@@ -78,8 +78,9 @@
           <div class="landing-card">
             <h3>Senhas e acessos (como instruções)</h3>
             <p>
-              Aqui você explica <strong>onde</strong> estão suas senhas e como acessar.
-              As senhas completas podem ficar em um cofre de senhas dedicado.
+              Aqui você explica <strong>onde</strong> estão suas senhas e como acessar
+              (por exemplo: “todas as minhas senhas ficam no aplicativo X, com o e-mail Y”).
+              As senhas completas podem continuar guardadas em um aplicativo próprio só para senhas.
             </p>
           </div>
           <div class="landing-card">
@@ -93,6 +94,42 @@
             <h3>Memórias e mensagens</h3>
             <p>Recados, histórias e lembranças para quem é importante pra você.</p>
           </div>
+        </div>
+      </section>
+
+      <!-- NOVA SEÇÃO: VISÃO PARA PESSOAS DE CONFIANÇA / CO-AUTOR -->
+      <section class="landing-section landing-two-columns">
+        <div>
+          <h2>Como sua família poderá ver o que você deixou</h2>
+          <p>
+            A ideia do Famli é que, no futuro, quem você marcar como pessoa de confiança
+            possa ter uma visão especial, em formato de lembranças:
+          </p>
+          <ul class="bullet-list">
+            <li>Somente leitura, sem poder apagar nada.</li>
+            <li>Mensagens e histórias organizadas como um diário.</li>
+            <li>Instruções importantes separadas por tema (saúde, finanças, família...).</li>
+          </ul>
+          <p>
+            Assim, em vez de planilhas confusas, seus filhos ou netos veem um espaço de
+            recordações e orientações feito por você.
+          </p>
+        </div>
+        <div>
+          <h2>Co-autor de confiança (ideia em construção)</h2>
+          <p>
+            Conforme a idade chega, é comum a gente ir deixando alguns hábitos de lado.
+            Por isso estamos desenhando a figura de um “co-autor de confiança”:
+          </p>
+          <ul class="bullet-list">
+            <li>Alguém próximo que pode te ajudar a preencher o Famli.</li>
+            <li>Com acesso limitado: pode completar informações, não apagar tudo.</li>
+            <li>Sempre com você no controle do que pode ou não ser feito.</li>
+          </ul>
+          <p>
+            A intenção é que você não precise cuidar de tudo sozinho, e tenha ajuda
+            de quem já está ao seu lado no dia a dia.
+          </p>
         </div>
       </section>
 
@@ -116,7 +153,10 @@
           <p class="quote">
             “Quero guardar meus documentos do plano de saúde. Por onde começo?”
           </p>
-          <p>Ele te guia, passo a passo, dentro da sua Caixa Famli.</p>
+          <p>
+            Ele te guia, passo a passo, dentro da sua Caixa Famli e pode sugerir,
+            aos poucos, novas coisas para registrar, sem cobrar que você faça tudo de uma vez.
+          </p>
         </div>
       </section>
 
@@ -255,6 +295,11 @@
               Neste momento, elas <strong>não recebem automaticamente</strong> suas informações.
               Só você vê o que está na sua Caixa Famli.
             </p>
+            <p class="sidebar-text">
+              Estamos desenhando, para o futuro, uma visão especial em formato de lembranças
+              para essas pessoas, sempre em modo somente leitura e com você decidindo
+              o que cada uma poderá ver.
+            </p>
             <button class="link-button small" @click="showLgpd = true">
               Ver detalhes de privacidade
             </button>
@@ -305,7 +350,8 @@
                     class="composer-form">
               <p class="composer-explainer">
                 Use este espaço para guardar instruções, contatos e orientações importantes.
-                Para senhas completas de banco ou e-mail, recomendamos um cofre de senhas dedicado.
+                Se precisar registrar senhas, use este campo para explicar onde elas estão
+                e como acessar (por exemplo: aplicativo de senhas, caderno em casa, etc.).
               </p>
               <label>
                 Título da informação
