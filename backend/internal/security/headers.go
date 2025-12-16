@@ -181,24 +181,25 @@ func HeadersMiddleware(config SecurityHeadersConfig) func(http.Handler) http.Han
 // buildDefaultCSP constrói a política CSP padrão
 func buildDefaultCSP(isDevelopment bool) string {
 	directives := []string{
-		// Padrão: bloquear tudo
+		// Padrão: bloquear tudo que não for explicitamente permitido
 		"default-src 'self'",
 
-		// Scripts: apenas do próprio domínio
-		// Em dev, permite 'unsafe-inline' para hot reload
-		"script-src 'self'" + conditionalCSP(isDevelopment, " 'unsafe-inline' 'unsafe-eval'"),
+		// Scripts: próprio domínio
+		// 'unsafe-eval' necessário para Vue.js runtime compilation
+		// Em produção, idealmente usaríamos templates pré-compilados
+		"script-src 'self' 'unsafe-inline' 'unsafe-eval'",
 
 		// Estilos: próprio domínio + Google Fonts + inline (necessário para Vue)
 		"style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
 
 		// Fontes: próprio domínio + Google Fonts
-		"font-src 'self' https://fonts.gstatic.com",
+		"font-src 'self' https://fonts.gstatic.com data:",
 
 		// Imagens: próprio domínio + data URIs + https
-		"img-src 'self' data: https:",
+		"img-src 'self' data: https: blob:",
 
-		// Conexões: próprio domínio + WebSocket em dev
-		"connect-src 'self'" + conditionalCSP(isDevelopment, " ws://localhost:* wss://localhost:*"),
+		// Conexões: próprio domínio + Google Fonts (service worker) + WebSocket em dev
+		"connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com" + conditionalCSP(isDevelopment, " ws://localhost:* wss://localhost:*"),
 
 		// Frames: bloquear (prevenção de clickjacking adicional)
 		"frame-ancestors 'none'",
@@ -212,8 +213,16 @@ func buildDefaultCSP(isDevelopment bool) string {
 		// Object/Embed: bloquear
 		"object-src 'none'",
 
-		// Upgrade requests insecuras para HTTPS
-		"upgrade-insecure-requests",
+		// Workers: próprio domínio (necessário para Service Worker/PWA)
+		"worker-src 'self' blob:",
+
+		// Manifest: próprio domínio (PWA manifest)
+		"manifest-src 'self'",
+	}
+
+	// Só adicionar upgrade-insecure-requests em produção
+	if !isDevelopment {
+		directives = append(directives, "upgrade-insecure-requests")
 	}
 
 	return strings.Join(directives, "; ")
