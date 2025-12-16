@@ -396,7 +396,11 @@
       "storage": "Armazenamento",
       "allocated": "Alocada",
       "system": "Sistema",
-      "type": "Tipo"
+      "type": "Tipo",
+      "config": "Configuração",
+      "environment": "Ambiente",
+      "adminEmails": "Emails de Admin (ADMIN_EMAILS)",
+      "noAdminEmails": "Nenhum email configurado (todos os usuários têm acesso em desenvolvimento)"
     }
   },
   "profile": {

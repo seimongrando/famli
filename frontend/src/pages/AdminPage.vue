@@ -41,7 +41,11 @@ const dashboard = ref({
   },
   items_by_type: {},
   items_by_category: {},
-  recent_signups: 0
+  recent_signups: 0,
+  config: {
+    admin_emails: [],
+    environment: ''
+  }
 })
 
 const health = ref({
@@ -524,6 +528,32 @@ onUnmounted(() => {
               </div>
             </div>
           </div>
+
+          <!-- Config Card (Debug) -->
+          <div class="system-card system-card--wide">
+            <h3 class="system-card__title">{{ t('admin.system.config') }}</h3>
+            <div class="system-card__content">
+              <div class="system-stat">
+                <span class="system-stat__label">{{ t('admin.system.environment') }}</span>
+                <span class="system-stat__value">{{ dashboard.config?.environment || 'development' }}</span>
+              </div>
+              <div class="system-stat system-stat--vertical">
+                <span class="system-stat__label">{{ t('admin.system.adminEmails') }}</span>
+                <div class="system-stat__list">
+                  <span 
+                    v-for="email in (dashboard.config?.admin_emails || [])" 
+                    :key="email"
+                    class="system-stat__tag"
+                  >
+                    {{ email }}
+                  </span>
+                  <span v-if="!dashboard.config?.admin_emails?.length" class="system-stat__empty">
+                    {{ t('admin.system.noAdminEmails') }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
     </main>
@@ -958,6 +988,37 @@ onUnmounted(() => {
 
 .system-stat__value--degraded {
   color: #f59e0b;
+}
+
+.system-card--wide {
+  grid-column: 1 / -1;
+}
+
+.system-stat--vertical {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-sm);
+}
+
+.system-stat__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+.system-stat__tag {
+  background: var(--color-bg-warm);
+  color: var(--color-text);
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  font-family: monospace;
+}
+
+.system-stat__empty {
+  color: var(--color-text-soft);
+  font-style: italic;
+  font-size: var(--font-size-sm);
 }
 
 /* Responsive */

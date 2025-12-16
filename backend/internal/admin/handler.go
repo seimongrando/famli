@@ -188,6 +188,7 @@ func isAdmin(email string) bool {
 //   - items: número total de itens
 //   - guardians: número total de guardiões
 //   - activity: atividade recente
+//   - config: configurações do admin (para debug)
 func (h *Handler) Dashboard(w http.ResponseWriter, r *http.Request) {
 	stats := h.store.GetStats()
 
@@ -196,6 +197,10 @@ func (h *Handler) Dashboard(w http.ResponseWriter, r *http.Request) {
 	if stats.TotalUsers > 0 {
 		avgItemsPerUser = float64(stats.TotalItems) / float64(stats.TotalUsers)
 	}
+
+	// Obter configurações para debug
+	adminEmails := getAdminEmails()
+	env := os.Getenv("ENV")
 
 	dashboard := map[string]interface{}{
 		"overview": map[string]interface{}{
@@ -207,7 +212,11 @@ func (h *Handler) Dashboard(w http.ResponseWriter, r *http.Request) {
 		"items_by_type":     stats.ItemsByType,
 		"items_by_category": stats.ItemsByCategory,
 		"recent_signups":    stats.RecentSignups,
-		"generated_at":      time.Now().UTC().Format(time.RFC3339),
+		"config": map[string]interface{}{
+			"admin_emails": adminEmails,
+			"environment":  env,
+		},
+		"generated_at": time.Now().UTC().Format(time.RFC3339),
 	}
 
 	writeJSON(w, http.StatusOK, dashboard)

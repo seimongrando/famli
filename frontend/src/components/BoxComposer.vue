@@ -1,13 +1,30 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useBoxStore } from '../stores/box'
 
 const { t } = useI18n()
 const boxStore = useBoxStore()
 
-const activeType = ref('info')
+// Props para permitir selecionar tipo externamente
+const props = defineProps({
+  initialType: {
+    type: String,
+    default: 'info'
+  }
+})
+
+const emit = defineEmits(['saved'])
+
+const activeType = ref(props.initialType)
 const saving = ref(false)
+
+// Observar mudanças na prop para atualizar o tipo ativo
+watch(() => props.initialType, (newType) => {
+  if (newType) {
+    activeType.value = newType
+  }
+})
 
 // Forms para cada tipo
 const infoForm = ref({ title: '', content: '', category: '' })
@@ -27,14 +44,17 @@ async function saveInfo() {
   if (!infoForm.value.title) return
   saving.value = true
   
-  await boxStore.createItem({
+  const result = await boxStore.createItem({
     type: 'info',
     title: infoForm.value.title,
     content: infoForm.value.content,
     category: infoForm.value.category
   })
   
-  infoForm.value = { title: '', content: '', category: '' }
+  if (result) {
+    infoForm.value = { title: '', content: '', category: '' }
+    emit('saved', 'info')
+  }
   saving.value = false
 }
 
@@ -42,14 +62,17 @@ async function saveGuardian() {
   if (!guardianForm.value.name) return
   saving.value = true
   
-  await boxStore.createGuardian({
+  const result = await boxStore.createGuardian({
     name: guardianForm.value.name,
     email: guardianForm.value.email,
     phone: guardianForm.value.phone,
     relationship: guardianForm.value.relationship
   })
   
-  guardianForm.value = { name: '', email: '', phone: '', relationship: '' }
+  if (result) {
+    guardianForm.value = { name: '', email: '', phone: '', relationship: '' }
+    emit('saved', 'guardian')
+  }
   saving.value = false
 }
 
@@ -57,14 +80,17 @@ async function saveMemory() {
   if (!memoryForm.value.title) return
   saving.value = true
   
-  await boxStore.createItem({
+  const result = await boxStore.createItem({
     type: 'memory',
     title: memoryForm.value.title,
     content: memoryForm.value.content,
     recipient: memoryForm.value.recipient
   })
   
-  memoryForm.value = { title: '', content: '', recipient: '' }
+  if (result) {
+    memoryForm.value = { title: '', content: '', recipient: '' }
+    emit('saved', 'memory')
+  }
   saving.value = false
 }
 </script>

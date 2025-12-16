@@ -23,6 +23,48 @@ const guideStore = useGuideStore()
 const activeTab = ref('caixa') // 'caixa' | 'guia'
 const showSettings = ref(false)
 const showPrivacy = ref(false)
+const selectedComposerType = ref('info')
+
+// Mapear IDs dos cards do guia para tipos do composer
+const cardToComposerType = {
+  'welcome': 'info',
+  'people': 'guardian',
+  'locations': 'info',
+  'routines': 'info',
+  'access': 'info',
+  'memories': 'memory'
+}
+
+// Função para iniciar tarefa do guia
+function startGuideTask(card) {
+  // Marcar como iniciado
+  guideStore.markProgress(card.id, 'started')
+  
+  // Definir o tipo correto no composer
+  selectedComposerType.value = cardToComposerType[card.id] || 'info'
+  
+  // Mudar para a aba da caixa
+  activeTab.value = 'caixa'
+}
+
+// Função chamada quando um item é salvo no composer
+function onComposerSaved(type) {
+  // Verificar se há um card do guia relacionado que pode ser completado
+  const relatedCards = {
+    'info': ['welcome', 'locations', 'routines', 'access'],
+    'guardian': ['people'],
+    'memory': ['memories']
+  }
+  
+  const cards = relatedCards[type] || []
+  for (const cardId of cards) {
+    const status = guideStore.getCardStatus(cardId)
+    if (status === 'started') {
+      guideStore.markProgress(cardId, 'completed')
+      break
+    }
+  }
+}
 
 // Computed
 const greeting = computed(() => {
@@ -143,7 +185,10 @@ onMounted(async () => {
           <div v-if="activeTab === 'caixa'" class="caixa-layout">
             <div class="caixa-main">
               <!-- Composer -->
-              <BoxComposer />
+              <BoxComposer 
+                :initial-type="selectedComposerType"
+                @saved="onComposerSaved"
+              />
               
               <!-- Feed -->
               <BoxFeed />
@@ -199,7 +244,7 @@ onMounted(async () => {
                 :key="card.id"
                 :card="card"
                 :status="guideStore.getCardStatus(card.id)"
-                @start="guideStore.markProgress(card.id, 'started'); activeTab = 'caixa'"
+                @start="startGuideTask(card)"
                 @complete="guideStore.markProgress(card.id, 'completed')"
                 @skip="guideStore.markProgress(card.id, 'skipped')"
               />

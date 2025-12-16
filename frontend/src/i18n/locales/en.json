@@ -396,7 +396,11 @@
       "storage": "Storage",
       "allocated": "Allocated",
       "system": "System",
-      "type": "Type"
+      "type": "Type",
+      "config": "Configuration",
+      "environment": "Environment",
+      "adminEmails": "Admin Emails (ADMIN_EMAILS)",
+      "noAdminEmails": "No emails configured (all users have access in development)"
     }
   },
   "profile": {
