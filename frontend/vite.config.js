@@ -1,3 +1,14 @@
+// =============================================================================
+// Famli - Vite Configuration
+// =============================================================================
+// Este arquivo configura o Vite para build do frontend Vue.js + PWA.
+//
+// Funcionalidades:
+// - Vue 3 com Single File Components
+// - PWA com Service Worker (auto update)
+// - Proxy para API em desenvolvimento
+// =============================================================================
+
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { VitePWA } from 'vite-plugin-pwa'
@@ -6,8 +17,77 @@ export default defineConfig({
   plugins: [
     vue(),
     VitePWA({
+      // =======================================================================
+      // CONFIGURAÇÃO DO SERVICE WORKER
+      // =======================================================================
+      
+      // 'autoUpdate': Atualiza automaticamente sem perguntar ao usuário
+      // Isso garante que os usuários sempre tenham a versão mais recente
       registerType: 'autoUpdate',
-      includeAssets: ['famli.png', 'favicon.ico'],
+      
+      // Assets estáticos para incluir no precache
+      includeAssets: ['famli.png', 'favicon.ico', 'logo.svg'],
+      
+      // =======================================================================
+      // WORKBOX - Service Worker Configuration
+      // =======================================================================
+      workbox: {
+        // Forçar ativação imediata do novo SW (não esperar abas fecharem)
+        skipWaiting: true,
+        
+        // Assumir controle de clientes imediatamente
+        clientsClaim: true,
+        
+        // Arquivos para precache
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
+        
+        // NÃO cachear fontes do Google via Service Worker
+        // O browser já faz cache nativo e evita conflitos com CSP
+        // Removido o runtimeCaching para fonts.googleapis.com
+        
+        runtimeCaching: [
+          // Cache de API - Network First (busca na rede, fallback para cache)
+          {
+            urlPattern: /\/api\/.*/i,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'api-cache',
+              expiration: {
+                maxEntries: 50,
+                maxAgeSeconds: 60 * 5 // 5 minutos
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
+          },
+          // Cache de imagens externas
+          {
+            urlPattern: /^https:\/\/.*\.(png|jpg|jpeg|svg|gif|webp)$/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'images-cache',
+              expiration: {
+                maxEntries: 100,
+                maxAgeSeconds: 60 * 60 * 24 * 30 // 30 dias
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
+          }
+        ],
+        
+        // Limpar caches antigos automaticamente
+        cleanupOutdatedCaches: true,
+        
+        // Não precachear arquivos muito grandes
+        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024 // 3MB
+      },
+      
+      // =======================================================================
+      // MANIFEST (PWA)
+      // =======================================================================
       manifest: {
         name: 'Famli',
         short_name: 'Famli',
@@ -18,6 +98,7 @@ export default defineConfig({
         orientation: 'portrait',
         scope: '/',
         start_url: '/',
+        categories: ['lifestyle', 'productivity'],
         icons: [
           {
             src: '/icons/icon-72x72.png',
@@ -69,41 +150,19 @@ export default defineConfig({
           }
         ]
       },
-      workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
-        runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'google-fonts-cache',
-              expiration: {
-                maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365 // 1 ano
-              },
-              cacheableResponse: {
-                statuses: [0, 200]
-              }
-            }
-          },
-          {
-            urlPattern: /\/api\/.*/i,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'api-cache',
-              expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 60 * 5 // 5 minutos
-              },
-              cacheableResponse: {
-                statuses: [0, 200]
-              }
-            }
-          }
-        ]
+      
+      // =======================================================================
+      // DESENVOLVIMENTO
+      // =======================================================================
+      devOptions: {
+        enabled: false // Desabilitar SW em desenvolvimento para evitar problemas de cache
       }
     })
   ],
+  
+  // ===========================================================================
+  // SERVIDOR DE DESENVOLVIMENTO
+  // ===========================================================================
   server: {
     port: 5173,
     proxy: {
@@ -112,5 +171,16 @@ export default defineConfig({
         changeOrigin: true
       }
     }
+  },
+  
+  // ===========================================================================
+  // BUILD
+  // ===========================================================================
+  build: {
+    // Gerar sourcemaps apenas em desenvolvimento
+    sourcemap: false,
+    
+    // Tamanho máximo de chunk antes de warning
+    chunkSizeWarningLimit: 500
   }
 })
