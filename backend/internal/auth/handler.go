@@ -16,6 +16,8 @@ package auth
 import (
 	"encoding/json"
 	"net/http"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -274,6 +276,13 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 // Me retorna dados do usuário autenticado
 //
 // Endpoint: GET /api/auth/me
+//
+// Resposta inclui:
+//   - id: ID do usuário
+//   - email: email do usuário
+//   - name: nome do usuário
+//   - created_at: data de criação
+//   - is_admin: se o usuário é administrador
 func (h *Handler) Me(w http.ResponseWriter, r *http.Request) {
 	userID := GetUserID(r)
 	if userID == "" {
@@ -288,14 +297,40 @@ func (h *Handler) Me(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Verificar se é admin
+	isAdmin := checkIsAdmin(user.Email)
+
 	writeJSON(w, http.StatusOK, map[string]interface{}{
 		"user": map[string]interface{}{
 			"id":         user.ID,
 			"email":      user.Email,
 			"name":       user.Name,
 			"created_at": user.CreatedAt,
+			"is_admin":   isAdmin,
 		},
 	})
+}
+
+// checkIsAdmin verifica se o email está na lista de administradores
+// Lê a variável de ambiente ADMIN_EMAILS dinamicamente
+func checkIsAdmin(email string) bool {
+	adminEmails := os.Getenv("ADMIN_EMAILS")
+	if adminEmails == "" {
+		// Em desenvolvimento sem admins configurados, todos são admin
+		if os.Getenv("ENV") != "production" {
+			return true
+		}
+		return false
+	}
+
+	email = strings.ToLower(email)
+	for _, admin := range strings.Split(adminEmails, ",") {
+		admin = strings.TrimSpace(strings.ToLower(admin))
+		if email == admin {
+			return true
+		}
+	}
+	return false
 }
 
 // Logout encerra a sessão do usuário

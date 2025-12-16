@@ -10,12 +10,14 @@ import LandingPage from './pages/LandingPage.vue'
 import AuthPage from './pages/AuthPage.vue'
 import DashboardPage from './pages/DashboardPage.vue'
 import AdminPage from './pages/AdminPage.vue'
+import ProfilePage from './pages/ProfilePage.vue'
 
 const routes = [
   { path: '/', name: 'landing', component: LandingPage },
   { path: '/entrar', name: 'auth', component: AuthPage },
   { path: '/minha-caixa', name: 'dashboard', component: DashboardPage, meta: { requiresAuth: true } },
   { path: '/admin', name: 'admin', component: AdminPage, meta: { requiresAuth: true } },
+  { path: '/perfil', name: 'profile', component: ProfilePage, meta: { requiresAuth: true } },
 ]
 
 const router = createRouter({

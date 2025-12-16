@@ -20,6 +20,7 @@ package admin
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"os"
 	"runtime"
@@ -34,21 +35,23 @@ import (
 // CONFIGURAÇÃO
 // =============================================================================
 
-// Lista de emails de administradores
-// Em produção, isso deveria vir de um banco de dados ou variável de ambiente
-var adminEmails = []string{}
+// getAdminEmails retorna a lista de emails de administradores
+// Lê dinamicamente a variável de ambiente a cada chamada
+// Formato: ADMIN_EMAILS=admin1@email.com,admin2@email.com
+func getAdminEmails() []string {
+	emails := os.Getenv("ADMIN_EMAILS")
+	if emails == "" {
+		return []string{}
+	}
 
-func init() {
-	// Carregar emails de admin da variável de ambiente
-	// Formato: ADMIN_EMAILS=admin1@email.com,admin2@email.com
-	if emails := os.Getenv("ADMIN_EMAILS"); emails != "" {
-		for _, email := range strings.Split(emails, ",") {
-			email = strings.TrimSpace(email)
-			if email != "" {
-				adminEmails = append(adminEmails, strings.ToLower(email))
-			}
+	result := []string{}
+	for _, email := range strings.Split(emails, ",") {
+		email = strings.TrimSpace(email)
+		if email != "" {
+			result = append(result, strings.ToLower(email))
 		}
 	}
+	return result
 }
 
 // =============================================================================
@@ -111,17 +114,29 @@ func (h *Handler) AdminOnly(next http.Handler) http.Handler {
 }
 
 // isAdmin verifica se o email está na lista de admins
+// Lê a variável de ambiente ADMIN_EMAILS dinamicamente
 func isAdmin(email string) bool {
 	email = strings.ToLower(email)
+	adminEmails := getAdminEmails()
+	env := os.Getenv("ENV")
+
+	// Debug log
+	log.Printf("[ADMIN] Verificando acesso: email=%s, adminEmails=%v, ENV=%s", email, adminEmails, env)
+
 	for _, adminEmail := range adminEmails {
 		if email == adminEmail {
+			log.Printf("[ADMIN] ✓ Acesso permitido para: %s", email)
 			return true
 		}
 	}
+
 	// Em desenvolvimento, se não houver admins configurados, permitir qualquer usuário autenticado
-	if len(adminEmails) == 0 && os.Getenv("ENV") != "production" {
+	if len(adminEmails) == 0 && env != "production" {
+		log.Printf("[ADMIN] ✓ Acesso permitido (dev mode, sem admins configurados)")
 		return true
 	}
+
+	log.Printf("[ADMIN] ✗ Acesso negado para: %s", email)
 	return false
 }
 

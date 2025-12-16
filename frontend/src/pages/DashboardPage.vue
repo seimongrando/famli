@@ -62,8 +62,16 @@ onMounted(async () => {
           
           <div class="dashboard-header__actions">
             <LanguageSelector />
-            <router-link :to="{ name: 'admin' }" class="btn btn--ghost btn--small admin-link" title="Admin">
+            <router-link 
+              v-if="authStore.user?.is_admin" 
+              :to="{ name: 'admin' }" 
+              class="btn btn--ghost btn--small admin-link" 
+              title="Admin"
+            >
               ⚙️
+            </router-link>
+            <router-link :to="{ name: 'profile' }" class="btn btn--ghost btn--small" title="Perfil">
+              👤
             </router-link>
             <button class="btn btn--ghost btn--small" @click="showSettings = true">
               {{ t('nav.settings') }}

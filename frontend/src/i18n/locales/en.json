@@ -397,6 +397,25 @@
       "system": "System",
       "type": "Type"
     }
+  },
+  "profile": {
+    "title": "My Profile",
+    "noName": "User",
+    "admin": "Administrator",
+    "memberSince": "Member since",
+    "accountData": "Account Data",
+    "userId": "User ID",
+    "email": "Email",
+    "name": "Name",
+    "createdAt": "Created At",
+    "role": "Account Type",
+    "adminRole": "Administrator",
+    "userRole": "User",
+    "actions": "Actions",
+    "goToAdmin": "Go to Admin",
+    "goToBox": "Go to My Box",
+    "logout": "Sign Out",
+    "securityNote": "Your data is secure. You can access this page at any time to check your account information."
   }
 }
 

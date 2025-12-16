@@ -397,6 +397,25 @@
       "system": "Sistema",
       "type": "Tipo"
     }
+  },
+  "profile": {
+    "title": "Meu Perfil",
+    "noName": "Usuário",
+    "admin": "Administrador",
+    "memberSince": "Membro desde",
+    "accountData": "Dados da Conta",
+    "userId": "ID do Usuário",
+    "email": "E-mail",
+    "name": "Nome",
+    "createdAt": "Data de Criação",
+    "role": "Tipo de Conta",
+    "adminRole": "Administrador",
+    "userRole": "Usuário",
+    "actions": "Ações",
+    "goToAdmin": "Ir para Administração",
+    "goToBox": "Ir para Minha Caixa",
+    "logout": "Sair da Conta",
+    "securityNote": "Seus dados estão seguros. Você pode acessar esta página a qualquer momento para verificar suas informações de conta."
   }
 }
 
