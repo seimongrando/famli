@@ -349,6 +349,54 @@
       "uppercase": "One uppercase letter",
       "special": "One special character (!@#$%)"
     }
+  },
+  "admin": {
+    "title": "Admin Dashboard",
+    "backToDashboard": "Back to Dashboard",
+    "refresh": "Refresh",
+    "loading": "Loading data...",
+    "error": "Access Restricted",
+    "accessDenied": "You don't have permission to access this area.",
+    "loadError": "Error loading data. Please try again.",
+    "tabs": {
+      "overview": "Overview",
+      "users": "Users",
+      "activity": "Activity",
+      "system": "System"
+    },
+    "metrics": {
+      "totalUsers": "Users",
+      "totalItems": "Saved Items",
+      "totalGuardians": "Guardians",
+      "avgItemsPerUser": "Avg per User",
+      "thisWeek": "this week"
+    },
+    "charts": {
+      "itemsByType": "Items by Type",
+      "itemsByCategory": "Items by Category",
+      "noData": "No data available"
+    },
+    "users": {
+      "name": "Name",
+      "email": "Email",
+      "items": "Items",
+      "guardians": "Guardians",
+      "createdAt": "Created",
+      "admin": "Admin",
+      "noUsers": "No users registered"
+    },
+    "activity": {
+      "noActivity": "No recent activity"
+    },
+    "system": {
+      "status": "Server Status",
+      "memory": "Memory",
+      "runtime": "Runtime",
+      "storage": "Storage",
+      "allocated": "Allocated",
+      "system": "System",
+      "type": "Type"
+    }
   }
 }
 

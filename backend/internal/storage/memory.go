@@ -333,3 +333,75 @@ func (s *MemoryStore) UpdateSettings(userID string, updates *Settings) *Settings
 	copySettings := *updates
 	return &copySettings
 }
+
+// ============ ADMIN / ESTATÍSTICAS ============
+
+// Stats representa estatísticas do sistema
+type Stats struct {
+	TotalUsers      int            `json:"total_users"`
+	TotalItems      int            `json:"total_items"`
+	TotalGuardians  int            `json:"total_guardians"`
+	ItemsByType     map[string]int `json:"items_by_type"`
+	ItemsByCategory map[string]int `json:"items_by_category"`
+	RecentSignups   int            `json:"recent_signups"` // Últimos 7 dias
+}
+
+// GetStats retorna estatísticas gerais do sistema
+func (s *MemoryStore) GetStats() *Stats {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	stats := &Stats{
+		ItemsByType:     make(map[string]int),
+		ItemsByCategory: make(map[string]int),
+	}
+
+	// Contar usuários
+	stats.TotalUsers = len(s.users)
+
+	// Contar inscrições recentes (últimos 7 dias)
+	sevenDaysAgo := time.Now().AddDate(0, 0, -7)
+	for _, user := range s.users {
+		if user.CreatedAt.After(sevenDaysAgo) {
+			stats.RecentSignups++
+		}
+	}
+
+	// Contar itens e categorias
+	for _, userItems := range s.items {
+		for _, item := range userItems {
+			stats.TotalItems++
+			stats.ItemsByType[string(item.Type)]++
+			if item.Category != "" {
+				stats.ItemsByCategory[item.Category]++
+			}
+		}
+	}
+
+	// Contar guardiões
+	for _, userGuardians := range s.guardians {
+		stats.TotalGuardians += len(userGuardians)
+	}
+
+	return stats
+}
+
+// ListUsers retorna lista de todos os usuários (para admin)
+func (s *MemoryStore) ListUsers() []*User {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	users := make([]*User, 0, len(s.users))
+	for _, user := range s.users {
+		// Criar cópia sem a senha
+		copyUser := &User{
+			ID:        user.ID,
+			Email:     user.Email,
+			Name:      user.Name,
+			CreatedAt: user.CreatedAt,
+			// Password NÃO incluído
+		}
+		users = append(users, copyUser)
+	}
+	return users
+}

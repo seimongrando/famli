@@ -57,8 +57,10 @@ const (
 	EventTokenInvalid       AuditEventType = "TOKEN_INVALID"
 
 	// WhatsApp
-	EventWhatsAppLink   AuditEventType = "WHATSAPP_LINK"
-	EventWhatsAppUnlink AuditEventType = "WHATSAPP_UNLINK"
+	EventWhatsAppLink            AuditEventType = "WHATSAPP_LINK"
+	EventWhatsAppUnlink          AuditEventType = "WHATSAPP_UNLINK"
+	EventWhatsAppMessageReceived AuditEventType = "WHATSAPP_MESSAGE_RECEIVED"
+	EventWhatsAppWebhookReceived AuditEventType = "WHATSAPP_WEBHOOK_RECEIVED"
 )
 
 // AuditSeverity define a severidade do evento

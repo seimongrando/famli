@@ -62,6 +62,9 @@ onMounted(async () => {
           
           <div class="dashboard-header__actions">
             <LanguageSelector />
+            <router-link :to="{ name: 'admin' }" class="btn btn--ghost btn--small admin-link" title="Admin">
+              ⚙️
+            </router-link>
             <button class="btn btn--ghost btn--small" @click="showSettings = true">
               {{ t('nav.settings') }}
             </button>
@@ -430,6 +433,18 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   gap: var(--space-md);
+}
+
+/* Admin Link */
+.admin-link {
+  font-size: 1.25rem;
+  padding: var(--space-xs) var(--space-sm);
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.admin-link:hover {
+  opacity: 1;
 }
 
 /* Responsive */

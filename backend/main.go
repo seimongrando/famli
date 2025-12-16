@@ -37,6 +37,7 @@ import (
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 
+	"famli/internal/admin"
 	"famli/internal/auth"
 	"famli/internal/box"
 	"famli/internal/guardian"
@@ -123,6 +124,7 @@ func main() {
 	guardianHandler := guardian.NewHandler(store)
 	guideHandler := guide.NewHandler(store)
 	settingsHandler := settings.NewHandler(store)
+	adminHandler := admin.NewHandler(store)
 
 	// Serviço e handler do WhatsApp
 	whatsappService := whatsapp.NewService(store, whatsappConfig)
@@ -189,6 +191,9 @@ func main() {
 		// ROTAS PÚBLICAS (sem autenticação)
 		// ─────────────────────────────────────────────────────────────────────
 
+		// Health check público (para load balancers)
+		api.Get("/health", adminHandler.PublicHealth)
+
 		// Autenticação (rate limit adicional no handler)
 		api.Post("/auth/register", authHandler.Register)
 		api.Post("/auth/login", authHandler.Login)
@@ -242,6 +247,26 @@ func main() {
 			// WhatsApp (vincular/desvincular)
 			pr.Post("/whatsapp/link", whatsappHandler.Link)
 			pr.Delete("/whatsapp/link", whatsappHandler.Unlink)
+		})
+
+		// ─────────────────────────────────────────────────────────────────────
+		// ROTAS ADMINISTRATIVAS (requerem autenticação JWT + permissão admin)
+		// ─────────────────────────────────────────────────────────────────────
+
+		api.Route("/admin", func(ar chi.Router) {
+			// Autenticação JWT obrigatória
+			ar.Use(auth.JWTMiddleware(jwtSecret))
+			// Verificação de permissão admin
+			ar.Use(adminHandler.AdminOnly)
+
+			// Dashboard com métricas
+			ar.Get("/dashboard", adminHandler.Dashboard)
+			// Health check detalhado
+			ar.Get("/health", adminHandler.Health)
+			// Lista de usuários
+			ar.Get("/users", adminHandler.Users)
+			// Atividade recente
+			ar.Get("/activity", adminHandler.Activity)
 		})
 	})
 
