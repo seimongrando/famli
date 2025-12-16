@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 100" fill="none">
+  <!-- Símbolo: Balão de conversa -->
+  <path d="M12 16C12 8.82 17.82 3 25 3H67C74.18 3 80 8.82 80 16V52C80 59.18 74.18 65 67 65H52L46 78L40 65H25C17.82 65 12 59.18 12 52V16Z" fill="#355d4a"/>
+  
+  <!-- Símbolo: Coração -->
+  <path d="M46 55C46 55 64.5 41.5 64.5 29C64.5 23 60 18 54 18C49.5 18 46 21 46 21C46 21 42.5 18 38 18C32 18 27.5 23 27.5 29C27.5 41.5 46 55 46 55Z" fill="#f4a285"/>
+  
+  <!-- Texto: famli -->
+  <text x="95" y="58" font-family="Nunito, -apple-system, sans-serif" font-size="48" font-weight="700" fill="#355d4a">famli</text>
+</svg>
+

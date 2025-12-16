@@ -2,596 +2,125 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <title>Famli</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" href="styles.css" />
-  <!-- Vue 3 via CDN -->
-  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       TÍTULO E DESCRIÇÃO
+       ═══════════════════════════════════════════════════════════════════════ -->
+  <title>Famli - Guarde o que importa para quem você ama</title>
+  <meta name="description" content="Sua caixa segura de memórias, documentos e orientações. Organize o que importa e compartilhe com pessoas de confiança quando chegar a hora." />
+  
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       SEO - META TAGS
+       ═══════════════════════════════════════════════════════════════════════ -->
+  <meta name="keywords" content="memórias familiares, documentos importantes, testamento digital, herança digital, organização familiar, legado, orientações família, caixa de memórias, guardar documentos" />
+  <meta name="author" content="Famli" />
+  <meta name="robots" content="index, follow" />
+  <meta name="language" content="Portuguese" />
+  <meta name="revisit-after" content="7 days" />
+  <meta name="distribution" content="global" />
+  <meta name="rating" content="general" />
+  
+  <!-- Canonical URL -->
+  <link rel="canonical" href="https://famli.net/" />
+  
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       OPEN GRAPH (Facebook, WhatsApp, LinkedIn, etc.)
+       ═══════════════════════════════════════════════════════════════════════ -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://famli.net/" />
+  <meta property="og:title" content="Famli - Guarde o que importa para quem você ama" />
+  <meta property="og:description" content="Sua caixa segura de memórias, documentos e orientações. Organize o que importa e compartilhe com pessoas de confiança." />
+  <meta property="og:image" content="https://famli.net/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="Famli - Guarde o que importa para quem você ama" />
+  <meta property="og:site_name" content="Famli" />
+  <meta property="og:locale" content="pt_BR" />
+  <meta property="og:locale:alternate" content="en_US" />
+  
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       TWITTER CARD
+       ═══════════════════════════════════════════════════════════════════════ -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:url" content="https://famli.net/" />
+  <meta name="twitter:title" content="Famli - Guarde o que importa para quem você ama" />
+  <meta name="twitter:description" content="Sua caixa segura de memórias, documentos e orientações. Organize o que importa e compartilhe com pessoas de confiança." />
+  <meta name="twitter:image" content="https://famli.net/og-image.png" />
+  <meta name="twitter:image:alt" content="Famli - Guarde o que importa para quem você ama" />
+  
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       PWA E MOBILE
+       ═══════════════════════════════════════════════════════════════════════ -->
+  <meta name="theme-color" content="#355d4a" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="application-name" content="Famli" />
+  
+  <!-- iOS -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Famli" />
+  <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+  
+  <!-- Splash Screens iOS -->
+  <link rel="apple-touch-startup-image" href="/icons/splash-640x1136.png" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2)" />
+  <link rel="apple-touch-startup-image" href="/icons/splash-750x1334.png" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)" />
+  <link rel="apple-touch-startup-image" href="/icons/splash-1242x2208.png" media="(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3)" />
+  <link rel="apple-touch-startup-image" href="/icons/splash-1125x2436.png" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3)" />
+  
+  <!-- Microsoft/Windows -->
+  <meta name="msapplication-TileColor" content="#355d4a" />
+  <meta name="msapplication-TileImage" content="/icons/icon-144x144.png" />
+  <meta name="msapplication-config" content="/browserconfig.xml" />
+  
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       FAVICONS
+       ═══════════════════════════════════════════════════════════════════════ -->
+  <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+  <link rel="shortcut icon" href="/favicon.ico" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       PRECONNECT E FONTS
+       ═══════════════════════════════════════════════════════════════════════ -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       SCHEMA.ORG - DADOS ESTRUTURADOS
+       ═══════════════════════════════════════════════════════════════════════ -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Famli",
+    "description": "Sua caixa segura de memórias, documentos e orientações. Organize o que importa e compartilhe com pessoas de confiança quando chegar a hora.",
+    "url": "https://famli.net",
+    "applicationCategory": "LifestyleApplication",
+    "operatingSystem": "Web, Android, iOS",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "BRL"
+    },
+    "author": {
+      "@type": "Organization",
+      "name": "Famli",
+      "url": "https://famli.net"
+    },
+    "aggregateRating": {
+      "@type": "AggregateRating",
+      "ratingValue": "5",
+      "ratingCount": "1"
+    }
+  }
+  </script>
 </head>
 <body>
-<div id="app">
-  <!-- VIEW: LANDING (pública) -->
-  <div v-if="view === 'landing'" class="landing-wrapper">
-    <header class="landing-header">
-      <div class="brand brand-row">
-        <img src="./famli.png" alt="Famli" class="brand-logo-img" />
-        <span class="brand-text">famli</span>
-      </div>
-      <nav class="landing-nav">
-        <button class="ghost" @click="goToAuth('login')">Entrar</button>
-        <button class="primary" @click="goToAuth('register')">Criar conta</button>
-      </nav>
-    </header>
-
-    <main class="landing-main">
-      <section class="hero">
-        <div class="hero-text">
-          <h1>Guarde o que importa hoje.<br />Deixe tranquilo quem você ama amanhã.</h1>
-          <p>
-            Um espaço seguro e simples para organizar documentos, instruções e memórias,
-            feito para quem já viveu muita coisa.
-          </p>
-          <div class="hero-actions">
-            <button class="primary big" @click="goToAuth('register')">
-              Começar agora
-            </button>
-            <button class="ghost big" @click="goToAuth('login')">
-              Já tenho conta
-            </button>
-          </div>
-        </div>
-        <div class="hero-card">
-          <p class="hero-card-title">Seu cuidado em um só lugar</p>
-          <ul>
-            <li>Informações importantes com instruções claras</li>
-            <li>Pessoas de confiança escolhidas por você</li>
-            <li>Memórias e mensagens para quem você ama</li>
-          </ul>
-        </div>
-      </section>
-
-      <section class="landing-section">
-        <h2>Para quem é o Famli?</h2>
-        <div class="landing-columns">
-          <div class="landing-card">
-            <h3>Para quem tem 50+</h3>
-            <p>Quer deixar tudo organizado, sem depender da memória para lembrar de tudo.</p>
-          </div>
-          <div class="landing-card">
-            <h3>Para famílias</h3>
-            <p>Que não querem deixar ninguém no escuro em caso de emergência.</p>
-          </div>
-          <div class="landing-card">
-            <h3>Para quem cuida</h3>
-            <p>Filhos, netos e pessoas de confiança que precisam saber onde encontrar o que é importante.</p>
-          </div>
-        </div>
-      </section>
-
-      <section class="landing-section">
-        <h2>O que você pode guardar</h2>
-        <div class="landing-columns">
-          <div class="landing-card">
-            <h3>Informações importantes</h3>
-            <p>Planos de saúde, seguros, contas, imóveis e contatos de emergência com instruções de uso.</p>
-          </div>
-          <div class="landing-card">
-            <h3>Senhas e acessos (como instruções)</h3>
-            <p>
-              Aqui você explica <strong>onde</strong> estão suas senhas e como acessar
-              (por exemplo: “todas as minhas senhas ficam no aplicativo X, com o e-mail Y”).
-              As senhas completas podem continuar guardadas em um aplicativo próprio só para senhas.
-            </p>
-          </div>
-          <div class="landing-card">
-            <h3>Pessoas de confiança</h3>
-            <p>
-              Familiares ou amigos próximos que você autoriza a serem avisados se um dia
-              não puder acessar sua conta.
-            </p>
-          </div>
-          <div class="landing-card">
-            <h3>Memórias e mensagens</h3>
-            <p>Recados, histórias e lembranças para quem é importante pra você.</p>
-          </div>
-        </div>
-      </section>
-
-      <!-- NOVA SEÇÃO: VISÃO PARA PESSOAS DE CONFIANÇA / CO-AUTOR -->
-      <section class="landing-section landing-two-columns">
-        <div>
-          <h2>Como sua família poderá ver o que você deixou</h2>
-          <p>
-            A ideia do Famli é que, no futuro, quem você marcar como pessoa de confiança
-            possa ter uma visão especial, em formato de lembranças:
-          </p>
-          <ul class="bullet-list">
-            <li>Somente leitura, sem poder apagar nada.</li>
-            <li>Mensagens e histórias organizadas como um diário.</li>
-            <li>Instruções importantes separadas por tema (saúde, finanças, família...).</li>
-          </ul>
-          <p>
-            Assim, em vez de planilhas confusas, seus filhos ou netos veem um espaço de
-            recordações e orientações feito por você.
-          </p>
-        </div>
-        <div>
-          <h2>Co-autor de confiança (ideia em construção)</h2>
-          <p>
-            Conforme a idade chega, é comum a gente ir deixando alguns hábitos de lado.
-            Por isso estamos desenhando a figura de um “co-autor de confiança”:
-          </p>
-          <ul class="bullet-list">
-            <li>Alguém próximo que pode te ajudar a preencher o Famli.</li>
-            <li>Com acesso limitado: pode completar informações, não apagar tudo.</li>
-            <li>Sempre com você no controle do que pode ou não ser feito.</li>
-          </ul>
-          <p>
-            A intenção é que você não precise cuidar de tudo sozinho, e tenha ajuda
-            de quem já está ao seu lado no dia a dia.
-          </p>
-        </div>
-      </section>
-
-      <section class="landing-section landing-two-columns">
-        <div>
-          <h2>Segurança e privacidade em primeiro lugar</h2>
-          <ul class="bullet-list">
-            <li>Seus dados são protegidos e só você decide quem pode ver.</li>
-            <li>Você pode apagar tudo quando quiser.</li>
-            <li>Não vendemos nem compartilhamos seus dados com terceiros para marketing.</li>
-            <li>Adicionar uma pessoa de confiança <strong>não</strong> dá acesso automático às suas informações.</li>
-            <li>Todo acesso é registrado e você pode ser avisado em caso de atividade suspeita.</li>
-          </ul>
-        </div>
-        <div>
-          <h2>Assistente com IA para ajudar em cada passo</h2>
-          <p>
-            Não é preciso entender de tecnologia. Você pode conversar com o assistente Famli
-            como faria com alguém próximo:
-          </p>
-          <p class="quote">
-            “Quero guardar meus documentos do plano de saúde. Por onde começo?”
-          </p>
-          <p>
-            Ele te guia, passo a passo, dentro da sua Caixa Famli e pode sugerir,
-            aos poucos, novas coisas para registrar, sem cobrar que você faça tudo de uma vez.
-          </p>
-        </div>
-      </section>
-
-      <section class="landing-section center">
-        <h2>Comece hoje a organizar o que é importante</h2>
-        <p>Leva menos de 5 minutos para dar o primeiro passo.</p>
-        <button class="primary big" @click="goToAuth('register')">
-          Criar minha conta
-        </button>
-        <button class="link-button" @click="goToAuth('login')">
-          Entrar se já tenho conta
-        </button>
-      </section>
-    </main>
-  </div>
-
-  <!-- VIEW: AUTENTICAÇÃO -->
-  <div v-else-if="view === 'auth'" class="auth-wrapper">
-    <header class="landing-header">
-      <div class="brand brand-row">
-        <img src="./famli.png" alt="Famli" class="brand-logo-img" />
-        <span class="brand-text">famli</span>
-      </div>
-      <nav class="landing-nav">
-        <button class="ghost" @click="goToLanding">Voltar</button>
-      </nav>
-    </header>
-
-    <main class="auth-main">
-      <section class="panel auth-panel">
-        <div class="auth-toggle">
-          <button
-                  :class="['tab', authMode === 'login' ? 'active' : '']"
-                  @click="authMode = 'login'">
-            Entrar
-          </button>
-          <button
-                  :class="['tab', authMode === 'register' ? 'active' : '']"
-                  @click="authMode = 'register'">
-            Criar conta
-          </button>
-        </div>
-
-        <h1 v-if="authMode === 'login'">Bem-vindo de volta ao Famli</h1>
-        <h1 v-else>Crie sua conta Famli</h1>
-
-        <form @submit.prevent="handleAuthSubmit">
-          <label>
-            E-mail
-            <input
-                    type="email"
-                    v-model="authForm.email"
-                    required
-                    autocomplete="email" />
-          </label>
-          <label>
-            Senha
-            <input
-                    type="password"
-                    v-model="authForm.password"
-                    required
-                    minlength="6"
-                    autocomplete="current-password" />
-          </label>
-          <p class="auth-hint">
-            Use um e-mail que você acesse com frequência.
-          </p>
-          <button class="primary full" type="submit" :disabled="authLoading">
-              <span v-if="authMode === 'login'">
-                {{ authLoading ? 'Entrando...' : 'Entrar' }}
-              </span>
-            <span v-else>
-                {{ authLoading ? 'Criando...' : 'Criar conta' }}
-              </span>
-          </button>
-          <p v-if="authError" class="error-text">{{ authError }}</p>
-        </form>
-      </section>
-    </main>
-  </div>
-
-  <!-- VIEW: DASHBOARD (logado) -->
-  <div v-else-if="view === 'dashboard'" class="dashboard-wrapper">
-    <header class="top-bar">
-      <div class="brand brand-row">
-        <img src="./famli.png" alt="Famli" class="brand-logo-img" />
-        <span class="brand-text">famli</span>
-      </div>
-      <div class="top-bar-center">
-        <span class="tagline">Guarde o que importa, com calma.</span>
-      </div>
-      <div class="top-bar-actions">
-        <button class="ghost small" @click="openSettings">
-          Configurações
-        </button>
-        <button class="ghost small" @click="logout">
-          Sair
-        </button>
-      </div>
-    </header>
-
-    <main class="panel dashboard">
-      <div class="dashboard-grid">
-        <!-- SIDEBAR ESQUERDA -->
-        <aside class="sidebar-left">
-          <section class="sidebar-card">
-            <h2>Sua conta</h2>
-            <p class="user-email">{{ user?.email }}</p>
-            <p class="sidebar-text">
-              Você já organizou <strong>{{ summaryCounts.total }}</strong> itens na Famli.
-            </p>
-            <ul class="sidebar-list">
-              <li>
-                ✅ Guardou sua primeira informação
-              </li>
-              <li>
-                <span v-if="summaryCounts.guardians > 0">✅</span>
-                <span v-else>⬜</span>
-                Adicionou uma pessoa de confiança
-              </li>
-              <li>
-                <span v-if="settings.emergency_protocol_enabled">✅</span>
-                <span v-else>⬜</span>
-                Ativou o protocolo de emergência
-              </li>
-            </ul>
-          </section>
-
-          <section class="sidebar-card">
-            <h2>Sobre pessoas de confiança</h2>
-            <p class="sidebar-text">
-              Pessoas de confiança são familiares ou amigos próximos que você autoriza a serem avisados
-              se um dia não puder acessar sua conta.
-            </p>
-            <p class="sidebar-text">
-              Neste momento, elas <strong>não recebem automaticamente</strong> suas informações.
-              Só você vê o que está na sua Caixa Famli.
-            </p>
-            <p class="sidebar-text">
-              Estamos desenhando, para o futuro, uma visão especial em formato de lembranças
-              para essas pessoas, sempre em modo somente leitura e com você decidindo
-              o que cada uma poderá ver.
-            </p>
-            <button class="link-button small" @click="showLgpd = true">
-              Ver detalhes de privacidade
-            </button>
-          </section>
-
-          <section class="sidebar-card">
-            <h2>Segurança e LGPD</h2>
-            <p class="sidebar-text">
-              Seus dados são seus. Você pode apagar tudo quando quiser.
-            </p>
-            <button class="link-button small" @click="showLgpd = true">
-              Ver transparência LGPD
-            </button>
-          </section>
-        </aside>
-
-        <!-- COLUNA CENTRAL (COMPOSER + FEED) -->
-        <section class="dashboard-center">
-          <!-- COMPOSER -->
-          <section class="composer-card">
-            <h1>O que você deseja guardar hoje?</h1>
-            <p class="composer-intro">
-              Você pode registrar informações importantes, escolher pessoas de confiança
-              e escrever mensagens para quem você ama.
-            </p>
-            <div class="composer-types">
-              <button
-                      :class="['chip', composerType === 'info' ? 'active' : '']"
-                      @click="composerType = 'info'">
-                Informação importante
-              </button>
-              <button
-                      :class="['chip', composerType === 'guardian' ? 'active' : '']"
-                      @click="composerType = 'guardian'">
-                Pessoa de confiança
-              </button>
-              <button
-                      :class="['chip', composerType === 'memory' ? 'active' : '']"
-                      @click="composerType = 'memory'">
-                Memória / mensagem
-              </button>
-            </div>
-
-            <!-- Form INFO -->
-            <form
-                    v-if="composerType === 'info'"
-                    @submit.prevent="saveInfo"
-                    class="composer-form">
-              <p class="composer-explainer">
-                Use este espaço para guardar instruções, contatos e orientações importantes.
-                Se precisar registrar senhas, use este campo para explicar onde elas estão
-                e como acessar (por exemplo: aplicativo de senhas, caderno em casa, etc.).
-              </p>
-              <label>
-                Título da informação
-                <input
-                        type="text"
-                        v-model="infoForm.title"
-                        required
-                        placeholder="Ex: Plano de saúde, seguro, conta importante" />
-              </label>
-              <label>
-                Detalhes
-                <textarea
-                        v-model="infoForm.content"
-                        required
-                        rows="3"
-                        placeholder="Descreva o que é, onde acessar, contatos, links..."></textarea>
-              </label>
-              <button class="primary" type="submit" :disabled="savingInfo">
-                {{ savingInfo ? 'Salvando...' : 'Guardar informação' }}
-              </button>
-            </form>
-
-            <!-- Form GUARDIAN -->
-            <form
-                    v-else-if="composerType === 'guardian'"
-                    @submit.prevent="saveGuardian"
-                    class="composer-form">
-              <p class="composer-explainer">
-                Pessoas de confiança são familiares ou amigos que você autoriza a serem avisados
-                se um dia não puder acessar sua conta.
-                Neste momento, elas <strong>não têm acesso automático</strong> ao que você guarda aqui.
-              </p>
-              <label>
-                Nome da pessoa de confiança
-                <input
-                        type="text"
-                        v-model="guardianForm.name"
-                        required
-                        placeholder="Ex: Ana, Carlos, João..." />
-              </label>
-              <label>
-                E-mail
-                <input
-                        type="email"
-                        v-model="guardianForm.email"
-                        required
-                        placeholder="E-mail de contato dessa pessoa" />
-              </label>
-              <button class="primary" type="submit" :disabled="savingGuardian">
-                {{ savingGuardian ? 'Salvando...' : 'Adicionar pessoa de confiança' }}
-              </button>
-            </form>
-
-            <!-- Form MEMORY -->
-            <form
-                    v-else
-                    @submit.prevent="saveMemory"
-                    class="composer-form">
-              <p class="composer-explainer">
-                Aqui você pode escrever recados, histórias ou mensagens para quem é importante pra você.
-              </p>
-              <label>
-                Título da memória ou mensagem
-                <input
-                        type="text"
-                        v-model="memoryForm.title"
-                        required
-                        placeholder="Ex: Mensagem para meus filhos" />
-              </label>
-              <label>
-                Mensagem
-                <textarea
-                        v-model="memoryForm.content"
-                        required
-                        rows="3"
-                        placeholder="Escreva sua mensagem ou lembrança."></textarea>
-              </label>
-              <button class="primary" type="submit" :disabled="savingMemory">
-                {{ savingMemory ? 'Salvando...' : 'Guardar memória / mensagem' }}
-              </button>
-            </form>
-          </section>
-
-          <!-- FEED: SUA CAIXA FAMLI -->
-          <section class="caixa-block">
-            <div class="caixa-header">
-              <div>
-                <h2>Sua Caixa Famli</h2>
-                <p>Tudo o que você já guardou, em um só lugar.</p>
-              </div>
-              <div class="caixa-summary">
-                <span>Informações: {{ summaryCounts.infos }}</span>
-                <span>Pessoas: {{ summaryCounts.guardians }}</span>
-                <span>Memórias: {{ summaryCounts.memories }}</span>
-              </div>
-            </div>
-
-            <!-- FILTROS -->
-            <div class="caixa-filters">
-              <button
-                      :class="['chip', feedFilter === 'all' ? 'active' : '']"
-                      @click="feedFilter = 'all'">
-                Tudo
-              </button>
-              <button
-                      :class="['chip', feedFilter === 'info' ? 'active' : '']"
-                      @click="feedFilter = 'info'">
-                Informações
-              </button>
-              <button
-                      :class="['chip', feedFilter === 'guardian' ? 'active' : '']"
-                      @click="feedFilter = 'guardian'">
-                Pessoas de confiança
-              </button>
-              <button
-                      :class="['chip', feedFilter === 'memory' ? 'active' : '']"
-                      @click="feedFilter = 'memory'">
-                Memórias / mensagens
-              </button>
-            </div>
-
-            <!-- LISTA UNIFICADA -->
-            <div v-if="filteredEntries.length === 0" class="empty-state">
-              <p>Nenhum item ainda. Comece guardando algo importante no topo da página.</p>
-            </div>
-            <ul v-else class="feed-list">
-              <li v-for="entry in filteredEntries" :key="entry.kind + '-' + entry.id" class="feed-card">
-                <div class="feed-icon">
-                  <span v-if="entry.kind === 'info'">📄</span>
-                  <span v-else-if="entry.kind === 'guardian'">👤</span>
-                  <span v-else>💬</span>
-                </div>
-                <div class="feed-main">
-                  <div class="feed-title-row">
-                    <h3>{{ entry.title }}</h3>
-                    <span class="feed-type">
-                        {{ entry.typeLabel }}
-                      </span>
-                  </div>
-                  <p v-if="entry.description" class="feed-description">
-                    {{ entry.description }}
-                  </p>
-                  <p v-if="formattedEntryDate(entry)" class="feed-meta">
-                    Atualizado em {{ formattedEntryDate(entry) }}
-                  </p>
-                </div>
-                <div class="feed-actions">
-                  <button class="ghost small" @click="editEntry(entry)">
-                    Ver / Editar
-                  </button>
-                  <button class="ghost small danger" @click="deleteEntry(entry)">
-                    Excluir
-                  </button>
-                </div>
-              </li>
-            </ul>
-          </section>
-        </section>
-
-        <!-- SIDEBAR DIREITA – ASSISTENTE -->
-        <aside class="sidebar-right">
-          <section class="assistant">
-            <h2>Assistente Famli</h2>
-            <p class="assistant-text">
-              Converse comigo como faria com alguém próximo. Posso te ajudar a decidir o que guardar,
-              como organizar e como explicar as coisas para suas pessoas de confiança.
-            </p>
-            <form @submit.prevent="sendAssistant" class="assistant-form">
-                <textarea
-                        v-model="assistantInput"
-                        rows="3"
-                        placeholder="Ex: Quero guardar o telefone do meu cardiologista. Como faço?"></textarea>
-              <button class="primary full" type="submit" :disabled="assistantLoading">
-                {{ assistantLoading ? 'Pensando...' : 'Enviar' }}
-              </button>
-            </form>
-            <div v-if="assistantReply" class="assistant-reply">
-              <p>{{ assistantReply }}</p>
-            </div>
-          </section>
-        </aside>
-      </div>
-    </main>
-
-    <!-- MODAL LGPD -->
-    <div v-if="showLgpd" class="modal-backdrop" @click.self="showLgpd = false">
-      <div class="modal">
-        <h2>Transparência LGPD</h2>
-        <p>
-          Seus dados são seus. Usamos suas informações apenas para organizar sua
-          Caixa Famli e mostrar o que você guardou para você.
-        </p>
-        <p>
-          Você pode apagar tudo o que guardou a qualquer momento. Não vendemos
-          nem compartilhamos seus dados com terceiros para fins de marketing.
-        </p>
-        <p>
-          Adicionar alguém como pessoa de confiança <strong>não</strong> dá acesso automático
-          às suas informações. No MVP, elas servem para você registrar quem são as pessoas
-          que poderão ser avisadas se um dia precisar de ajuda.
-        </p>
-        <p>
-          Em versões futuras, você poderá escolher com mais detalhe:
-          quais informações compartilhar, com quem e em quais situações.
-        </p>
-        <button class="primary full" @click="showLgpd = false">
-          Entendi
-        </button>
-      </div>
-    </div>
-
-    <!-- MODAL CONFIGURAÇÕES (opcional simples) -->
-    <div v-if="showSettings" class="modal-backdrop" @click.self="showSettings = false">
-      <div class="modal">
-        <h2>Configurações</h2>
-        <label class="toggle-row">
-          <input
-                  type="checkbox"
-                  v-model="settings.emergency_protocol_enabled"
-                  @change="saveSettings" />
-          <span>Ativar protocolo de emergência (conceito)</span>
-        </label>
-        <p class="hint">
-          No futuro, isso permitirá que suas pessoas de confiança sejam avisadas
-          se você ficar muito tempo sem acessar sua conta. Por enquanto,
-          é apenas uma configuração inicial.
-        </p>
-        <button class="primary full" @click="showSettings = false">
-          Fechar
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- fallback simples -->
-  <div v-else>
-    Carregando...
-  </div>
-</div>
-
-<script src="app.js"></script>
+  <div id="app"></div>
+  <script type="module" src="/src/main.js"></script>
 </body>
 </html>

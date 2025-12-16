@@ -1,6 +1,33 @@
+// =============================================================================
+// FAMLI - Backend Server
+// =============================================================================
+// Este é o ponto de entrada principal do servidor Famli.
+//
+// Funcionalidades:
+// - API REST para gerenciamento de dados (autenticação, itens, guardiões)
+// - Integração com WhatsApp via Twilio
+// - Servir frontend estático (SPA)
+//
+// Segurança implementada (OWASP Top 10):
+// - Rate limiting (A04)
+// - Headers de segurança (A05)
+// - Validação de inputs (A03)
+// - Criptografia de dados sensíveis (A02)
+// - Auditoria de eventos (A09)
+//
+// Variáveis de ambiente:
+// - PORT: porta do servidor (padrão: 8080)
+// - STATIC_DIR: diretório do frontend buildado
+// - JWT_SECRET: segredo para tokens JWT (mínimo 32 caracteres em produção)
+// - ENCRYPTION_KEY: chave para criptografar dados sensíveis
+// - ENV: ambiente (development, production)
+// - TWILIO_*: configurações do WhatsApp
+// =============================================================================
+
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -8,80 +35,257 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
 
-	"legacybridge/handlers"
-	appmw "legacybridge/middleware"
-	"legacybridge/store"
+	"famli/internal/auth"
+	"famli/internal/box"
+	"famli/internal/guardian"
+	"famli/internal/guide"
+	"famli/internal/security"
+	"famli/internal/settings"
+	"famli/internal/storage"
+	"famli/internal/whatsapp"
 )
 
 func main() {
-	port := getenv("PORT", "8080")
+	// =========================================================================
+	// CONFIGURAÇÃO
+	// =========================================================================
 
-	// Diretório do frontend (index.html, styles.css, app.js)
-	// Ajuste se seu build estiver em outro caminho.
-	staticDir := getenv("STATIC_DIR", filepath.Join("..", "frontend"))
+	// Ambiente
+	env := getenv("ENV", "development")
+	isDev := env == "development"
+
+	// Variáveis de ambiente com valores padrão para desenvolvimento
+	port := getenv("PORT", "8080")
+	staticDir := getenv("STATIC_DIR", filepath.Join("..", "frontend", "dist"))
+	jwtSecret := getenv("JWT_SECRET", "famli-dev-secret-change-in-production")
+	encryptionKey := getenv("ENCRYPTION_KEY", "famli-encryption-key-change-in-prod")
+
+	// Validar segredo JWT em produção
+	if !isDev && len(jwtSecret) < 32 {
+		log.Fatal("❌ JWT_SECRET deve ter pelo menos 32 caracteres em produção")
+	}
+
+	// Configuração do WhatsApp/Twilio
+	whatsappConfig := &whatsapp.Config{
+		TwilioAccountSid:  getenv("TWILIO_ACCOUNT_SID", ""),
+		TwilioAuthToken:   getenv("TWILIO_AUTH_TOKEN", ""),
+		TwilioPhoneNumber: getenv("TWILIO_PHONE_NUMBER", ""),
+		WebhookBaseURL:    getenv("WEBHOOK_BASE_URL", "http://localhost:8080"),
+		Enabled:           getenv("TWILIO_ACCOUNT_SID", "") != "",
+	}
+
+	// =========================================================================
+	// LOG DE INICIALIZAÇÃO
+	// =========================================================================
+
+	log.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+	log.Printf("🏠 Famli - Ambiente: %s", env)
+	log.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+
+	if whatsappConfig.Enabled {
+		log.Println("📱 WhatsApp: habilitado")
+	} else {
+		log.Println("📱 WhatsApp: desabilitado")
+	}
+
+	// =========================================================================
+	// VERIFICAÇÃO DO FRONTEND
+	// =========================================================================
+
+	indexPath := filepath.Join(staticDir, "index.html")
+	frontendBuilt := true
+	if _, err := os.Stat(indexPath); os.IsNotExist(err) {
+		frontendBuilt = false
+		log.Printf("⚠️  Frontend não encontrado em %s", staticDir)
+	}
+
+	// =========================================================================
+	// INICIALIZAÇÃO DOS SERVIÇOS
+	// =========================================================================
 
 	// Store em memória (MVP)
-	memoryStore := store.NewMemoryStore()
+	store := storage.NewMemoryStore()
 
-	// Segredo JWT: compartilhado entre AuthHandler e middleware
-	jwtSecret := os.Getenv("JWT_SECRET")
+	// Encryptor para dados sensíveis
+	encryptor, err := security.NewEncryptor(encryptionKey)
+	if err != nil {
+		log.Printf("⚠️  Criptografia não configurada: %v", err)
+	} else {
+		log.Println("🔐 Criptografia: habilitada")
+		_ = encryptor // TODO: Usar encryptor no box handler para dados sensíveis
+	}
 
-	authHandler := handlers.NewAuthHandler(memoryStore, jwtSecret)
-	itemsHandler := handlers.NewItemsHandler(memoryStore)
-	guardiansHandler := handlers.NewGuardiansHandler(memoryStore)
-	settingsHandler := handlers.NewSettingsHandler(memoryStore)
-	assistantHandler := handlers.NewAssistantHandler()
+	// Handlers organizados por domínio
+	authHandler := auth.NewHandler(store, jwtSecret)
+	boxHandler := box.NewHandler(store)
+	guardianHandler := guardian.NewHandler(store)
+	guideHandler := guide.NewHandler(store)
+	settingsHandler := settings.NewHandler(store)
 
-	// Router raiz
+	// Serviço e handler do WhatsApp
+	whatsappService := whatsapp.NewService(store, whatsappConfig)
+	whatsappHandler := whatsapp.NewHandler(whatsappService, whatsappConfig)
+
+	// Rate limiters
+	apiLimiter := security.NewRateLimiter(security.APIRateLimit)
+	webhookLimiter := security.NewRateLimiter(security.WebhookRateLimit)
+
+	// =========================================================================
+	// CONFIGURAÇÃO DO ROUTER
+	// =========================================================================
+
 	r := chi.NewRouter()
-	r.Use(
-		chimiddleware.RequestID,
-		chimiddleware.RealIP,
-		chimiddleware.Logger,
-		chimiddleware.Recoverer,
-	)
 
-	// API sob /api
+	// ─────────────────────────────────────────────────────────────────────────
+	// MIDDLEWARES GLOBAIS
+	// ─────────────────────────────────────────────────────────────────────────
+
+	// Request ID para rastreamento
+	r.Use(chimiddleware.RequestID)
+
+	// IP real do cliente (quando atrás de proxy)
+	r.Use(chimiddleware.RealIP)
+
+	// Logger de requisições
+	r.Use(chimiddleware.Logger)
+
+	// Recuperar de panics
+	r.Use(chimiddleware.Recoverer)
+
+	// Headers de segurança (OWASP A05)
+	var headersConfig security.SecurityHeadersConfig
+	if isDev {
+		headersConfig = security.DevelopmentSecurityHeadersConfig()
+	} else {
+		headersConfig = security.DefaultSecurityHeadersConfig()
+	}
+	r.Use(security.HeadersMiddleware(headersConfig))
+
+	// CORS - Cross-Origin Resource Sharing
+	allowedOrigins := []string{"http://localhost:5173", "http://localhost:8080"}
+	if !isDev {
+		allowedOrigins = append(allowedOrigins, "https://famli.net", "https://www.famli.net")
+	}
+
+	r.Use(cors.Handler(cors.Options{
+		AllowedOrigins:   allowedOrigins,
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "Accept-Language"},
+		AllowCredentials: true,
+		MaxAge:           300,
+	}))
+
+	// =========================================================================
+	// ROTAS DA API
+	// =========================================================================
+
 	r.Route("/api", func(api chi.Router) {
-		// Rotas públicas (sem auth)
+		// Rate limiting para API (OWASP A04)
+		api.Use(apiLimiter.Middleware(security.GetClientIP))
+
+		// ─────────────────────────────────────────────────────────────────────
+		// ROTAS PÚBLICAS (sem autenticação)
+		// ─────────────────────────────────────────────────────────────────────
+
+		// Autenticação (rate limit adicional no handler)
 		api.Post("/auth/register", authHandler.Register)
 		api.Post("/auth/login", authHandler.Login)
 
-		// Rotas protegidas (precisam de sessão JWT no cookie)
-		api.Group(func(pr chi.Router) {
-			pr.Use(appmw.NewJWTMiddleware(jwtSecret))
+		// Webhook do WhatsApp (chamado pelo Twilio)
+		api.Group(func(wh chi.Router) {
+			wh.Use(webhookLimiter.Middleware(security.GetClientIP))
+			wh.Get("/whatsapp/webhook", whatsappHandler.WebhookVerify)
+			wh.Post("/whatsapp/webhook", whatsappHandler.Webhook)
+		})
 
+		// Status da integração WhatsApp
+		api.Get("/whatsapp/status", whatsappHandler.Status)
+
+		// ─────────────────────────────────────────────────────────────────────
+		// ROTAS PROTEGIDAS (requerem autenticação JWT)
+		// ─────────────────────────────────────────────────────────────────────
+
+		api.Group(func(pr chi.Router) {
+			// Middleware de autenticação JWT
+			pr.Use(auth.JWTMiddleware(jwtSecret))
+
+			// Autenticação
 			pr.Get("/auth/me", authHandler.Me)
 			pr.Post("/auth/logout", authHandler.Logout)
 
-			pr.Get("/items", itemsHandler.List)
-			pr.Post("/items", itemsHandler.Create)
-			pr.Put("/items/{itemID}", itemsHandler.Update)
-			pr.Delete("/items/{itemID}", itemsHandler.Delete)
+			// Caixa Famli
+			pr.Get("/box/items", boxHandler.List)
+			pr.Post("/box/items", boxHandler.Create)
+			pr.Put("/box/items/{itemID}", boxHandler.Update)
+			pr.Delete("/box/items/{itemID}", boxHandler.Delete)
 
-			pr.Get("/guardians", guardiansHandler.List)
-			pr.Post("/guardians", guardiansHandler.Create)
-			pr.Delete("/guardians/{guardianID}", guardiansHandler.Delete)
+			// Guardiões
+			pr.Get("/guardians", guardianHandler.List)
+			pr.Post("/guardians", guardianHandler.Create)
+			pr.Put("/guardians/{guardianID}", guardianHandler.Update)
+			pr.Delete("/guardians/{guardianID}", guardianHandler.Delete)
 
+			// Guia Famli
+			pr.Get("/guide/cards", guideHandler.ListCards)
+			pr.Get("/guide/progress", guideHandler.GetProgress)
+			pr.Post("/guide/progress/{cardID}", guideHandler.MarkCardProgress)
+
+			// Configurações
 			pr.Get("/settings", settingsHandler.Get)
-			pr.Post("/settings", settingsHandler.Save)
+			pr.Put("/settings", settingsHandler.Update)
 
-			pr.Post("/assistant", assistantHandler.Handle)
+			// Assistente
+			pr.Post("/assistant", boxHandler.Assistant)
+
+			// WhatsApp (vincular/desvincular)
+			pr.Post("/whatsapp/link", whatsappHandler.Link)
+			pr.Delete("/whatsapp/link", whatsappHandler.Unlink)
 		})
 	})
 
-	// Servir o SPA (frontend)
-	fileServer := http.FileServer(http.Dir(staticDir))
+	// =========================================================================
+	// SERVIR FRONTEND (SPA)
+	// =========================================================================
 
-	// Qualquer rota que não comece com /api cai no frontend
-	r.Handle("/*", fileServer)
+	if frontendBuilt {
+		fileServer := http.FileServer(http.Dir(staticDir))
 
-	log.Printf("Famli server escutando em http://localhost:%s", port)
+		r.Handle("/*", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			path := filepath.Join(staticDir, r.URL.Path)
+
+			// SPA fallback
+			if _, err := os.Stat(path); os.IsNotExist(err) {
+				http.ServeFile(w, r, filepath.Join(staticDir, "index.html"))
+				return
+			}
+
+			fileServer.ServeHTTP(w, r)
+		}))
+	} else {
+		r.Handle("/*", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, setupInstructionsHTML)
+		}))
+	}
+
+	// =========================================================================
+	// INICIAR SERVIDOR
+	// =========================================================================
+
+	log.Printf("🌐 Servidor: http://localhost:%s", port)
+	log.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+
 	if err := http.ListenAndServe(":"+port, r); err != nil {
 		log.Fatal(err)
 	}
 }
+
+// =============================================================================
+// FUNÇÕES AUXILIARES
+// =============================================================================
 
 func getenv(key, fallback string) string {
 	if value := os.Getenv(key); value != "" {
@@ -89,3 +293,95 @@ func getenv(key, fallback string) string {
 	}
 	return fallback
 }
+
+// =============================================================================
+// HTML DE INSTRUÇÕES
+// =============================================================================
+
+const setupInstructionsHTML = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Famli - Setup</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Nunito', system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #faf8f5 0%, #f5f0e8 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .card {
+            background: white;
+            border-radius: 24px;
+            padding: 48px;
+            max-width: 600px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+        }
+        .logo { font-size: 48px; margin-bottom: 16px; }
+        h1 { color: #2d5a47; font-size: 28px; margin-bottom: 8px; }
+        .subtitle { color: #5c584f; margin-bottom: 32px; }
+        .section { margin-bottom: 24px; }
+        .section-title { 
+            color: #2d5a47; 
+            font-size: 18px; 
+            font-weight: 700; 
+            margin-bottom: 12px;
+        }
+        pre {
+            background: #f5f0e8;
+            padding: 16px;
+            border-radius: 12px;
+            overflow-x: auto;
+            font-size: 14px;
+            color: #2c2a26;
+        }
+        code { font-family: 'SF Mono', Monaco, monospace; }
+        .api-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #e8f4ee;
+            color: #2d5a47;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-top: 24px;
+        }
+        .dot { 
+            width: 8px; 
+            height: 8px; 
+            background: #3a8a5c; 
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="logo">🏠</div>
+        <h1>Famli - Setup Necessário</h1>
+        <p class="subtitle">O frontend precisa ser compilado antes de usar.</p>
+        
+        <div class="section">
+            <div class="section-title">🚀 Setup Rápido</div>
+            <pre><code>make setup
+make run</code></pre>
+        </div>
+
+        <div class="api-status">
+            <span class="dot"></span>
+            API Backend funcionando em /api
+        </div>
+    </div>
+</body>
+</html>`

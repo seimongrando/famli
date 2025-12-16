@@ -1,0 +1,351 @@
+{
+  "common": {
+    "loading": "Carregando...",
+    "save": "Salvar",
+    "cancel": "Cancelar",
+    "delete": "Excluir",
+    "edit": "Editar",
+    "close": "Fechar",
+    "back": "Voltar",
+    "next": "Próximo",
+    "confirm": "Confirmar",
+    "yes": "Sim",
+    "no": "Não",
+    "or": "ou",
+    "and": "e",
+    "items": "itens",
+    "item": "item"
+  },
+  "brand": {
+    "name": "famli",
+    "tagline": "Guarde o que importa, com calma.",
+    "slogan": "Organizar cuidado, não apenas dados."
+  },
+  "nav": {
+    "login": "Entrar",
+    "register": "Criar conta",
+    "logout": "Sair",
+    "settings": "Configurações",
+    "myBox": "Minha Caixa"
+  },
+  "landing": {
+    "hero": {
+      "title": "Guarde o que importa hoje.",
+      "titleHighlight": "Deixe tranquilo",
+      "titleEnd": "quem você ama amanhã.",
+      "subtitle": "Um espaço simples e seguro para organizar informações, orientações e memórias importantes — feito para quem já viveu muita coisa e quer deixar tudo em ordem.",
+      "cta": "Começar agora — é simples",
+      "ctaSecondary": "Já tenho conta"
+    },
+    "card": {
+      "title": "Seu cuidado em um só lugar",
+      "item1": "Informações importantes com instruções claras",
+      "item2": "Pessoas de confiança escolhidas por você",
+      "item3": "Memórias e mensagens para quem você ama",
+      "item4": "Você no controle, sempre"
+    },
+    "audience": {
+      "title": "Para quem é o Famli?",
+      "senior": {
+        "title": "Para quem tem 50+",
+        "description": "Quer deixar tudo organizado, com calma, sem depender da memória."
+      },
+      "family": {
+        "title": "Para famílias",
+        "description": "Que não querem deixar ninguém no escuro em caso de emergência."
+      },
+      "caregiver": {
+        "title": "Para quem cuida",
+        "description": "Filhos, netos e pessoas de confiança que precisam saber onde encontrar o que é importante."
+      }
+    },
+    "features": {
+      "title": "O que você pode guardar",
+      "subtitle": "Tudo o que alguém precisaria saber se você não pudesse explicar.",
+      "info": {
+        "title": "Informações importantes",
+        "description": "Planos de saúde, seguros, contas, contatos de emergência — tudo em um lugar só, com instruções claras."
+      },
+      "people": {
+        "title": "Pessoas de confiança",
+        "description": "Registre quem são as pessoas que podem ajudar se você precisar. Você decide o que cada uma pode ver."
+      },
+      "access": {
+        "title": "Instruções de acesso",
+        "description": "Explique onde estão suas senhas e como acessar — sem guardar as senhas aqui. Seguro e prático."
+      },
+      "memories": {
+        "title": "Memórias e mensagens",
+        "description": "Um espaço especial para deixar recados, histórias e lembranças para quem você ama."
+      }
+    },
+    "security": {
+      "title": "Seus dados são seus",
+      "item1": "Nada é compartilhado automaticamente",
+      "item2": "Você continua no controle",
+      "item3": "Pode apagar tudo quando quiser",
+      "item4": "Não vendemos seus dados para ninguém",
+      "note": "Adicionar alguém como pessoa de confiança {bold} dá acesso automático às suas informações.",
+      "notBold": "não"
+    },
+    "cta": {
+      "title": "Comece hoje a organizar o que é importante",
+      "subtitle": "Leva menos de 5 minutos para dar o primeiro passo. Sem complicação.",
+      "button": "Criar minha conta grátis"
+    }
+  },
+  "auth": {
+    "loginTitle": "Bem-vindo de volta!",
+    "loginSubtitle": "Entre para acessar sua Caixa Famli",
+    "registerTitle": "Crie sua conta Famli",
+    "registerSubtitle": "É simples e leva menos de 1 minuto",
+    "name": "Seu nome",
+    "namePlaceholder": "Como gostaria de ser chamado?",
+    "email": "E-mail",
+    "emailPlaceholder": "seu{'@'}email.com",
+    "emailHint": "Use um e-mail que você acessa com frequência",
+    "password": "Senha",
+    "passwordPlaceholder": "••••••••",
+    "passwordHint": "Veja abaixo os requisitos de senha",
+    "loginButton": "Entrar",
+    "loginLoading": "Entrando...",
+    "registerButton": "Criar minha conta",
+    "registerLoading": "Criando conta...",
+    "noAccount": "Não tem conta?",
+    "hasAccount": "Já tem conta?",
+    "createNow": "Criar agora",
+    "securityNote": "Seus dados são protegidos e só você decide quem pode ver."
+  },
+  "dashboard": {
+    "greeting": {
+      "morning": "Bom dia",
+      "afternoon": "Boa tarde",
+      "evening": "Boa noite"
+    },
+    "welcome": "Você já organizou {count} itens na sua Caixa Famli.",
+    "stats": {
+      "info": "Informações",
+      "people": "Pessoas",
+      "memories": "Memórias"
+    },
+    "tabs": {
+      "box": "Minha Caixa Famli",
+      "guide": "Guia Famli"
+    }
+  },
+  "box": {
+    "title": "Sua Caixa Famli",
+    "subtitle": "Tudo o que você guardou, em um só lugar.",
+    "empty": "Sua caixa está vazia. Comece guardando algo importante acima!",
+    "emptyFiltered": "Nenhum item nesta categoria.",
+    "filters": {
+      "all": "Tudo",
+      "info": "Informações",
+      "guardian": "Pessoas",
+      "memory": "Memórias"
+    }
+  },
+  "composer": {
+    "title": "O que você deseja guardar hoje?",
+    "subtitle": "Escolha um tipo e preencha com calma. Você pode editar depois.",
+    "types": {
+      "info": "Informação",
+      "guardian": "Pessoa de confiança",
+      "memory": "Memória / mensagem"
+    },
+    "info": {
+      "hint": "Use este espaço para guardar informações importantes, instruções e orientações.",
+      "titleLabel": "Título",
+      "titlePlaceholder": "Ex: Plano de saúde, chaves do carro, conta do banco...",
+      "categoryLabel": "Categoria (opcional)",
+      "detailsLabel": "Detalhes",
+      "detailsPlaceholder": "Descreva onde está, como acessar, quem contatar...",
+      "saveButton": "Guardar informação",
+      "saving": "Salvando..."
+    },
+    "guardian": {
+      "hint": "Pessoas de confiança são familiares ou amigos que você autoriza a serem avisados se precisar de ajuda. {bold} ao que você guarda aqui.",
+      "hintBold": "Elas não têm acesso automático",
+      "nameLabel": "Nome",
+      "namePlaceholder": "Ex: Ana, Carlos, João...",
+      "emailLabel": "E-mail (opcional)",
+      "phonePlaceholder": "(11) 99999-9999",
+      "phoneLabel": "Telefone (opcional)",
+      "relationshipLabel": "Relação",
+      "saveButton": "Adicionar pessoa de confiança",
+      "saving": "Salvando..."
+    },
+    "memory": {
+      "hint": "Um espaço especial para deixar mensagens, histórias e recados para quem você ama.",
+      "titleLabel": "Título",
+      "titlePlaceholder": "Ex: Mensagem para meus filhos, Uma história importante...",
+      "recipientLabel": "Para quem? (opcional)",
+      "recipientPlaceholder": "Ex: Meus filhos, Maria, Toda a família...",
+      "messageLabel": "Sua mensagem",
+      "messagePlaceholder": "Escreva sua mensagem ou lembrança...",
+      "saveButton": "Guardar memória",
+      "saving": "Salvando..."
+    },
+    "categories": {
+      "saude": "Saúde",
+      "financas": "Finanças",
+      "documentos": "Documentos",
+      "casa": "Casa",
+      "familia": "Família",
+      "outro": "Outro"
+    },
+    "relationships": {
+      "filho": "Filho(a)",
+      "neto": "Neto(a)",
+      "conjuge": "Cônjuge",
+      "irmao": "Irmão(ã)",
+      "amigo": "Amigo(a)",
+      "outro": "Outro"
+    }
+  },
+  "itemTypes": {
+    "info": "Informação importante",
+    "memory": "Memória",
+    "note": "Nota pessoal",
+    "access": "Instruções de acesso",
+    "routine": "Rotina",
+    "location": "Localização",
+    "guardian": "Pessoa de confiança"
+  },
+  "guide": {
+    "title": "Guia Famli",
+    "subtitle": "Siga os cards abaixo no seu ritmo. Não precisa fazer tudo de uma vez — vá preenchendo aos poucos, quando se sentir à vontade.",
+    "progress": "{completed} de {total} etapas concluídas",
+    "status": {
+      "completed": "Concluído",
+      "skipped": "Pulado",
+      "started": "Em andamento"
+    },
+    "actions": {
+      "start": "Começar",
+      "continue": "Continuar",
+      "skip": "Pular por agora",
+      "markDone": "Marcar como feito",
+      "review": "Revisar ou adicionar mais"
+    },
+    "cards": {
+      "welcome": {
+        "title": "Comece por aqui",
+        "description": "Dê o primeiro passo: registre algo simples, como o telefone de emergência ou um contato importante."
+      },
+      "people": {
+        "title": "Pessoas importantes",
+        "description": "Quem são as pessoas que devem ser avisadas se você precisar de ajuda? Registre aqui seus contatos de confiança."
+      },
+      "locations": {
+        "title": "Onde estão as coisas importantes",
+        "description": "Documentos, chaves, cartões... Explique onde estão as coisas que alguém precisaria encontrar."
+      },
+      "routines": {
+        "title": "Rotina que não pode parar",
+        "description": "Medicamentos, contas automáticas, pets... O que precisa continuar funcionando mesmo se você não estiver por perto?"
+      },
+      "access": {
+        "title": "Como acessar suas coisas",
+        "description": "Explique onde estão suas senhas (não as senhas em si!) e como alguém de confiança pode ajudar a acessar."
+      },
+      "memories": {
+        "title": "Notas pessoais e memórias",
+        "description": "Mensagens, histórias, recados... Um espaço para deixar algo especial para quem você ama."
+      }
+    }
+  },
+  "assistant": {
+    "title": "Assistente Famli",
+    "intro": "Converse comigo como faria com alguém próximo. Posso ajudar você a decidir o que guardar e como organizar.",
+    "placeholder": "Ex: Quero guardar o telefone do meu cardiologista. Como faço?",
+    "send": "Enviar",
+    "thinking": "Pensando..."
+  },
+  "settings": {
+    "title": "Configurações",
+    "emergency": {
+      "title": "Protocolo de emergência",
+      "description": "No futuro, suas pessoas de confiança poderão ser avisadas se você ficar muito tempo sem acessar sua conta. Por enquanto, é apenas uma configuração inicial."
+    },
+    "notifications": {
+      "title": "Notificações",
+      "description": "Receba lembretes gentis para continuar organizando sua Caixa Famli."
+    },
+    "language": {
+      "title": "Idioma",
+      "description": "Escolha o idioma da interface."
+    }
+  },
+  "privacy": {
+    "title": "Transparência e Privacidade",
+    "subtitle": "Seus dados são seus. Aqui explicamos como cuidamos deles.",
+    "whatWeDo": {
+      "title": "O que fazemos com seus dados",
+      "item1": "Usamos suas informações apenas para organizar sua Caixa Famli",
+      "item2": "Seus dados ficam armazenados de forma segura",
+      "item3": "Só você vê o que está na sua Caixa Famli"
+    },
+    "whatWeDont": {
+      "title": "O que NÃO fazemos",
+      "item1": "Não vendemos seus dados para terceiros",
+      "item2": "Não usamos suas informações para marketing",
+      "item3": "Não compartilhamos automaticamente com ninguém"
+    },
+    "guardians": {
+      "title": "Sobre pessoas de confiança",
+      "text1": "Adicionar alguém como pessoa de confiança {bold} dá acesso automático às suas informações. No MVP, elas servem para você registrar quem são as pessoas que poderão ser avisadas se um dia precisar de ajuda.",
+      "text1Bold": "não",
+      "text2": "Em versões futuras, você poderá escolher com mais detalhe: quais informações compartilhar, com quem e em quais situações."
+    },
+    "rights": {
+      "title": "Seus direitos",
+      "item1": "Você pode ver tudo o que guardou a qualquer momento",
+      "item2": "Você pode editar ou excluir qualquer informação",
+      "item3": "Você pode apagar sua conta e todos os dados quando quiser",
+      "item4": "Respeitamos a LGPD (Lei Geral de Proteção de Dados)"
+    },
+    "understood": "Entendi"
+  },
+  "sidebar": {
+    "tip": {
+      "title": "Dica",
+      "text": "Comece pelo mais importante: registre o contato de uma pessoa de confiança."
+    },
+    "privacy": {
+      "title": "Privacidade",
+      "text": "Seus dados são seus. Você decide o que guardar e quem pode ver.",
+      "link": "Ver detalhes"
+    }
+  },
+  "errors": {
+    "connection": "Erro de conexão. Tente novamente.",
+    "generic": "Algo deu errado. Tente novamente.",
+    "sessionExpired": "Sessão expirada. Entre novamente.",
+    "invalidCredentials": "E-mail ou senha incorretos.",
+    "emailExists": "Este e-mail já está cadastrado.",
+    "requiredField": "Este campo é obrigatório.",
+    "invalidEmail": "E-mail inválido.",
+    "passwordTooShort": "A senha deve ter pelo menos 6 caracteres."
+  },
+  "confirmations": {
+    "deleteItem": "Tem certeza que deseja excluir este item?",
+    "deleteGuardian": "Tem certeza que deseja remover esta pessoa?",
+    "logout": "Tem certeza que deseja sair?"
+  },
+  "password": {
+    "weak": "Fraca",
+    "fair": "Razoável",
+    "good": "Boa",
+    "strong": "Forte",
+    "optional": "opcional",
+    "req": {
+      "minLength": "Mínimo de 8 caracteres",
+      "lowercase": "Uma letra minúscula",
+      "number": "Um número",
+      "uppercase": "Uma letra maiúscula",
+      "special": "Um caractere especial (!@#$%)"
+    }
+  }
+}
+

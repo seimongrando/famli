@@ -1,0 +1,267 @@
+# ==============================================================================
+# Famli - .gitignore
+# ==============================================================================
+# Este arquivo define quais arquivos/pastas não devem ser versionados no Git.
+# ==============================================================================
+
+# ==============================================================================
+# AMBIENTE E CONFIGURAÇÃO
+# ==============================================================================
+
+# Variáveis de ambiente (NUNCA commitar!)
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+
+# Arquivos de configuração local
+*.local
+config.local.*
+
+# ==============================================================================
+# FRONTEND (Node.js / Vue / Vite)
+# ==============================================================================
+
+# Dependências
+frontend/node_modules/
+node_modules/
+
+# Build de produção
+frontend/dist/
+
+# Cache do Vite
+frontend/.vite/
+
+# Logs do npm
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/pnpm-debug.log*
+
+# Cache do npm
+frontend/.npm/
+
+# Arquivos temporários
+frontend/*.tmp
+frontend/*.temp
+
+# ==============================================================================
+# BACKEND (Go)
+# ==============================================================================
+
+# Binários compilados
+backend/famli
+backend/server
+backend/*.exe
+backend/*.exe~
+backend/*.dll
+backend/*.so
+backend/*.dylib
+
+# Cache do Go
+backend/.gocache/
+.gocache/
+
+# Arquivos de teste
+backend/*.test
+backend/*.out
+
+# Vendor (se não for commitado)
+# backend/vendor/
+
+# ==============================================================================
+# MOBILE (Capacitor)
+# ==============================================================================
+
+# Projetos nativos gerados
+frontend/android/
+frontend/ios/
+
+# Arquivos de build do Capacitor
+frontend/.capacitor/
+
+# ==============================================================================
+# IDE E EDITORES
+# ==============================================================================
+
+# VSCode
+.vscode/
+*.code-workspace
+
+# JetBrains (GoLand, WebStorm, etc.)
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+
+# Emacs
+*~
+\#*\#
+.#*
+
+# ==============================================================================
+# SISTEMA OPERACIONAL
+# ==============================================================================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+.directory
+
+# ==============================================================================
+# LOGS E DEBUG
+# ==============================================================================
+
+# Logs
+logs/
+*.log
+log/
+
+# Debug
+debug/
+*.debug
+
+# Profiling
+*.prof
+*.pprof
+
+# ==============================================================================
+# TESTES E COBERTURA
+# ==============================================================================
+
+# Cobertura de código
+coverage/
+*.cover
+*.coverage
+.coverage
+htmlcov/
+coverage.xml
+*.gcno
+*.gcda
+*.gcov
+
+# Relatórios de teste
+test-results/
+junit.xml
+
+# ==============================================================================
+# BUILD E DISTRIBUIÇÃO
+# ==============================================================================
+
+# Diretórios de build
+build/
+dist/
+out/
+target/
+
+# Arquivos comprimidos
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# Binários genéricos
+*.bin
+*.o
+*.a
+
+# ==============================================================================
+# DOCKER
+# ==============================================================================
+
+# Arquivos do Docker Compose (volumes locais)
+docker-data/
+
+# ==============================================================================
+# CERTIFICADOS E CHAVES
+# ==============================================================================
+
+# Certificados SSL
+*.pem
+*.key
+*.crt
+*.csr
+*.p12
+*.pfx
+
+# Chaves SSH
+id_rsa
+id_rsa.pub
+*.pub
+
+# ==============================================================================
+# TEMPORÁRIOS E CACHE
+# ==============================================================================
+
+# Arquivos temporários
+tmp/
+temp/
+*.tmp
+*.temp
+*.bak
+*.backup
+
+# Cache genérico
+.cache/
+cache/
+
+# ==============================================================================
+# ESPECÍFICOS DO PROJETO
+# ==============================================================================
+
+# Dados de desenvolvimento
+data/
+*.db
+*.sqlite
+*.sqlite3
+
+# Uploads de usuários (desenvolvimento)
+uploads/
+
+# Mídia de teste
+media/
+
+# ==============================================================================
+# ARQUIVOS GRANDES / BINÁRIOS
+# ==============================================================================
+
+# Imagens grandes (manter apenas logo e ícones)
+# Descomente se necessário:
+# *.png
+# *.jpg
+# *.jpeg
+# *.gif
+
+# Vídeos
+*.mp4
+*.mov
+*.avi
+*.mkv
+
+# Áudio
+*.mp3
+*.wav
+*.ogg

@@ -1,0 +1,351 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "confirm": "Confirm",
+    "yes": "Yes",
+    "no": "No",
+    "or": "or",
+    "and": "and",
+    "items": "items",
+    "item": "item"
+  },
+  "brand": {
+    "name": "famli",
+    "tagline": "Store what matters, at your pace.",
+    "slogan": "Organizing care, not just data."
+  },
+  "nav": {
+    "login": "Sign in",
+    "register": "Create account",
+    "logout": "Sign out",
+    "settings": "Settings",
+    "myBox": "My Box"
+  },
+  "landing": {
+    "hero": {
+      "title": "Store what matters today.",
+      "titleHighlight": "Give peace of mind",
+      "titleEnd": "to those you love tomorrow.",
+      "subtitle": "A simple and secure space to organize important information, guidance, and memories — made for those who have lived a lot and want to keep everything in order.",
+      "cta": "Get started — it's simple",
+      "ctaSecondary": "I already have an account"
+    },
+    "card": {
+      "title": "Your care in one place",
+      "item1": "Important information with clear instructions",
+      "item2": "Trusted people chosen by you",
+      "item3": "Memories and messages for those you love",
+      "item4": "You in control, always"
+    },
+    "audience": {
+      "title": "Who is Famli for?",
+      "senior": {
+        "title": "For those 50+",
+        "description": "Want to keep everything organized, calmly, without depending on memory."
+      },
+      "family": {
+        "title": "For families",
+        "description": "Who don't want to leave anyone in the dark in case of emergency."
+      },
+      "caregiver": {
+        "title": "For caregivers",
+        "description": "Children, grandchildren, and trusted people who need to know where to find what's important."
+      }
+    },
+    "features": {
+      "title": "What you can store",
+      "subtitle": "Everything someone would need to know if you couldn't explain.",
+      "info": {
+        "title": "Important information",
+        "description": "Health plans, insurance, accounts, emergency contacts — all in one place, with clear instructions."
+      },
+      "people": {
+        "title": "Trusted people",
+        "description": "Register who can help if you need it. You decide what each person can see."
+      },
+      "access": {
+        "title": "Access instructions",
+        "description": "Explain where your passwords are and how to access them — without storing the passwords here. Safe and practical."
+      },
+      "memories": {
+        "title": "Memories and messages",
+        "description": "A special space to leave messages, stories, and memories for those you love."
+      }
+    },
+    "security": {
+      "title": "Your data is yours",
+      "item1": "Nothing is shared automatically",
+      "item2": "You stay in control",
+      "item3": "You can delete everything whenever you want",
+      "item4": "We don't sell your data to anyone",
+      "note": "Adding someone as a trusted person {bold} give automatic access to your information.",
+      "notBold": "does not"
+    },
+    "cta": {
+      "title": "Start organizing what matters today",
+      "subtitle": "It takes less than 5 minutes to take the first step. No complications.",
+      "button": "Create my free account"
+    }
+  },
+  "auth": {
+    "loginTitle": "Welcome back!",
+    "loginSubtitle": "Sign in to access your Famli Box",
+    "registerTitle": "Create your Famli account",
+    "registerSubtitle": "It's simple and takes less than 1 minute",
+    "name": "Your name",
+    "namePlaceholder": "What would you like to be called?",
+    "email": "Email",
+    "emailPlaceholder": "your{'@'}email.com",
+    "emailHint": "Use an email you check frequently",
+    "password": "Password",
+    "passwordPlaceholder": "••••••••",
+    "passwordHint": "See password requirements below",
+    "loginButton": "Sign in",
+    "loginLoading": "Signing in...",
+    "registerButton": "Create my account",
+    "registerLoading": "Creating account...",
+    "noAccount": "Don't have an account?",
+    "hasAccount": "Already have an account?",
+    "createNow": "Create now",
+    "securityNote": "Your data is protected and only you decide who can see it."
+  },
+  "dashboard": {
+    "greeting": {
+      "morning": "Good morning",
+      "afternoon": "Good afternoon",
+      "evening": "Good evening"
+    },
+    "welcome": "You've organized {count} items in your Famli Box.",
+    "stats": {
+      "info": "Information",
+      "people": "People",
+      "memories": "Memories"
+    },
+    "tabs": {
+      "box": "My Famli Box",
+      "guide": "Famli Guide"
+    }
+  },
+  "box": {
+    "title": "Your Famli Box",
+    "subtitle": "Everything you've stored, in one place.",
+    "empty": "Your box is empty. Start by storing something important above!",
+    "emptyFiltered": "No items in this category.",
+    "filters": {
+      "all": "All",
+      "info": "Information",
+      "guardian": "People",
+      "memory": "Memories"
+    }
+  },
+  "composer": {
+    "title": "What would you like to store today?",
+    "subtitle": "Choose a type and fill it out at your pace. You can edit later.",
+    "types": {
+      "info": "Information",
+      "guardian": "Trusted person",
+      "memory": "Memory / message"
+    },
+    "info": {
+      "hint": "Use this space to store important information, instructions, and guidance.",
+      "titleLabel": "Title",
+      "titlePlaceholder": "E.g.: Health plan, car keys, bank account...",
+      "categoryLabel": "Category (optional)",
+      "detailsLabel": "Details",
+      "detailsPlaceholder": "Describe where it is, how to access it, who to contact...",
+      "saveButton": "Store information",
+      "saving": "Saving..."
+    },
+    "guardian": {
+      "hint": "Trusted people are family members or friends you authorize to be notified if you need help. {bold} to what you store here.",
+      "hintBold": "They don't have automatic access",
+      "nameLabel": "Name",
+      "namePlaceholder": "E.g.: Ana, Carlos, John...",
+      "emailLabel": "Email (optional)",
+      "phonePlaceholder": "+1 (555) 123-4567",
+      "phoneLabel": "Phone (optional)",
+      "relationshipLabel": "Relationship",
+      "saveButton": "Add trusted person",
+      "saving": "Saving..."
+    },
+    "memory": {
+      "hint": "A special space to leave messages, stories, and notes for those you love.",
+      "titleLabel": "Title",
+      "titlePlaceholder": "E.g.: Message for my children, An important story...",
+      "recipientLabel": "For whom? (optional)",
+      "recipientPlaceholder": "E.g.: My children, Maria, The whole family...",
+      "messageLabel": "Your message",
+      "messagePlaceholder": "Write your message or memory...",
+      "saveButton": "Store memory",
+      "saving": "Saving..."
+    },
+    "categories": {
+      "saude": "Health",
+      "financas": "Finance",
+      "documentos": "Documents",
+      "casa": "Home",
+      "familia": "Family",
+      "outro": "Other"
+    },
+    "relationships": {
+      "filho": "Son/Daughter",
+      "neto": "Grandson/Granddaughter",
+      "conjuge": "Spouse",
+      "irmao": "Brother/Sister",
+      "amigo": "Friend",
+      "outro": "Other"
+    }
+  },
+  "itemTypes": {
+    "info": "Important information",
+    "memory": "Memory",
+    "note": "Personal note",
+    "access": "Access instructions",
+    "routine": "Routine",
+    "location": "Location",
+    "guardian": "Trusted person"
+  },
+  "guide": {
+    "title": "Famli Guide",
+    "subtitle": "Follow the cards below at your own pace. You don't need to do everything at once — fill them out gradually, when you feel comfortable.",
+    "progress": "{completed} of {total} steps completed",
+    "status": {
+      "completed": "Completed",
+      "skipped": "Skipped",
+      "started": "In progress"
+    },
+    "actions": {
+      "start": "Start",
+      "continue": "Continue",
+      "skip": "Skip for now",
+      "markDone": "Mark as done",
+      "review": "Review or add more"
+    },
+    "cards": {
+      "welcome": {
+        "title": "Start here",
+        "description": "Take the first step: register something simple, like an emergency phone number or an important contact."
+      },
+      "people": {
+        "title": "Important people",
+        "description": "Who should be notified if you need help? Register your trusted contacts here."
+      },
+      "locations": {
+        "title": "Where important things are",
+        "description": "Documents, keys, cards... Explain where the things someone would need to find are."
+      },
+      "routines": {
+        "title": "Routines that can't stop",
+        "description": "Medications, automatic payments, pets... What needs to keep working even if you're not around?"
+      },
+      "access": {
+        "title": "How to access your things",
+        "description": "Explain where your passwords are (not the passwords themselves!) and how a trusted person can help access them."
+      },
+      "memories": {
+        "title": "Personal notes and memories",
+        "description": "Messages, stories, notes... A space to leave something special for those you love."
+      }
+    }
+  },
+  "assistant": {
+    "title": "Famli Assistant",
+    "intro": "Talk to me like you would talk to someone close. I can help you decide what to store and how to organize it.",
+    "placeholder": "E.g.: I want to save my cardiologist's phone number. How do I do it?",
+    "send": "Send",
+    "thinking": "Thinking..."
+  },
+  "settings": {
+    "title": "Settings",
+    "emergency": {
+      "title": "Emergency protocol",
+      "description": "In the future, your trusted people may be notified if you haven't accessed your account for a long time. For now, this is just an initial setting."
+    },
+    "notifications": {
+      "title": "Notifications",
+      "description": "Receive gentle reminders to continue organizing your Famli Box."
+    },
+    "language": {
+      "title": "Language",
+      "description": "Choose the interface language."
+    }
+  },
+  "privacy": {
+    "title": "Transparency and Privacy",
+    "subtitle": "Your data is yours. Here we explain how we take care of it.",
+    "whatWeDo": {
+      "title": "What we do with your data",
+      "item1": "We use your information only to organize your Famli Box",
+      "item2": "Your data is stored securely",
+      "item3": "Only you see what's in your Famli Box"
+    },
+    "whatWeDont": {
+      "title": "What we DON'T do",
+      "item1": "We don't sell your data to third parties",
+      "item2": "We don't use your information for marketing",
+      "item3": "We don't share automatically with anyone"
+    },
+    "guardians": {
+      "title": "About trusted people",
+      "text1": "Adding someone as a trusted person {bold} give automatic access to your information. In the MVP, they serve to register who can be notified if you ever need help.",
+      "text1Bold": "does not",
+      "text2": "In future versions, you'll be able to choose in more detail: what information to share, with whom, and in what situations."
+    },
+    "rights": {
+      "title": "Your rights",
+      "item1": "You can see everything you've stored at any time",
+      "item2": "You can edit or delete any information",
+      "item3": "You can delete your account and all data whenever you want",
+      "item4": "We respect GDPR and data protection laws"
+    },
+    "understood": "I understand"
+  },
+  "sidebar": {
+    "tip": {
+      "title": "Tip",
+      "text": "Start with the most important: register a trusted person's contact."
+    },
+    "privacy": {
+      "title": "Privacy",
+      "text": "Your data is yours. You decide what to store and who can see it.",
+      "link": "See details"
+    }
+  },
+  "errors": {
+    "connection": "Connection error. Please try again.",
+    "generic": "Something went wrong. Please try again.",
+    "sessionExpired": "Session expired. Please sign in again.",
+    "invalidCredentials": "Invalid email or password.",
+    "emailExists": "This email is already registered.",
+    "requiredField": "This field is required.",
+    "invalidEmail": "Invalid email.",
+    "passwordTooShort": "Password must be at least 6 characters."
+  },
+  "confirmations": {
+    "deleteItem": "Are you sure you want to delete this item?",
+    "deleteGuardian": "Are you sure you want to remove this person?",
+    "logout": "Are you sure you want to sign out?"
+  },
+  "password": {
+    "weak": "Weak",
+    "fair": "Fair",
+    "good": "Good",
+    "strong": "Strong",
+    "optional": "optional",
+    "req": {
+      "minLength": "At least 8 characters",
+      "lowercase": "One lowercase letter",
+      "number": "One number",
+      "uppercase": "One uppercase letter",
+      "special": "One special character (!@#$%)"
+    }
+  }
+}
+
