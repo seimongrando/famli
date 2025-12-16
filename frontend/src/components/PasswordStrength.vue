@@ -108,6 +108,9 @@ const strengthLabel = computed(() => {
   }
 })
 
+// Se o usuário começou a digitar
+const hasStartedTyping = computed(() => props.password.length > 0)
+
 // =============================================================================
 // LISTA DE REQUISITOS
 // =============================================================================
@@ -130,18 +133,20 @@ const requirements = computed(() => [
     label: t('password.req.number'),
     met: hasNumber.value,
     required: true
-  },
+  }
+])
+
+// Requisitos opcionais (bônus)
+const bonusRequirements = computed(() => [
   {
     key: 'uppercase',
     label: t('password.req.uppercase'),
-    met: hasUppercase.value,
-    required: false
+    met: hasUppercase.value
   },
   {
     key: 'special',
     label: t('password.req.special'),
-    met: hasSpecial.value,
-    required: false
+    met: hasSpecial.value
   }
 ])
 
@@ -156,9 +161,21 @@ watch(isValid, (newValue) => {
 </script>
 
 <template>
-  <div v-if="show && password.length > 0" class="password-strength">
-    <!-- Barra de força -->
-    <div class="strength-bar">
+  <div v-if="show" class="password-strength">
+    <!-- Título dos requisitos -->
+    <div class="password-strength__header">
+      <span class="password-strength__title">{{ t('password.requirements') }}</span>
+      <span 
+        v-if="hasStartedTyping" 
+        class="password-strength__status"
+        :class="{ 'password-strength__status--valid': isValid }"
+      >
+        {{ isValid ? '✓' : '' }}
+      </span>
+    </div>
+
+    <!-- Barra de força (só mostra após digitar) -->
+    <div v-if="hasStartedTyping" class="strength-bar">
       <div 
         class="strength-bar__fill"
         :class="`strength-bar__fill--${strengthLevel}`"
@@ -167,11 +184,15 @@ watch(isValid, (newValue) => {
     </div>
     
     <!-- Label de força -->
-    <div class="strength-label" :class="`strength-label--${strengthLevel}`">
+    <div 
+      v-if="hasStartedTyping && strengthLabel" 
+      class="strength-label" 
+      :class="`strength-label--${strengthLevel}`"
+    >
       {{ strengthLabel }}
     </div>
 
-    <!-- Lista de requisitos -->
+    <!-- Lista de requisitos obrigatórios -->
     <ul class="requirements-list">
       <li 
         v-for="req in requirements" 
@@ -179,20 +200,38 @@ watch(isValid, (newValue) => {
         class="requirement"
         :class="{ 
           'requirement--met': req.met,
-          'requirement--optional': !req.required
+          'requirement--pending': !req.met && hasStartedTyping
         }"
       >
         <span class="requirement__icon">
-          {{ req.met ? '✓' : '○' }}
+          <template v-if="req.met">✓</template>
+          <template v-else-if="hasStartedTyping">✗</template>
+          <template v-else>○</template>
         </span>
         <span class="requirement__label">
           {{ req.label }}
-          <span v-if="!req.required" class="requirement__optional">
-            ({{ t('password.optional') }})
-          </span>
+          <span class="requirement__required">*</span>
         </span>
       </li>
     </ul>
+
+    <!-- Requisitos opcionais (só mostra após senha válida) -->
+    <div v-if="isValid" class="bonus-section">
+      <div class="bonus-section__title">{{ t('password.bonus') }}</div>
+      <ul class="requirements-list requirements-list--bonus">
+        <li 
+          v-for="req in bonusRequirements" 
+          :key="req.key"
+          class="requirement requirement--optional"
+          :class="{ 'requirement--met': req.met }"
+        >
+          <span class="requirement__icon">
+            {{ req.met ? '✓' : '○' }}
+          </span>
+          <span class="requirement__label">{{ req.label }}</span>
+        </li>
+      </ul>
+    </div>
   </div>
 </template>
 
@@ -207,6 +246,33 @@ watch(isValid, (newValue) => {
   background: var(--color-bg-warm);
   border-radius: var(--radius-md);
   border: 1px solid var(--color-border-light);
+}
+
+/* =============================================================================
+   HEADER
+   ============================================================================= */
+
+.password-strength__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-sm);
+}
+
+.password-strength__title {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.password-strength__status {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-soft);
+}
+
+.password-strength__status--valid {
+  color: #10b981;
+  font-weight: 600;
 }
 
 /* =============================================================================
@@ -292,6 +358,10 @@ watch(isValid, (newValue) => {
   gap: var(--space-xs);
 }
 
+.requirements-list--bonus {
+  margin-top: var(--space-xs);
+}
+
 .requirement {
   display: flex;
   align-items: center;
@@ -309,6 +379,14 @@ watch(isValid, (newValue) => {
   color: #10b981;
 }
 
+.requirement--pending {
+  color: #ef4444;
+}
+
+.requirement--pending .requirement__icon {
+  color: #ef4444;
+}
+
 .requirement--optional {
   opacity: 0.8;
 }
@@ -324,10 +402,26 @@ watch(isValid, (newValue) => {
   flex: 1;
 }
 
-.requirement__optional {
+.requirement__required {
+  color: #ef4444;
+  margin-left: 2px;
+}
+
+/* =============================================================================
+   BONUS SECTION
+   ============================================================================= */
+
+.bonus-section {
+  margin-top: var(--space-md);
+  padding-top: var(--space-sm);
+  border-top: 1px dashed var(--color-border);
+}
+
+.bonus-section__title {
   font-size: var(--font-size-xs);
   color: var(--color-text-soft);
-  opacity: 0.7;
+  margin-bottom: var(--space-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 </style>
-

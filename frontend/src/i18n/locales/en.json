@@ -107,6 +107,7 @@
     "password": "Password",
     "passwordPlaceholder": "••••••••",
     "passwordHint": "See password requirements below",
+    "passwordInvalid": "Complete the password requirements above to continue",
     "loginButton": "Sign in",
     "loginLoading": "Signing in...",
     "registerButton": "Create my account",
@@ -334,6 +335,8 @@
     "logout": "Are you sure you want to sign out?"
   },
   "password": {
+    "requirements": "Password requirements",
+    "bonus": "To make it stronger",
     "weak": "Weak",
     "fair": "Fair",
     "good": "Good",

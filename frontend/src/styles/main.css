@@ -171,6 +171,14 @@ a:hover {
   transform: translateY(-1px);
 }
 
+/* Botão desabilitado com indicação visual de que falta algo */
+.btn--disabled-hint:disabled {
+  background: var(--color-border);
+  color: var(--color-text-soft);
+  opacity: 1;
+  position: relative;
+}
+
 .btn--accent {
   background: var(--color-accent);
   color: white;
@@ -300,6 +308,17 @@ a:hover {
   margin-top: var(--space-sm);
   font-size: var(--font-size-sm);
   color: var(--color-danger);
+}
+
+.form-warning {
+  margin-top: var(--space-sm);
+  margin-bottom: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--font-size-sm);
+  color: #92400e;
+  background: #fef3c7;
+  border-radius: var(--radius-sm);
+  border: 1px solid #fcd34d;
 }
 
 /* Chips/Tags */

@@ -107,6 +107,7 @@
     "password": "Senha",
     "passwordPlaceholder": "••••••••",
     "passwordHint": "Veja abaixo os requisitos de senha",
+    "passwordInvalid": "Complete os requisitos de senha acima para continuar",
     "loginButton": "Entrar",
     "loginLoading": "Entrando...",
     "registerButton": "Criar minha conta",
@@ -334,6 +335,8 @@
     "logout": "Tem certeza que deseja sair?"
   },
   "password": {
+    "requirements": "Requisitos da senha",
+    "bonus": "Para deixar mais forte",
     "weak": "Fraca",
     "fair": "Razoável",
     "good": "Boa",

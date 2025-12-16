@@ -214,10 +214,16 @@ async function handleSubmit() {
             {{ authStore.error }}
           </p>
 
+          <!-- Aviso de senha inválida -->
+          <p v-if="!isLogin && !isPasswordValid && form.password.length > 0" class="form-warning">
+            {{ t('auth.passwordInvalid') }}
+          </p>
+
           <!-- Botão -->
           <button 
             type="submit" 
             class="btn btn--primary btn--large btn--full"
+            :class="{ 'btn--disabled-hint': !isLogin && !canSubmit && form.password.length > 0 }"
             :disabled="authStore.loading || (!isLogin && !canSubmit)"
           >
             {{ authStore.loading 
