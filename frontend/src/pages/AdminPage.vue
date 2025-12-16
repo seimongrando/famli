@@ -20,10 +20,12 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../stores/auth'
+import { useLocalizedRoutes } from '../composables/useLocalizedRoutes'
 
 const { t } = useI18n()
 const router = useRouter()
 const authStore = useAuthStore()
+const { paths } = useLocalizedRoutes()
 
 // Estados
 const loading = ref(true)
@@ -219,7 +221,7 @@ function formatTimestamp(timestamp) {
 // Lifecycle
 onMounted(() => {
   if (!authStore.isAuthenticated) {
-    router.push({ name: 'auth' })
+    router.push(paths.value.auth)
     return
   }
   
@@ -241,7 +243,7 @@ onUnmounted(() => {
     <!-- Header -->
     <header class="admin-header">
       <div class="admin-header__left">
-        <router-link :to="{ name: 'dashboard' }" class="admin-header__back">
+        <router-link :to="paths.dashboard" class="admin-header__back">
           ← {{ t('admin.backToDashboard') }}
         </router-link>
         <h1 class="admin-header__title">{{ t('admin.title') }}</h1>
@@ -271,7 +273,7 @@ onUnmounted(() => {
       <div class="admin-error__icon">🔒</div>
       <h2>{{ t('admin.error') }}</h2>
       <p>{{ error }}</p>
-      <router-link :to="{ name: 'dashboard' }" class="btn btn--primary">
+      <router-link :to="paths.dashboard" class="btn btn--primary">
         {{ t('admin.backToDashboard') }}
       </router-link>
     </div>

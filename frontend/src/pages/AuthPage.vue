@@ -20,6 +20,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../stores/auth'
+import { useLocalizedRoutes } from '../composables/useLocalizedRoutes'
 import LanguageSelector from '../components/LanguageSelector.vue'
 import PasswordStrength from '../components/PasswordStrength.vue'
 
@@ -31,6 +32,7 @@ const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
+const { paths } = useLocalizedRoutes()
 
 // =============================================================================
 // ESTADO
@@ -77,7 +79,7 @@ onMounted(() => {
   
   // Se já autenticado, redirecionar para dashboard
   if (authStore.isAuthenticated) {
-    router.push({ name: 'dashboard' })
+    router.push(paths.value.dashboard)
   }
 })
 
@@ -110,7 +112,7 @@ async function handleSubmit() {
   }
   
   if (success) {
-    router.push({ name: 'dashboard' })
+    router.push(paths.value.dashboard)
   }
 }
 </script>
@@ -119,7 +121,7 @@ async function handleSubmit() {
   <div class="auth-page">
     <!-- Header simples -->
     <header class="auth-header">
-      <router-link :to="{ name: 'landing' }" class="header__brand">
+      <router-link :to="paths.landing" class="header__brand">
         <img src="/famli.png" alt="Famli" class="header__logo" />
         <span class="header__name">{{ t('brand.name') }}</span>
       </router-link>

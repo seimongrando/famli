@@ -15,11 +15,13 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../stores/auth'
+import { useLocalizedRoutes } from '../composables/useLocalizedRoutes'
 import LanguageSelector from '../components/LanguageSelector.vue'
 
 const { t } = useI18n()
 const router = useRouter()
 const authStore = useAuthStore()
+const { paths } = useLocalizedRoutes()
 
 // Estado local
 const loading = ref(true)
@@ -58,7 +60,7 @@ async function handleLogout() {
     console.error('[Profile] Logout error:', err)
   }
   // Sempre redirecionar, mesmo se o logout falhar no servidor
-  router.push({ name: 'landing' })
+  router.push(paths.value.landing)
 }
 </script>
 
@@ -67,7 +69,7 @@ async function handleLogout() {
     <!-- Header -->
     <header class="profile-header">
       <div class="profile-header__left">
-        <router-link :to="{ name: 'dashboard' }" class="profile-header__back">
+        <router-link :to="paths.dashboard" class="profile-header__back">
           ← {{ t('common.back') }}
         </router-link>
         <h1 class="profile-header__title">{{ t('profile.title') }}</h1>
@@ -147,13 +149,13 @@ async function handleLogout() {
         <div class="action-buttons">
           <router-link 
             v-if="isAdmin" 
-            :to="{ name: 'admin' }" 
+            :to="paths.admin" 
             class="btn btn--primary"
           >
             ⚙️ {{ t('profile.goToAdmin') }}
           </router-link>
           
-          <router-link :to="{ name: 'dashboard' }" class="btn btn--secondary">
+          <router-link :to="paths.dashboard" class="btn btn--secondary">
             📦 {{ t('profile.goToBox') }}
           </router-link>
           

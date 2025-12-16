@@ -2,16 +2,18 @@
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../stores/auth'
+import { useLocalizedRoutes } from '../composables/useLocalizedRoutes'
 import { onMounted } from 'vue'
 import LanguageSelector from '../components/LanguageSelector.vue'
 
 const { t } = useI18n()
 const router = useRouter()
 const authStore = useAuthStore()
+const { paths, getPath } = useLocalizedRoutes()
 
 onMounted(() => {
   if (authStore.isAuthenticated) {
-    router.push({ name: 'dashboard' })
+    router.push(paths.value.dashboard)
   }
 })
 </script>
@@ -28,10 +30,10 @@ onMounted(() => {
           </div>
           <nav class="landing-header__nav">
             <LanguageSelector />
-            <router-link :to="{ name: 'auth', query: { mode: 'login' } }" class="btn btn--ghost">
+            <router-link :to="{ path: paths.auth, query: { mode: 'login' } }" class="btn btn--ghost">
               {{ t('nav.login') }}
             </router-link>
-            <router-link :to="{ name: 'auth', query: { mode: 'register' } }" class="btn btn--primary">
+            <router-link :to="{ path: paths.auth, query: { mode: 'register' } }" class="btn btn--primary">
               {{ t('nav.register') }}
             </router-link>
           </nav>
@@ -52,10 +54,10 @@ onMounted(() => {
               {{ t('landing.hero.subtitle') }}
             </p>
             <div class="hero__actions">
-              <router-link :to="{ name: 'auth', query: { mode: 'register' } }" class="btn btn--accent btn--large">
+              <router-link :to="{ path: paths.auth, query: { mode: 'register' } }" class="btn btn--accent btn--large">
                 {{ t('landing.hero.cta') }}
               </router-link>
-              <router-link :to="{ name: 'auth', query: { mode: 'login' } }" class="btn btn--link">
+              <router-link :to="{ path: paths.auth, query: { mode: 'login' } }" class="btn btn--link">
                 {{ t('landing.hero.ctaSecondary') }}
               </router-link>
             </div>
@@ -160,7 +162,7 @@ onMounted(() => {
         <p class="section__subtitle">
           {{ t('landing.cta.subtitle') }}
         </p>
-        <router-link :to="{ name: 'auth', query: { mode: 'register' } }" class="btn btn--primary btn--large">
+        <router-link :to="{ path: paths.auth, query: { mode: 'register' } }" class="btn btn--primary btn--large">
           {{ t('landing.cta.button') }}
         </router-link>
       </div>

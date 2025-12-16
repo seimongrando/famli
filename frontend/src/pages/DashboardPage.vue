@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../stores/auth'
 import { useBoxStore } from '../stores/box'
 import { useGuideStore } from '../stores/guide'
+import { useLocalizedRoutes } from '../composables/useLocalizedRoutes'
 
 // Components
 import LanguageSelector from '../components/LanguageSelector.vue'
@@ -18,6 +19,7 @@ const { t } = useI18n()
 const authStore = useAuthStore()
 const boxStore = useBoxStore()
 const guideStore = useGuideStore()
+const { paths } = useLocalizedRoutes()
 
 // UI State
 const activeTab = ref('caixa') // 'caixa' | 'guia'
@@ -106,13 +108,13 @@ onMounted(async () => {
             <LanguageSelector />
             <router-link 
               v-if="authStore.user?.is_admin" 
-              :to="{ name: 'admin' }" 
+              :to="paths.admin" 
               class="btn btn--ghost btn--small admin-link" 
               title="Admin"
             >
               ⚙️
             </router-link>
-            <router-link :to="{ name: 'profile' }" class="btn btn--ghost btn--small" title="Perfil">
+            <router-link :to="paths.profile" class="btn btn--ghost btn--small" title="Perfil">
               👤
             </router-link>
             <button class="btn btn--ghost btn--small" @click="showSettings = true">

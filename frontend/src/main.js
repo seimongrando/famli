@@ -64,6 +64,19 @@ app.use(i18n)
 // Importar store após configurar o Pinia
 import { useAuthStore } from './stores/auth'
 
+// Mapeamento de rotas por idioma (duplicado do composable para uso no guard)
+const routePaths = {
+  'pt-BR': { auth: '/entrar', dashboard: '/minha-caixa' },
+  'en': { auth: '/login', dashboard: '/my-box' }
+}
+
+// Função para obter path localizado no guard
+function getLocalizedPath(routeName) {
+  const locale = i18n.global.locale.value || 'pt-BR'
+  const paths = routePaths[locale] || routePaths['pt-BR']
+  return paths[routeName] || routePaths['pt-BR'][routeName]
+}
+
 // Navigation guard para rotas protegidas
 router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore()
@@ -74,10 +87,10 @@ router.beforeEach(async (to, from, next) => {
   }
   
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
-    next({ name: 'auth' })
+    next(getLocalizedPath('auth'))
   } else if (to.name === 'auth' && authStore.isAuthenticated) {
     // Se já está logado e tenta acessar /entrar, redirecionar para dashboard
-    next({ name: 'dashboard' })
+    next(getLocalizedPath('dashboard'))
   } else {
     next()
   }
