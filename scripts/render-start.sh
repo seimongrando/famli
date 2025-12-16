@@ -4,10 +4,6 @@
 # ==============================================================================
 # Este script é usado no campo "Start Command" do Render.
 #
-# No Render, configure:
-#   Build Command: ./scripts/render-build.sh
-#   Start Command: ./scripts/render-start.sh
-#
 # Variáveis de ambiente necessárias no Render:
 #   - ENV=production
 #   - JWT_SECRET=<seu-segredo-jwt>
@@ -20,23 +16,46 @@ set -e
 echo "🏠 Iniciando servidor Famli..."
 echo ""
 
-# Definir diretório do frontend relativo ao backend
-export STATIC_DIR=../frontend/dist
+# Diretório raiz (onde o script está sendo executado)
+ROOT_DIR=$(pwd)
 
-# O Render define a variável PORT automaticamente
-# Se não estiver definida, usar 8080 como padrão
+# Verificar se o binário existe
+if [ ! -f "$ROOT_DIR/server" ]; then
+    echo "❌ ERRO: Binário 'server' não encontrado em $ROOT_DIR"
+    echo "   Conteúdo do diretório:"
+    ls -la "$ROOT_DIR"
+    exit 1
+fi
+
+# Verificar se o frontend foi buildado
+if [ ! -d "$ROOT_DIR/frontend/dist" ]; then
+    echo "❌ ERRO: Frontend não encontrado em $ROOT_DIR/frontend/dist"
+    exit 1
+fi
+
+# Configurar variáveis de ambiente
+export STATIC_DIR="$ROOT_DIR/frontend/dist"
 export PORT=${PORT:-8080}
-
-# Garantir que estamos em produção
 export ENV=${ENV:-production}
 
 echo "📋 Configuração:"
 echo "   - Ambiente: $ENV"
 echo "   - Porta: $PORT"
 echo "   - Frontend: $STATIC_DIR"
+echo "   - Binário: $ROOT_DIR/server"
 echo ""
 
-# Iniciar servidor
-cd backend
-exec ./server
+# Verificar se as variáveis obrigatórias estão definidas
+if [ -z "$JWT_SECRET" ]; then
+    echo "⚠️  AVISO: JWT_SECRET não definido, usando valor padrão (inseguro!)"
+fi
 
+if [ -z "$ENCRYPTION_KEY" ]; then
+    echo "⚠️  AVISO: ENCRYPTION_KEY não definido, usando valor padrão (inseguro!)"
+fi
+
+echo "🚀 Executando servidor..."
+echo ""
+
+# Executar o servidor (exec substitui o processo shell pelo servidor)
+exec "$ROOT_DIR/server"
