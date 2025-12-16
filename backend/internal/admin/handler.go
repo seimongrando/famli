@@ -20,7 +20,6 @@ package admin
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 	"os"
 	"runtime"
@@ -120,23 +119,59 @@ func isAdmin(email string) bool {
 	adminEmails := getAdminEmails()
 	env := os.Getenv("ENV")
 
-	// Debug log
-	log.Printf("[ADMIN] Verificando acesso: email=%s, adminEmails=%v, ENV=%s", email, adminEmails, env)
+	// Debug log usando AuditLogger para garantir visibilidade
+	auditLogger := security.GetAuditLogger()
+	auditLogger.Log(security.AuditEvent{
+		Type:     security.EventDataAccess,
+		Severity: security.SeverityInfo,
+		Resource: "admin_check",
+		Action:   "verify_permission",
+		Result:   "checking",
+		Details: map[string]interface{}{
+			"email":        email,
+			"admin_emails": adminEmails,
+			"env":          env,
+		},
+	})
 
 	for _, adminEmail := range adminEmails {
 		if email == adminEmail {
-			log.Printf("[ADMIN] ✓ Acesso permitido para: %s", email)
+			auditLogger.Log(security.AuditEvent{
+				Type:     security.EventDataAccess,
+				Severity: security.SeverityInfo,
+				Resource: "admin_check",
+				Action:   "verify_permission",
+				Result:   "granted",
+				Details:  map[string]interface{}{"email": email},
+			})
 			return true
 		}
 	}
 
 	// Em desenvolvimento, se não houver admins configurados, permitir qualquer usuário autenticado
 	if len(adminEmails) == 0 && env != "production" {
-		log.Printf("[ADMIN] ✓ Acesso permitido (dev mode, sem admins configurados)")
+		auditLogger.Log(security.AuditEvent{
+			Type:     security.EventDataAccess,
+			Severity: security.SeverityInfo,
+			Resource: "admin_check",
+			Action:   "verify_permission",
+			Result:   "granted_dev_mode",
+			Details:  map[string]interface{}{"reason": "no admins configured in dev"},
+		})
 		return true
 	}
 
-	log.Printf("[ADMIN] ✗ Acesso negado para: %s", email)
+	auditLogger.Log(security.AuditEvent{
+		Type:     security.EventUnauthorizedAccess,
+		Severity: security.SeverityWarning,
+		Resource: "admin_check",
+		Action:   "verify_permission",
+		Result:   "denied",
+		Details: map[string]interface{}{
+			"email":        email,
+			"admin_emails": adminEmails,
+		},
+	})
 	return false
 }
 

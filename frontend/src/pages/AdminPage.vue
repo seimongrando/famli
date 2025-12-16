@@ -105,15 +105,29 @@ async function fetchDashboard() {
       credentials: 'include'
     })
     
+    console.log('[Admin] Dashboard response status:', response.status)
+    
+    if (response.status === 401) {
+      error.value = t('admin.sessionExpired')
+      return
+    }
+    
     if (response.status === 403) {
       error.value = t('admin.accessDenied')
       return
     }
     
-    if (!response.ok) throw new Error('Failed to fetch dashboard')
+    if (!response.ok) {
+      const errorData = await response.text()
+      console.error('[Admin] Dashboard error:', errorData)
+      throw new Error('Failed to fetch dashboard')
+    }
     
-    dashboard.value = await response.json()
+    const data = await response.json()
+    console.log('[Admin] Dashboard data:', data)
+    dashboard.value = data
   } catch (err) {
+    console.error('[Admin] Dashboard fetch error:', err)
     error.value = t('admin.loadError')
   }
 }

@@ -356,7 +356,8 @@
     "refresh": "Atualizar",
     "loading": "Carregando dados...",
     "error": "Acesso Restrito",
-    "accessDenied": "Você não tem permissão para acessar esta área.",
+    "accessDenied": "Você não tem permissão para acessar esta área. Verifique se seu email está na lista ADMIN_EMAILS.",
+    "sessionExpired": "Sua sessão expirou. Por favor, faça login novamente.",
     "loadError": "Erro ao carregar os dados. Tente novamente.",
     "tabs": {
       "overview": "Visão Geral",

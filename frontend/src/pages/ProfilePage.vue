@@ -52,7 +52,12 @@ onMounted(async () => {
 
 // Actions
 async function handleLogout() {
-  await authStore.logout()
+  try {
+    await authStore.logout()
+  } catch (err) {
+    console.error('[Profile] Logout error:', err)
+  }
+  // Sempre redirecionar, mesmo se o logout falhar no servidor
   router.push({ name: 'landing' })
 }
 </script>

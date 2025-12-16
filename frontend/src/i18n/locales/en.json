@@ -356,7 +356,8 @@
     "refresh": "Refresh",
     "loading": "Loading data...",
     "error": "Access Restricted",
-    "accessDenied": "You don't have permission to access this area.",
+    "accessDenied": "You don't have permission to access this area. Please check if your email is in the ADMIN_EMAILS list.",
+    "sessionExpired": "Your session has expired. Please log in again.",
     "loadError": "Error loading data. Please try again.",
     "tabs": {
       "overview": "Overview",

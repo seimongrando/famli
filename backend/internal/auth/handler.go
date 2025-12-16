@@ -352,7 +352,7 @@ func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 		SameSite: http.SameSiteLaxMode,
 	})
 
-	// Registrar logout
+	// Registrar logout (já usa o AuditLogger que funciona)
 	h.auditLogger.LogAuth(security.EventLogout, userID, clientIP, r.UserAgent(), "success", nil)
 
 	writeJSON(w, http.StatusOK, map[string]string{"message": "Sessão encerrada."})
