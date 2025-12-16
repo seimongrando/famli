@@ -26,6 +26,7 @@ import (
 	"strings"
 	"time"
 
+	"famli/internal/auth"
 	"famli/internal/security"
 	"famli/internal/storage"
 )
@@ -80,15 +81,15 @@ func NewHandler(store *storage.MemoryStore) *Handler {
 // AdminOnly é um middleware que verifica se o usuário é admin
 func (h *Handler) AdminOnly(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Obter userID do contexto (já autenticado pelo JWT middleware)
-		userID := r.Context().Value("userID")
-		if userID == nil {
+		// Obter userID do contexto usando a função correta do pacote auth
+		userID := auth.GetUserID(r)
+		if userID == "" {
 			writeError(w, http.StatusUnauthorized, "Não autenticado")
 			return
 		}
 
 		// Buscar usuário
-		user, ok := h.store.GetUserByID(userID.(string))
+		user, ok := h.store.GetUserByID(userID)
 		if !ok {
 			writeError(w, http.StatusUnauthorized, "Usuário não encontrado")
 			return
@@ -106,7 +107,7 @@ func (h *Handler) AdminOnly(next http.Handler) http.Handler {
 		}
 
 		// Registrar acesso admin
-		h.auditLogger.LogDataAccess(userID.(string), security.GetClientIP(r), "admin", "access", "success")
+		h.auditLogger.LogDataAccess(userID, security.GetClientIP(r), "admin", "access", "success")
 
 		next.ServeHTTP(w, r)
 	})
