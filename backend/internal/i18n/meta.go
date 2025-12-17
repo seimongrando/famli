@@ -28,20 +28,20 @@ type MetaTags struct {
 // Traduções das meta tags por idioma
 var metaTagsTranslations = map[string]MetaTags{
 	"pt-BR": {
-		Title:       "Famli - Guarde o que importa para quem você ama",
-		Description: "Sua caixa segura de memórias, documentos e orientações. Organize o que importa e compartilhe com pessoas de confiança quando chegar a hora.",
-		Keywords:    "memórias familiares, documentos importantes, testamento digital, herança digital, organização familiar, legado, orientações família, caixa de memórias, guardar documentos",
-		OGTitle:     "Famli - Guarde o que importa para quem você ama",
-		OGDesc:      "Sua caixa segura de memórias, documentos e orientações. Organize o que importa e compartilhe com pessoas de confiança.",
+		Title:       "Famli - Organize memórias e orientações para quem você ama",
+		Description: "Transmita o que importa para as pessoas certas, quando for a hora. Organize memórias, documentos e orientações de forma segura, no seu tempo e com total controle.",
+		Keywords:    "memórias familiares, documentos importantes, testamento digital, herança digital, organização familiar, legado, orientações família, planejamento familiar, segurança de dados",
+		OGTitle:     "Famli - Organize memórias e orientações para quem você ama",
+		OGDesc:      "Transmita o que importa para as pessoas certas, quando for a hora. Organize de forma segura, no seu tempo.",
 		Language:    "Portuguese",
 		Locale:      "pt_BR",
 	},
 	"en": {
-		Title:       "Famli - Keep what matters for those you love",
-		Description: "Your secure box for memories, documents, and guidance. Organize what matters and share with trusted people when the time comes.",
-		Keywords:    "family memories, important documents, digital legacy, digital inheritance, family organization, legacy, family guidance, memory box, store documents",
-		OGTitle:     "Famli - Keep what matters for those you love",
-		OGDesc:      "Your secure box for memories, documents, and guidance. Organize what matters and share with trusted people.",
+		Title:       "Famli - Organize memories and guidance for your loved ones",
+		Description: "Pass on what matters to the right people, when the time comes. Organize memories, documents, and guidance securely, at your own pace, with full control.",
+		Keywords:    "family memories, important documents, digital legacy, family organization, legacy planning, family guidance, secure storage, end of life planning",
+		OGTitle:     "Famli - Organize memories and guidance for your loved ones",
+		OGDesc:      "Pass on what matters to the right people, when the time comes. Organize securely, at your own pace.",
 		Language:    "English",
 		Locale:      "en_US",
 	},
@@ -58,11 +58,11 @@ var originalTexts = struct {
 	Locale      string
 	HTMLLang    string
 }{
-	Title:       "Famli - Guarde o que importa para quem você ama",
-	Description: "Sua caixa segura de memórias, documentos e orientações. Organize o que importa e compartilhe com pessoas de confiança quando chegar a hora.",
-	Keywords:    "memórias familiares, documentos importantes, testamento digital, herança digital, organização familiar, legado, orientações família, caixa de memórias, guardar documentos",
-	OGTitle:     "Famli - Guarde o que importa para quem você ama",
-	OGDesc:      "Sua caixa segura de memórias, documentos e orientações. Organize o que importa e compartilhe com pessoas de confiança.",
+	Title:       "Famli - Organize memórias e orientações para quem você ama",
+	Description: "Transmita o que importa para as pessoas certas, quando for a hora. Organize memórias, documentos e orientações de forma segura, no seu tempo e com total controle.",
+	Keywords:    "memórias familiares, documentos importantes, testamento digital, herança digital, organização familiar, legado, orientações família, planejamento familiar, segurança de dados",
+	OGTitle:     "Famli - Organize memórias e orientações para quem você ama",
+	OGDesc:      "Transmita o que importa para as pessoas certas, quando for a hora. Organize de forma segura, no seu tempo.",
 	Language:    "Portuguese",
 	Locale:      "pt_BR",
 	HTMLLang:    "pt-BR",

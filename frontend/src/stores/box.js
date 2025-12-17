@@ -1,11 +1,32 @@
+// =============================================================================
+// FAMLI - Store da Caixa (Pinia)
+// =============================================================================
+// Gerencia o estado dos itens e guardiões com suporte a:
+// - Paginação infinita (cursor-based)
+// - Cache local
+// - Otimizações de performance
+// =============================================================================
+
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 
 export const useBoxStore = defineStore('box', () => {
+  // Estado dos itens
   const items = ref([])
+  const itemsCursor = ref(null)
+  const itemsHasMore = ref(true)
+  const itemsTotal = ref(0)
+
+  // Estado dos guardiões
   const guardians = ref([])
+  
+  // Estado geral
   const loading = ref(false)
+  const loadingMore = ref(false)
   const error = ref('')
+
+  // Tamanho da página
+  const PAGE_SIZE = 20
 
   // Contagem por tipo
   const counts = computed(() => {
@@ -64,15 +85,48 @@ export const useBoxStore = defineStore('box', () => {
     return labels[type] || 'Item'
   }
 
+  // Buscar primeira página de itens
   async function fetchItems() {
     try {
-      const res = await fetch('/api/box/items', { credentials: 'include' })
+      const res = await fetch(`/api/box/items?limit=${PAGE_SIZE}`, { 
+        credentials: 'include' 
+      })
       if (res.ok) {
         const data = await res.json()
         items.value = data.items || []
+        itemsCursor.value = data.next_cursor || null
+        itemsHasMore.value = data.has_more || false
+        itemsTotal.value = data.total || 0
       }
     } catch (e) {
+      console.error('[Box Store] Erro ao carregar itens:', e)
       error.value = 'Erro ao carregar itens'
+    }
+  }
+
+  // Carregar mais itens (paginação infinita)
+  async function loadMoreItems() {
+    if (!itemsHasMore.value || loadingMore.value) return
+
+    loadingMore.value = true
+    try {
+      const url = `/api/box/items?limit=${PAGE_SIZE}${itemsCursor.value ? `&cursor=${itemsCursor.value}` : ''}`
+      const res = await fetch(url, { credentials: 'include' })
+      
+      if (res.ok) {
+        const data = await res.json()
+        // Adicionar itens sem duplicatas
+        const newItems = (data.items || []).filter(
+          newItem => !items.value.some(existing => existing.id === newItem.id)
+        )
+        items.value = [...items.value, ...newItems]
+        itemsCursor.value = data.next_cursor || null
+        itemsHasMore.value = data.has_more || false
+      }
+    } catch (e) {
+      console.error('[Box Store] Erro ao carregar mais itens:', e)
+    } finally {
+      loadingMore.value = false
     }
   }
 
@@ -84,6 +138,7 @@ export const useBoxStore = defineStore('box', () => {
         guardians.value = data.guardians || []
       }
     } catch (e) {
+      console.error('[Box Store] Erro ao carregar pessoas:', e)
       error.value = 'Erro ao carregar pessoas'
     }
   }
@@ -92,6 +147,13 @@ export const useBoxStore = defineStore('box', () => {
     loading.value = true
     await Promise.all([fetchItems(), fetchGuardians()])
     loading.value = false
+  }
+
+  // Recarregar todos os dados (reset de paginação)
+  async function refresh() {
+    itemsCursor.value = null
+    itemsHasMore.value = true
+    await fetchAll()
   }
 
   async function createItem(payload) {
@@ -108,7 +170,9 @@ export const useBoxStore = defineStore('box', () => {
       if (res.ok) {
         const item = await res.json()
         console.log('[Box Store] Item created successfully:', item.id)
+        // Adicionar no início da lista
         items.value.unshift(item)
+        itemsTotal.value++
         return item
       } else {
         const errorText = await res.text()
@@ -137,6 +201,7 @@ export const useBoxStore = defineStore('box', () => {
         return updated
       }
     } catch (e) {
+      console.error('[Box Store] Error updating item:', e)
       error.value = 'Erro ao atualizar'
     }
     return null
@@ -150,9 +215,11 @@ export const useBoxStore = defineStore('box', () => {
       })
       if (res.ok) {
         items.value = items.value.filter(i => i.id !== id)
+        itemsTotal.value = Math.max(0, itemsTotal.value - 1)
         return true
       }
     } catch (e) {
+      console.error('[Box Store] Error deleting item:', e)
       error.value = 'Erro ao excluir'
     }
     return false
@@ -197,21 +264,32 @@ export const useBoxStore = defineStore('box', () => {
         return true
       }
     } catch (e) {
+      console.error('[Box Store] Error deleting guardian:', e)
       error.value = 'Erro ao remover pessoa'
     }
     return false
   }
 
   return {
+    // Estado
     items,
     guardians,
     loading,
+    loadingMore,
     error,
+    itemsHasMore,
+    itemsTotal,
+    
+    // Computeds
     counts,
     unifiedEntries,
+    
+    // Ações
     fetchItems,
     fetchGuardians,
     fetchAll,
+    refresh,
+    loadMoreItems,
     createItem,
     updateItem,
     deleteItem,
@@ -219,4 +297,3 @@ export const useBoxStore = defineStore('box', () => {
     deleteGuardian
   }
 })
-

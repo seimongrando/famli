@@ -125,15 +125,43 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	userID := auth.GetUserID(r)
 	clientIP := security.GetClientIP(r)
 
-	// Buscar itens do usuário
-	items := h.store.ListBoxItems(userID)
+	// Parâmetros de paginação
+	cursor := r.URL.Query().Get("cursor")
+	limitStr := r.URL.Query().Get("limit")
+
+	limit := storage.DefaultPageSize
+	if limitStr != "" {
+		if parsed, err := parseInt(limitStr); err == nil && parsed > 0 {
+			limit = parsed
+		}
+	}
+
+	// Buscar itens com paginação
+	params := &storage.PaginationParams{
+		Cursor: cursor,
+		Limit:  limit,
+	}
+
+	result, err := h.store.ListBoxItemsPaginated(userID, params)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "Erro ao listar itens")
+		return
+	}
+
+	// Contar total (opcional, apenas na primeira página)
+	var total int
+	if cursor == "" {
+		total, _ = h.store.CountBoxItems(userID)
+	}
 
 	// Registrar acesso (auditoria)
 	h.auditLogger.LogDataAccess(userID, clientIP, "box/items", "list", "success")
 
 	writeJSON(w, http.StatusOK, map[string]interface{}{
-		"items": items,
-		"total": len(items),
+		"items":       result.Items,
+		"next_cursor": result.NextCursor,
+		"has_more":    result.HasMore,
+		"total":       total,
 	})
 }
 
@@ -379,6 +407,21 @@ func writeJSON(w http.ResponseWriter, status int, payload interface{}) {
 // writeError escreve resposta de erro JSON
 func writeError(w http.ResponseWriter, status int, message string) {
 	writeJSON(w, status, map[string]string{"error": message})
+}
+
+// parseInt converte string para int
+func parseInt(s string) (int, error) {
+	if s == "" {
+		return 0, nil
+	}
+	result := 0
+	for _, c := range s {
+		if c < '0' || c > '9' {
+			return 0, nil
+		}
+		result = result*10 + int(c-'0')
+	}
+	return result, nil
 }
 
 // sanitizeID sanitiza IDs para prevenir path traversal

@@ -2,6 +2,49 @@ package storage
 
 import "time"
 
+// =============================================================================
+// PAGINAÇÃO
+// =============================================================================
+
+// PaginationParams define os parâmetros de paginação (cursor-based)
+// Cursor-based é mais eficiente que OFFSET para grandes datasets
+type PaginationParams struct {
+	Cursor string `json:"cursor,omitempty"` // ID do último item (para next page)
+	Limit  int    `json:"limit"`            // Número de itens por página (max 50)
+}
+
+// PaginatedResult representa o resultado paginado
+type PaginatedResult[T any] struct {
+	Items      []T    `json:"items"`                 // Itens da página atual
+	NextCursor string `json:"next_cursor,omitempty"` // Cursor para próxima página
+	HasMore    bool   `json:"has_more"`              // Indica se há mais páginas
+	Total      int    `json:"total,omitempty"`       // Total de itens (opcional)
+}
+
+// DefaultPageSize é o tamanho padrão de página
+const DefaultPageSize = 20
+
+// MaxPageSize é o tamanho máximo de página
+const MaxPageSize = 50
+
+// NormalizePagination normaliza os parâmetros de paginação
+func NormalizePagination(p *PaginationParams) *PaginationParams {
+	if p == nil {
+		return &PaginationParams{Limit: DefaultPageSize}
+	}
+	if p.Limit <= 0 {
+		p.Limit = DefaultPageSize
+	}
+	if p.Limit > MaxPageSize {
+		p.Limit = MaxPageSize
+	}
+	return p
+}
+
+// =============================================================================
+// USUÁRIOS
+// =============================================================================
+
 // User representa um usuário do Famli
 type User struct {
 	ID        string    `json:"id"`
@@ -24,16 +67,28 @@ const (
 )
 
 // BoxItem representa um item na Caixa Famli
+// Campos sensíveis (Title, Content, Recipient) são armazenados criptografados
 type BoxItem struct {
 	ID          string    `json:"id"`
 	UserID      string    `json:"user_id"`
 	Type        ItemType  `json:"type"`
-	Title       string    `json:"title"`
-	Content     string    `json:"content"`
+	Title       string    `json:"title"`               // Criptografado no banco
+	Content     string    `json:"content"`             // Criptografado no banco
 	Category    string    `json:"category,omitempty"`  // saúde, finanças, família, etc.
-	Recipient   string    `json:"recipient,omitempty"` // para quem é (memórias)
+	Recipient   string    `json:"recipient,omitempty"` // Criptografado no banco
 	IsImportant bool      `json:"is_important"`
 	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+}
+
+// BoxItemSummary é uma versão resumida do item para listagens
+// Não inclui o Content completo para economizar dados
+type BoxItemSummary struct {
+	ID          string    `json:"id"`
+	Type        ItemType  `json:"type"`
+	Title       string    `json:"title"`
+	Category    string    `json:"category,omitempty"`
+	IsImportant bool      `json:"is_important"`
 	UpdatedAt   time.Time `json:"updated_at"`
 }
 
@@ -75,4 +130,14 @@ type Settings struct {
 	EmergencyProtocolEnabled bool   `json:"emergency_protocol_enabled"`
 	NotificationsEnabled     bool   `json:"notifications_enabled"`
 	Theme                    string `json:"theme"` // light, dark, auto
+}
+
+// UserDataExport representa todos os dados do usuário para exportação (LGPD)
+type UserDataExport struct {
+	User       *User            `json:"user"`
+	Items      []*BoxItem       `json:"items"`
+	Guardians  []*Guardian      `json:"guardians"`
+	Progress   []*GuideProgress `json:"guide_progress"`
+	Settings   *Settings        `json:"settings"`
+	ExportedAt time.Time        `json:"exported_at"`
 }

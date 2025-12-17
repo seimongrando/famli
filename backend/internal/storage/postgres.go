@@ -1,10 +1,14 @@
 // =============================================================================
 // FAMLI - PostgreSQL Storage
 // =============================================================================
-// Implementação de persistência usando PostgreSQL.
+// Implementação de persistência usando PostgreSQL com:
+// - Criptografia de dados sensíveis (AES-256-GCM)
+// - Paginação cursor-based para performance
+// - Campos específicos (sem SELECT *)
 //
 // Variáveis de ambiente:
 // - DATABASE_URL: URL de conexão do PostgreSQL
+// - ENCRYPTION_KEY: Chave para criptografia (mínimo 32 caracteres)
 //
 // Exemplo:
 //   DATABASE_URL=postgres://user:pass@host:5432/famli?sslmode=require
@@ -16,35 +20,59 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"os"
 	"strings"
 	"time"
+
+	"famli/internal/security"
 
 	_ "github.com/lib/pq"
 )
 
 // PostgresStore implementa armazenamento com PostgreSQL
+// Dados sensíveis são criptografados antes de serem salvos
 type PostgresStore struct {
-	db *sql.DB
+	db        *sql.DB
+	encryptor *security.Encryptor
 }
 
 // NewPostgresStore cria uma nova conexão com PostgreSQL
+// Inicializa também o encryptor para dados sensíveis
 func NewPostgresStore(databaseURL string) (*PostgresStore, error) {
 	db, err := sql.Open("postgres", databaseURL)
 	if err != nil {
 		return nil, fmt.Errorf("erro ao conectar ao PostgreSQL: %w", err)
 	}
 
-	// Configurar pool de conexões
-	db.SetMaxOpenConns(25)
-	db.SetMaxIdleConns(5)
-	db.SetConnMaxLifetime(5 * time.Minute)
+	// Configurar pool de conexões para performance
+	db.SetMaxOpenConns(25)                 // Máximo de conexões abertas
+	db.SetMaxIdleConns(5)                  // Conexões ociosas no pool
+	db.SetConnMaxLifetime(5 * time.Minute) // Tempo de vida da conexão
 
 	// Testar conexão
 	if err := db.Ping(); err != nil {
 		return nil, fmt.Errorf("erro ao pingar PostgreSQL: %w", err)
 	}
 
-	store := &PostgresStore{db: db}
+	// Inicializar encryptor para dados sensíveis
+	encryptionKey := os.Getenv("ENCRYPTION_KEY")
+	if encryptionKey == "" {
+		encryptionKey = os.Getenv("JWT_SECRET") // Fallback para compatibilidade
+	}
+	if encryptionKey == "" {
+		encryptionKey = "famli-dev-encryption-key-32chars!" // Apenas para desenvolvimento
+		log.Println("⚠️  AVISO: Usando chave de criptografia padrão (apenas para desenvolvimento)")
+	}
+
+	encryptor, err := security.NewEncryptor(encryptionKey)
+	if err != nil {
+		return nil, fmt.Errorf("erro ao criar encryptor: %w", err)
+	}
+
+	store := &PostgresStore{
+		db:        db,
+		encryptor: encryptor,
+	}
 
 	// Executar migrações
 	if err := store.migrate(); err != nil {
@@ -52,6 +80,7 @@ func NewPostgresStore(databaseURL string) (*PostgresStore, error) {
 	}
 
 	log.Println("✅ PostgreSQL conectado com sucesso")
+	log.Println("🔐 Criptografia de dados habilitada")
 	return store, nil
 }
 
@@ -122,10 +151,53 @@ func (s *PostgresStore) migrate() error {
 			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		)`,
 
-		// Índices
+		// =======================================================================
+		// ÍNDICES PARA PERFORMANCE
+		// =======================================================================
+		// Índices de usuários
 		`CREATE INDEX IF NOT EXISTS idx_users_email ON users(LOWER(email))`,
+		`CREATE INDEX IF NOT EXISTS idx_users_created_at ON users(created_at DESC)`,
+
+		// Índices de box_items (performance em listagens e filtros)
 		`CREATE INDEX IF NOT EXISTS idx_box_items_user ON box_items(user_id)`,
+		`CREATE INDEX IF NOT EXISTS idx_box_items_user_type ON box_items(user_id, type)`,
+		`CREATE INDEX IF NOT EXISTS idx_box_items_user_created ON box_items(user_id, created_at DESC)`,
+		`CREATE INDEX IF NOT EXISTS idx_box_items_important ON box_items(user_id, is_important) WHERE is_important = TRUE`,
+
+		// Índices de guardians
 		`CREATE INDEX IF NOT EXISTS idx_guardians_user ON guardians(user_id)`,
+
+		// Índices de guide_progress (para verificar progresso rapidamente)
+		`CREATE INDEX IF NOT EXISTS idx_guide_progress_user ON guide_progress(user_id)`,
+
+		// =======================================================================
+		// AUDITORIA E SEGURANÇA
+		// =======================================================================
+		// Tabela de auditoria para rastrear ações sensíveis (LGPD)
+		`CREATE TABLE IF NOT EXISTS audit_log (
+			id SERIAL PRIMARY KEY,
+			user_id VARCHAR(50),
+			action VARCHAR(100) NOT NULL,
+			resource_type VARCHAR(50),
+			resource_id VARCHAR(50),
+			ip_address VARCHAR(45),
+			user_agent TEXT,
+			details JSONB,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		)`,
+		`CREATE INDEX IF NOT EXISTS idx_audit_user ON audit_log(user_id)`,
+		`CREATE INDEX IF NOT EXISTS idx_audit_action ON audit_log(action)`,
+		`CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_log(created_at DESC)`,
+
+		// Tabela para tokens de exclusão (confirmação de exclusão de conta)
+		`CREATE TABLE IF NOT EXISTS deletion_tokens (
+			id VARCHAR(100) PRIMARY KEY,
+			user_id VARCHAR(50) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+			expires_at TIMESTAMP NOT NULL,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		)`,
+		`CREATE INDEX IF NOT EXISTS idx_deletion_tokens_user ON deletion_tokens(user_id)`,
+		`CREATE INDEX IF NOT EXISTS idx_deletion_tokens_expires ON deletion_tokens(expires_at)`,
 	}
 
 	for _, migration := range migrations {
@@ -198,10 +270,12 @@ func (s *PostgresStore) GetUserByEmail(email string) (*User, bool) {
 
 func (s *PostgresStore) GetUserByID(id string) (*User, bool) {
 	var user User
+	var name sql.NullString
+
 	err := s.db.QueryRow(`
 		SELECT id, email, name, password, created_at
 		FROM users WHERE id = $1
-	`, id).Scan(&user.ID, &user.Email, &user.Name, &user.Password, &user.CreatedAt)
+	`, id).Scan(&user.ID, &user.Email, &name, &user.Password, &user.CreatedAt)
 
 	if err == sql.ErrNoRows {
 		return nil, false
@@ -211,22 +285,107 @@ func (s *PostgresStore) GetUserByID(id string) (*User, bool) {
 		return nil, false
 	}
 
+	user.Name = name.String
 	return &user, true
+}
+
+// DeleteUser remove um usuário e todos os seus dados (LGPD: Direito ao esquecimento)
+// Devido ao ON DELETE CASCADE, todos os dados relacionados são removidos automaticamente
+func (s *PostgresStore) DeleteUser(userID string) error {
+	result, err := s.db.Exec(`DELETE FROM users WHERE id = $1`, userID)
+	if err != nil {
+		return fmt.Errorf("erro ao deletar usuário: %w", err)
+	}
+
+	rows, _ := result.RowsAffected()
+	if rows == 0 {
+		return ErrNotFound
+	}
+
+	log.Printf("[PostgreSQL] Usuário %s e todos os dados relacionados foram deletados (LGPD)", userID)
+	return nil
+}
+
+// ExportUserData exporta todos os dados do usuário (LGPD: Portabilidade)
+func (s *PostgresStore) ExportUserData(userID string) (*UserDataExport, error) {
+	user, found := s.GetUserByID(userID)
+	if !found {
+		return nil, ErrNotFound
+	}
+
+	// Limpar senha do export
+	user.Password = ""
+
+	items := s.ListBoxItems(userID)
+	guardians := s.ListGuardians(userID)
+	progressMap := s.GetGuideProgress(userID)
+	settings := s.GetSettings(userID)
+
+	// Converter map de progresso para slice
+	progress := make([]*GuideProgress, 0, len(progressMap))
+	for _, p := range progressMap {
+		progress = append(progress, p)
+	}
+
+	return &UserDataExport{
+		User:       user,
+		Items:      items,
+		Guardians:  guardians,
+		Progress:   progress,
+		Settings:   settings,
+		ExportedAt: time.Now(),
+	}, nil
+}
+
+// ============================================================================
+// HELPERS DE CRIPTOGRAFIA
+// ============================================================================
+
+// encryptSensitive criptografa um valor se não estiver vazio
+func (s *PostgresStore) encryptSensitive(value string) string {
+	if value == "" || s.encryptor == nil {
+		return value
+	}
+	encrypted, err := s.encryptor.Encrypt(value)
+	if err != nil {
+		log.Printf("[PostgreSQL] Aviso: falha ao criptografar valor: %v", err)
+		return value // Retorna valor original se falhar
+	}
+	return encrypted
+}
+
+// decryptSensitive descriptografa um valor se estiver criptografado
+func (s *PostgresStore) decryptSensitive(value string) string {
+	if value == "" || s.encryptor == nil {
+		return value
+	}
+	// Tenta descriptografar - se falhar, assume que é texto plano (migração)
+	decrypted, err := s.encryptor.Decrypt(value)
+	if err != nil {
+		// Pode ser dado antigo não criptografado
+		return value
+	}
+	return decrypted
 }
 
 // ============================================================================
 // BOX ITEMS
 // ============================================================================
 
+// GetBoxItems retorna itens (compatibilidade - sem paginação)
 func (s *PostgresStore) GetBoxItems(userID string) ([]*BoxItem, error) {
 	return s.ListBoxItems(userID), nil
 }
 
+// ListBoxItems lista todos os itens (CUIDADO: sem paginação, usar apenas para exportação)
 func (s *PostgresStore) ListBoxItems(userID string) []*BoxItem {
+	// Query com campos específicos (não usa SELECT *)
 	rows, err := s.db.Query(`
 		SELECT id, user_id, type, title, content, category, recipient, is_important, created_at, updated_at
-		FROM box_items WHERE user_id = $1
+		FROM box_items 
+		WHERE user_id = $1
 		ORDER BY updated_at DESC
+		LIMIT 1000
 	`, userID)
 	if err != nil {
 		log.Printf("[PostgreSQL] Erro ao listar itens: %v", err)
@@ -237,9 +396,9 @@ func (s *PostgresStore) ListBoxItems(userID string) []*BoxItem {
 	var items []*BoxItem
 	for rows.Next() {
 		var item BoxItem
-		var content, category, recipient sql.NullString
+		var title, content, category, recipient sql.NullString
 		err := rows.Scan(
-			&item.ID, &item.UserID, &item.Type, &item.Title,
+			&item.ID, &item.UserID, &item.Type, &title,
 			&content, &category, &recipient,
 			&item.IsImportant, &item.CreatedAt, &item.UpdatedAt,
 		)
@@ -247,24 +406,108 @@ func (s *PostgresStore) ListBoxItems(userID string) []*BoxItem {
 			log.Printf("[PostgreSQL] Erro ao escanear item: %v", err)
 			continue
 		}
-		item.Content = content.String
+		// Descriptografar dados sensíveis
+		item.Title = s.decryptSensitive(title.String)
+		item.Content = s.decryptSensitive(content.String)
 		item.Category = category.String
-		item.Recipient = recipient.String
+		item.Recipient = s.decryptSensitive(recipient.String)
 		items = append(items, &item)
 	}
 
 	return items
 }
 
+// ListBoxItemsPaginated lista itens com paginação (método preferido)
+// Usa cursor-based pagination para melhor performance
+func (s *PostgresStore) ListBoxItemsPaginated(userID string, params *PaginationParams) (*PaginatedResult[*BoxItemSummary], error) {
+	params = NormalizePagination(params)
+
+	// Query paginada - busca limit+1 para detectar hasMore
+	var rows *sql.Rows
+	var err error
+
+	if params.Cursor != "" {
+		// Buscar itens após o cursor (baseado no ID)
+		rows, err = s.db.Query(`
+			SELECT id, type, title, category, is_important, updated_at
+			FROM box_items 
+			WHERE user_id = $1 AND id < $2
+			ORDER BY id DESC
+			LIMIT $3
+		`, userID, params.Cursor, params.Limit+1)
+	} else {
+		// Primeira página
+		rows, err = s.db.Query(`
+			SELECT id, type, title, category, is_important, updated_at
+			FROM box_items 
+			WHERE user_id = $1
+			ORDER BY id DESC
+			LIMIT $2
+		`, userID, params.Limit+1)
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("erro ao listar itens paginados: %w", err)
+	}
+	defer rows.Close()
+
+	var items []*BoxItemSummary
+	for rows.Next() {
+		var item BoxItemSummary
+		var title, category sql.NullString
+		err := rows.Scan(
+			&item.ID, &item.Type, &title, &category,
+			&item.IsImportant, &item.UpdatedAt,
+		)
+		if err != nil {
+			log.Printf("[PostgreSQL] Erro ao escanear item: %v", err)
+			continue
+		}
+		item.Title = s.decryptSensitive(title.String)
+		item.Category = category.String
+		items = append(items, &item)
+	}
+
+	// Verificar se há mais páginas
+	hasMore := len(items) > params.Limit
+	if hasMore {
+		items = items[:params.Limit] // Remove o item extra
+	}
+
+	// Próximo cursor
+	var nextCursor string
+	if hasMore && len(items) > 0 {
+		nextCursor = items[len(items)-1].ID
+	}
+
+	return &PaginatedResult[*BoxItemSummary]{
+		Items:      items,
+		NextCursor: nextCursor,
+		HasMore:    hasMore,
+	}, nil
+}
+
+// CountBoxItems conta o total de itens de um usuário
+func (s *PostgresStore) CountBoxItems(userID string) (int, error) {
+	var count int
+	err := s.db.QueryRow(`
+		SELECT COUNT(*) FROM box_items WHERE user_id = $1
+	`, userID).Scan(&count)
+	return count, err
+}
+
+// GetBoxItem busca um item específico por ID
 func (s *PostgresStore) GetBoxItem(userID, itemID string) (*BoxItem, error) {
 	var item BoxItem
-	var content, category, recipient sql.NullString
+	var title, content, category, recipient sql.NullString
 
+	// Query com campos específicos (não usa SELECT *)
 	err := s.db.QueryRow(`
 		SELECT id, user_id, type, title, content, category, recipient, is_important, created_at, updated_at
-		FROM box_items WHERE user_id = $1 AND id = $2
+		FROM box_items 
+		WHERE user_id = $1 AND id = $2
 	`, userID, itemID).Scan(
-		&item.ID, &item.UserID, &item.Type, &item.Title,
+		&item.ID, &item.UserID, &item.Type, &title,
 		&content, &category, &recipient,
 		&item.IsImportant, &item.CreatedAt, &item.UpdatedAt,
 	)
@@ -276,20 +519,28 @@ func (s *PostgresStore) GetBoxItem(userID, itemID string) (*BoxItem, error) {
 		return nil, err
 	}
 
-	item.Content = content.String
+	// Descriptografar dados sensíveis
+	item.Title = s.decryptSensitive(title.String)
+	item.Content = s.decryptSensitive(content.String)
 	item.Category = category.String
-	item.Recipient = recipient.String
+	item.Recipient = s.decryptSensitive(recipient.String)
 	return &item, nil
 }
 
+// CreateBoxItem cria um novo item com dados criptografados
 func (s *PostgresStore) CreateBoxItem(userID string, item *BoxItem) (*BoxItem, error) {
 	id := fmt.Sprintf("itm_%d", time.Now().UnixNano())
 	now := time.Now()
 
+	// Criptografar dados sensíveis antes de salvar
+	encTitle := s.encryptSensitive(item.Title)
+	encContent := s.encryptSensitive(item.Content)
+	encRecipient := s.encryptSensitive(item.Recipient)
+
 	_, err := s.db.Exec(`
 		INSERT INTO box_items (id, user_id, type, title, content, category, recipient, is_important, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-	`, id, userID, item.Type, item.Title, item.Content, item.Category, item.Recipient, item.IsImportant, now, now)
+	`, id, userID, item.Type, encTitle, encContent, item.Category, encRecipient, item.IsImportant, now, now)
 
 	if err != nil {
 		return nil, err
@@ -302,12 +553,18 @@ func (s *PostgresStore) CreateBoxItem(userID string, item *BoxItem) (*BoxItem, e
 	return item, nil
 }
 
+// UpdateBoxItem atualiza um item existente com dados criptografados
 func (s *PostgresStore) UpdateBoxItem(userID, itemID string, updates *BoxItem) (*BoxItem, error) {
+	// Criptografar dados sensíveis antes de atualizar
+	encTitle := s.encryptSensitive(updates.Title)
+	encContent := s.encryptSensitive(updates.Content)
+	encRecipient := s.encryptSensitive(updates.Recipient)
+
 	result, err := s.db.Exec(`
 		UPDATE box_items 
 		SET title = $1, content = $2, type = $3, category = $4, recipient = $5, is_important = $6, updated_at = $7
 		WHERE user_id = $8 AND id = $9
-	`, updates.Title, updates.Content, updates.Type, updates.Category, updates.Recipient, updates.IsImportant, time.Now(), userID, itemID)
+	`, encTitle, encContent, updates.Type, updates.Category, encRecipient, updates.IsImportant, time.Now(), userID, itemID)
 
 	if err != nil {
 		return nil, err
@@ -342,15 +599,19 @@ func (s *PostgresStore) DeleteBoxItem(userID, itemID string) error {
 // GUARDIANS
 // ============================================================================
 
+// GetGuardians retorna guardiões (compatibilidade)
 func (s *PostgresStore) GetGuardians(userID string) ([]*Guardian, error) {
 	return s.ListGuardians(userID), nil
 }
 
+// ListGuardians lista todos os guardiões (CUIDADO: sem paginação)
 func (s *PostgresStore) ListGuardians(userID string) []*Guardian {
 	rows, err := s.db.Query(`
 		SELECT id, user_id, name, email, phone, relationship, role, notes, created_at, updated_at
-		FROM guardians WHERE user_id = $1
+		FROM guardians 
+		WHERE user_id = $1
 		ORDER BY created_at DESC
+		LIMIT 100
 	`, userID)
 	if err != nil {
 		log.Printf("[PostgreSQL] Erro ao listar guardiões: %v", err)
@@ -361,9 +622,9 @@ func (s *PostgresStore) ListGuardians(userID string) []*Guardian {
 	var guardians []*Guardian
 	for rows.Next() {
 		var g Guardian
-		var email, phone, relationship, notes sql.NullString
+		var name, email, phone, relationship, notes sql.NullString
 		err := rows.Scan(
-			&g.ID, &g.UserID, &g.Name, &email, &phone,
+			&g.ID, &g.UserID, &name, &email, &phone,
 			&relationship, &g.Role, &notes,
 			&g.CreatedAt, &g.UpdatedAt,
 		)
@@ -371,16 +632,95 @@ func (s *PostgresStore) ListGuardians(userID string) []*Guardian {
 			log.Printf("[PostgreSQL] Erro ao escanear guardião: %v", err)
 			continue
 		}
-		g.Email = email.String
-		g.Phone = phone.String
+		// Descriptografar dados sensíveis (PII)
+		g.Name = s.decryptSensitive(name.String)
+		g.Email = s.decryptSensitive(email.String)
+		g.Phone = s.decryptSensitive(phone.String)
 		g.Relationship = relationship.String
-		g.Notes = notes.String
+		g.Notes = s.decryptSensitive(notes.String)
 		guardians = append(guardians, &g)
 	}
 
 	return guardians
 }
 
+// ListGuardiansPaginated lista guardiões com paginação
+func (s *PostgresStore) ListGuardiansPaginated(userID string, params *PaginationParams) (*PaginatedResult[*Guardian], error) {
+	params = NormalizePagination(params)
+
+	var rows *sql.Rows
+	var err error
+
+	if params.Cursor != "" {
+		rows, err = s.db.Query(`
+			SELECT id, user_id, name, email, phone, relationship, role, notes, created_at, updated_at
+			FROM guardians 
+			WHERE user_id = $1 AND id < $2
+			ORDER BY id DESC
+			LIMIT $3
+		`, userID, params.Cursor, params.Limit+1)
+	} else {
+		rows, err = s.db.Query(`
+			SELECT id, user_id, name, email, phone, relationship, role, notes, created_at, updated_at
+			FROM guardians 
+			WHERE user_id = $1
+			ORDER BY id DESC
+			LIMIT $2
+		`, userID, params.Limit+1)
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("erro ao listar guardiões paginados: %w", err)
+	}
+	defer rows.Close()
+
+	var guardians []*Guardian
+	for rows.Next() {
+		var g Guardian
+		var name, email, phone, relationship, notes sql.NullString
+		err := rows.Scan(
+			&g.ID, &g.UserID, &name, &email, &phone,
+			&relationship, &g.Role, &notes,
+			&g.CreatedAt, &g.UpdatedAt,
+		)
+		if err != nil {
+			continue
+		}
+		g.Name = s.decryptSensitive(name.String)
+		g.Email = s.decryptSensitive(email.String)
+		g.Phone = s.decryptSensitive(phone.String)
+		g.Relationship = relationship.String
+		g.Notes = s.decryptSensitive(notes.String)
+		guardians = append(guardians, &g)
+	}
+
+	hasMore := len(guardians) > params.Limit
+	if hasMore {
+		guardians = guardians[:params.Limit]
+	}
+
+	var nextCursor string
+	if hasMore && len(guardians) > 0 {
+		nextCursor = guardians[len(guardians)-1].ID
+	}
+
+	return &PaginatedResult[*Guardian]{
+		Items:      guardians,
+		NextCursor: nextCursor,
+		HasMore:    hasMore,
+	}, nil
+}
+
+// CountGuardians conta o total de guardiões de um usuário
+func (s *PostgresStore) CountGuardians(userID string) (int, error) {
+	var count int
+	err := s.db.QueryRow(`
+		SELECT COUNT(*) FROM guardians WHERE user_id = $1
+	`, userID).Scan(&count)
+	return count, err
+}
+
+// CreateGuardian cria um novo guardião com dados criptografados
 func (s *PostgresStore) CreateGuardian(userID string, guardian *Guardian) (*Guardian, error) {
 	id := fmt.Sprintf("grd_%d", time.Now().UnixNano())
 	now := time.Now()
@@ -389,10 +729,16 @@ func (s *PostgresStore) CreateGuardian(userID string, guardian *Guardian) (*Guar
 		role = "viewer"
 	}
 
+	// Criptografar dados sensíveis (PII)
+	encName := s.encryptSensitive(guardian.Name)
+	encEmail := s.encryptSensitive(guardian.Email)
+	encPhone := s.encryptSensitive(guardian.Phone)
+	encNotes := s.encryptSensitive(guardian.Notes)
+
 	_, err := s.db.Exec(`
 		INSERT INTO guardians (id, user_id, name, email, phone, relationship, role, notes, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-	`, id, userID, guardian.Name, guardian.Email, guardian.Phone, guardian.Relationship, role, guardian.Notes, now, now)
+	`, id, userID, encName, encEmail, encPhone, guardian.Relationship, role, encNotes, now, now)
 
 	if err != nil {
 		return nil, err
@@ -406,12 +752,19 @@ func (s *PostgresStore) CreateGuardian(userID string, guardian *Guardian) (*Guar
 	return guardian, nil
 }
 
+// UpdateGuardian atualiza um guardião com dados criptografados
 func (s *PostgresStore) UpdateGuardian(userID, guardianID string, updates *Guardian) (*Guardian, error) {
+	// Criptografar dados sensíveis (PII)
+	encName := s.encryptSensitive(updates.Name)
+	encEmail := s.encryptSensitive(updates.Email)
+	encPhone := s.encryptSensitive(updates.Phone)
+	encNotes := s.encryptSensitive(updates.Notes)
+
 	result, err := s.db.Exec(`
 		UPDATE guardians 
 		SET name = $1, email = $2, phone = $3, relationship = $4, notes = $5, updated_at = $6
 		WHERE user_id = $7 AND id = $8
-	`, updates.Name, updates.Email, updates.Phone, updates.Relationship, updates.Notes, time.Now(), userID, guardianID)
+	`, encName, encEmail, encPhone, updates.Relationship, encNotes, time.Now(), userID, guardianID)
 
 	if err != nil {
 		return nil, err
@@ -422,24 +775,26 @@ func (s *PostgresStore) UpdateGuardian(userID, guardianID string, updates *Guard
 		return nil, ErrNotFound
 	}
 
-	// Buscar guardião atualizado
+	// Buscar guardião atualizado (descriptografado pelo GetGuardian interno)
 	var g Guardian
-	var email, phone, relationship, notes sql.NullString
+	var name, email, phone, relationship, notes sql.NullString
 	err = s.db.QueryRow(`
 		SELECT id, user_id, name, email, phone, relationship, role, notes, created_at, updated_at
 		FROM guardians WHERE user_id = $1 AND id = $2
 	`, userID, guardianID).Scan(
-		&g.ID, &g.UserID, &g.Name, &email, &phone,
+		&g.ID, &g.UserID, &name, &email, &phone,
 		&relationship, &g.Role, &notes,
 		&g.CreatedAt, &g.UpdatedAt,
 	)
 	if err != nil {
 		return nil, err
 	}
-	g.Email = email.String
-	g.Phone = phone.String
+	// Descriptografar dados sensíveis
+	g.Name = s.decryptSensitive(name.String)
+	g.Email = s.decryptSensitive(email.String)
+	g.Phone = s.decryptSensitive(phone.String)
 	g.Relationship = relationship.String
-	g.Notes = notes.String
+	g.Notes = s.decryptSensitive(notes.String)
 	return &g, nil
 }
 

@@ -238,6 +238,10 @@ func main() {
 			pr.Get("/auth/me", authHandler.Me)
 			pr.Post("/auth/logout", authHandler.Logout)
 
+			// LGPD - Direitos do Titular
+			pr.Delete("/auth/account", authHandler.DeleteAccount) // Direito ao esquecimento
+			pr.Get("/auth/export", authHandler.ExportData)        // Direito à portabilidade
+
 			// Caixa Famli
 			pr.Get("/box/items", boxHandler.List)
 			pr.Post("/box/items", boxHandler.Create)

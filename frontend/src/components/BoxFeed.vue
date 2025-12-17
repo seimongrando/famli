@@ -11,7 +11,7 @@
 ============================================================================== -->
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useBoxStore } from '../stores/box'
 import ConfirmModal from './ConfirmModal.vue'
@@ -27,6 +27,50 @@ const filter = ref('all')
 const showDeleteModal = ref(false)
 const showEditModal = ref(false)
 const selectedItem = ref(null)
+
+// Referência para o container do feed
+const feedContainer = ref(null)
+
+// Scroll infinito - detectar quando usuário chega no final
+function handleScroll() {
+  if (!feedContainer.value) return
+  
+  const container = feedContainer.value
+  const scrollPosition = container.scrollTop + container.clientHeight
+  const scrollHeight = container.scrollHeight
+  
+  // Carregar mais quando estiver a 200px do final
+  if (scrollHeight - scrollPosition < 200) {
+    boxStore.loadMoreItems()
+  }
+}
+
+// Usar Intersection Observer para detecção mais eficiente
+const loadMoreTrigger = ref(null)
+let observer = null
+
+onMounted(() => {
+  // Criar observer para o trigger de "carregar mais"
+  observer = new IntersectionObserver(
+    (entries) => {
+      if (entries[0].isIntersecting && boxStore.itemsHasMore && !boxStore.loadingMore) {
+        boxStore.loadMoreItems()
+      }
+    },
+    { threshold: 0.1 }
+  )
+  
+  // Observar o elemento trigger quando ele existir
+  if (loadMoreTrigger.value) {
+    observer.observe(loadMoreTrigger.value)
+  }
+})
+
+onUnmounted(() => {
+  if (observer) {
+    observer.disconnect()
+  }
+})
 
 const filters = [
   { id: 'all', labelKey: 'box.filters.all' },
@@ -201,6 +245,30 @@ function onEditSaved() {
         </div>
       </li>
     </ul>
+    
+    <!-- Trigger para paginação infinita -->
+    <div 
+      v-if="boxStore.itemsHasMore" 
+      ref="loadMoreTrigger" 
+      class="load-more-trigger"
+    >
+      <div v-if="boxStore.loadingMore" class="loading-more">
+        <span class="spinner-small"></span>
+        {{ t('common.loading') }}
+      </div>
+      <button 
+        v-else 
+        @click="boxStore.loadMoreItems()" 
+        class="btn btn--ghost btn--load-more"
+      >
+        {{ t('box.loadMore') }}
+      </button>
+    </div>
+    
+    <!-- Indicador de fim da lista -->
+    <div v-if="!boxStore.itemsHasMore && filteredEntries.length > 0" class="end-of-list">
+      {{ t('box.endOfList') }}
+    </div>
     
     <!-- Modal de Confirmação de Exclusão -->
     <ConfirmModal
@@ -393,5 +461,50 @@ function onEditSaved() {
     grid-column: 1 / -1;
     justify-content: flex-end;
   }
+}
+
+/* Paginação infinita */
+.load-more-trigger {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-lg);
+}
+
+.loading-more {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  color: var(--color-text-soft);
+  font-size: var(--font-size-sm);
+}
+
+.spinner-small {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--color-border);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.btn--load-more {
+  font-size: var(--font-size-sm);
+  color: var(--color-primary);
+}
+
+.btn--load-more:hover {
+  text-decoration: underline;
+}
+
+.end-of-list {
+  text-align: center;
+  padding: var(--space-lg);
+  color: var(--color-text-soft);
+  font-size: var(--font-size-sm);
+  font-style: italic;
 }
 </style>

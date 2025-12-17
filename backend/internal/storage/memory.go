@@ -90,6 +90,88 @@ func (s *MemoryStore) GetUserByID(id string) (*User, bool) {
 	return user, ok
 }
 
+// DeleteUser remove um usuário e todos os seus dados (LGPD: Direito ao esquecimento)
+func (s *MemoryStore) DeleteUser(userID string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	user, exists := s.users[userID]
+	if !exists {
+		return ErrNotFound
+	}
+
+	// Remover referência por email
+	normalized := strings.ToLower(strings.TrimSpace(user.Email))
+	delete(s.usersByEmail, normalized)
+
+	// Remover todos os dados relacionados (cascata)
+	delete(s.items, userID)
+	delete(s.guardians, userID)
+	delete(s.progress, userID)
+	delete(s.settings, userID)
+
+	// Remover o usuário
+	delete(s.users, userID)
+
+	return nil
+}
+
+// ExportUserData exporta todos os dados do usuário (LGPD: Portabilidade)
+func (s *MemoryStore) ExportUserData(userID string) (*UserDataExport, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	user, exists := s.users[userID]
+	if !exists {
+		return nil, ErrNotFound
+	}
+
+	// Criar cópia sem senha
+	userCopy := &User{
+		ID:        user.ID,
+		Email:     user.Email,
+		Name:      user.Name,
+		CreatedAt: user.CreatedAt,
+	}
+
+	// Coletar itens
+	items := make([]*BoxItem, 0)
+	for _, item := range s.items[userID] {
+		copyItem := *item
+		items = append(items, &copyItem)
+	}
+
+	// Coletar guardiões
+	guardians := make([]*Guardian, 0)
+	for _, g := range s.guardians[userID] {
+		copyG := *g
+		guardians = append(guardians, &copyG)
+	}
+
+	// Coletar progresso
+	progress := make([]*GuideProgress, 0)
+	for _, p := range s.progress[userID] {
+		copyP := *p
+		progress = append(progress, &copyP)
+	}
+
+	// Coletar configurações
+	var settings *Settings
+	if s, exists := s.settings[userID]; exists {
+		copyS := *s
+		settings = &copyS
+	}
+
+	return &UserDataExport{
+		User:       userCopy,
+		Items:      items,
+		Guardians:  guardians,
+		Progress:   progress,
+		Settings:   settings,
+		ExportedAt: time.Now(),
+	}, nil
+}
+
 // ============ BOX ITEMS ============
 
 // GetBoxItems retorna os itens de um usuário (alias para compatibilidade)
@@ -186,6 +268,86 @@ func (s *MemoryStore) DeleteBoxItem(userID, itemID string) error {
 	return nil
 }
 
+// ListBoxItemsPaginated lista itens com paginação (cursor-based)
+func (s *MemoryStore) ListBoxItemsPaginated(userID string, params *PaginationParams) (*PaginatedResult[*BoxItemSummary], error) {
+	params = NormalizePagination(params)
+
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	userItems := s.items[userID]
+
+	// Converter para slice e ordenar por ID desc
+	var allItems []*BoxItem
+	for _, item := range userItems {
+		copyItem := *item
+		allItems = append(allItems, &copyItem)
+	}
+
+	// Ordenar por ID desc (simples)
+	for i := 0; i < len(allItems); i++ {
+		for j := i + 1; j < len(allItems); j++ {
+			if allItems[i].ID < allItems[j].ID {
+				allItems[i], allItems[j] = allItems[j], allItems[i]
+			}
+		}
+	}
+
+	// Aplicar cursor
+	startIdx := 0
+	if params.Cursor != "" {
+		for i, item := range allItems {
+			if item.ID == params.Cursor {
+				startIdx = i + 1
+				break
+			}
+		}
+	}
+
+	// Paginar
+	endIdx := startIdx + params.Limit + 1
+	if endIdx > len(allItems) {
+		endIdx = len(allItems)
+	}
+
+	pagedItems := allItems[startIdx:endIdx]
+	hasMore := len(pagedItems) > params.Limit
+	if hasMore {
+		pagedItems = pagedItems[:params.Limit]
+	}
+
+	// Converter para BoxItemSummary
+	summaries := make([]*BoxItemSummary, len(pagedItems))
+	for i, item := range pagedItems {
+		summaries[i] = &BoxItemSummary{
+			ID:          item.ID,
+			Type:        item.Type,
+			Title:       item.Title,
+			Category:    item.Category,
+			IsImportant: item.IsImportant,
+			UpdatedAt:   item.UpdatedAt,
+		}
+	}
+
+	var nextCursor string
+	if hasMore && len(summaries) > 0 {
+		nextCursor = summaries[len(summaries)-1].ID
+	}
+
+	return &PaginatedResult[*BoxItemSummary]{
+		Items:      summaries,
+		NextCursor: nextCursor,
+		HasMore:    hasMore,
+	}, nil
+}
+
+// CountBoxItems conta o total de itens de um usuário
+func (s *MemoryStore) CountBoxItems(userID string) (int, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return len(s.items[userID]), nil
+}
+
 // ============ GUARDIANS ============
 
 // GetGuardians retorna os guardiões de um usuário (alias para compatibilidade)
@@ -267,6 +429,73 @@ func (s *MemoryStore) DeleteGuardian(userID, guardianID string) error {
 	}
 	delete(userGuardians, guardianID)
 	return nil
+}
+
+// ListGuardiansPaginated lista guardiões com paginação
+func (s *MemoryStore) ListGuardiansPaginated(userID string, params *PaginationParams) (*PaginatedResult[*Guardian], error) {
+	params = NormalizePagination(params)
+
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	userGuardians := s.guardians[userID]
+
+	// Converter para slice
+	var allGuardians []*Guardian
+	for _, g := range userGuardians {
+		copyG := *g
+		allGuardians = append(allGuardians, &copyG)
+	}
+
+	// Ordenar por ID desc
+	for i := 0; i < len(allGuardians); i++ {
+		for j := i + 1; j < len(allGuardians); j++ {
+			if allGuardians[i].ID < allGuardians[j].ID {
+				allGuardians[i], allGuardians[j] = allGuardians[j], allGuardians[i]
+			}
+		}
+	}
+
+	// Aplicar cursor
+	startIdx := 0
+	if params.Cursor != "" {
+		for i, g := range allGuardians {
+			if g.ID == params.Cursor {
+				startIdx = i + 1
+				break
+			}
+		}
+	}
+
+	// Paginar
+	endIdx := startIdx + params.Limit + 1
+	if endIdx > len(allGuardians) {
+		endIdx = len(allGuardians)
+	}
+
+	pagedGuardians := allGuardians[startIdx:endIdx]
+	hasMore := len(pagedGuardians) > params.Limit
+	if hasMore {
+		pagedGuardians = pagedGuardians[:params.Limit]
+	}
+
+	var nextCursor string
+	if hasMore && len(pagedGuardians) > 0 {
+		nextCursor = pagedGuardians[len(pagedGuardians)-1].ID
+	}
+
+	return &PaginatedResult[*Guardian]{
+		Items:      pagedGuardians,
+		NextCursor: nextCursor,
+		HasMore:    hasMore,
+	}, nil
+}
+
+// CountGuardians conta o total de guardiões de um usuário
+func (s *MemoryStore) CountGuardians(userID string) (int, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return len(s.guardians[userID]), nil
 }
 
 // ============ GUIDE PROGRESS ============

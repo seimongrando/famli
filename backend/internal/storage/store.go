@@ -14,8 +14,9 @@ type Store interface {
 	CreateUser(email, hashedPassword, name string) (*User, error)
 	GetUserByEmail(email string) (*User, bool)
 	GetUserByID(id string) (*User, bool)
+	DeleteUser(userID string) error // LGPD: Direito ao esquecimento
 
-	// Box Items
+	// Box Items (métodos legacy para compatibilidade)
 	GetBoxItems(userID string) ([]*BoxItem, error)
 	ListBoxItems(userID string) []*BoxItem
 	GetBoxItem(userID, itemID string) (*BoxItem, error)
@@ -23,12 +24,20 @@ type Store interface {
 	UpdateBoxItem(userID, itemID string, updates *BoxItem) (*BoxItem, error)
 	DeleteBoxItem(userID, itemID string) error
 
-	// Guardians
+	// Box Items (métodos paginados - preferir estes)
+	ListBoxItemsPaginated(userID string, params *PaginationParams) (*PaginatedResult[*BoxItemSummary], error)
+	CountBoxItems(userID string) (int, error)
+
+	// Guardians (métodos legacy para compatibilidade)
 	GetGuardians(userID string) ([]*Guardian, error)
 	ListGuardians(userID string) []*Guardian
 	CreateGuardian(userID string, guardian *Guardian) (*Guardian, error)
 	UpdateGuardian(userID, guardianID string, updates *Guardian) (*Guardian, error)
 	DeleteGuardian(userID, guardianID string) error
+
+	// Guardians (métodos paginados)
+	ListGuardiansPaginated(userID string, params *PaginationParams) (*PaginatedResult[*Guardian], error)
+	CountGuardians(userID string) (int, error)
 
 	// Guide Progress
 	GetGuideProgress(userID string) map[string]*GuideProgress
@@ -41,6 +50,9 @@ type Store interface {
 	// Admin
 	GetStats() *Stats
 	ListUsers() []*User
+
+	// User Data Export (LGPD: Portabilidade)
+	ExportUserData(userID string) (*UserDataExport, error)
 }
 
 // Garantir que as implementações satisfazem a interface

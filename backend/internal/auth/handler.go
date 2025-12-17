@@ -359,6 +359,164 @@ func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 }
 
 // =============================================================================
+// EXCLUSÃO DE CONTA (LGPD: Direito ao Esquecimento)
+// =============================================================================
+
+// deleteAccountPayload é o payload para exclusão de conta
+type deleteAccountPayload struct {
+	Password     string `json:"password"`     // Confirmação de senha
+	Confirmation string `json:"confirmation"` // Texto de confirmação "EXCLUIR MINHA CONTA"
+}
+
+// DeleteAccount exclui a conta do usuário e todos os seus dados
+//
+// Endpoint: DELETE /api/auth/account
+//
+// Este endpoint implementa o "direito ao esquecimento" (LGPD Art. 18)
+// Todos os dados do usuário são permanentemente removidos.
+//
+// Requisições:
+//   - Password: senha atual para confirmação
+//   - Confirmation: texto exato "DELETE MY ACCOUNT" ou "EXCLUIR MINHA CONTA"
+//
+// Segurança:
+//   - Requer autenticação
+//   - Validação de senha atual
+//   - Confirmação textual obrigatória
+//   - Log de auditoria mantido por requisitos legais
+func (h *Handler) DeleteAccount(w http.ResponseWriter, r *http.Request) {
+	clientIP := security.GetClientIP(r)
+	userID := GetUserID(r)
+
+	if userID == "" {
+		writeError(w, http.StatusUnauthorized, "Sessão inválida")
+		return
+	}
+
+	// Rate limiting
+	allowed, _ := h.loginLimiter.Allow(clientIP)
+	if !allowed {
+		h.auditLogger.LogAuth(security.EventRateLimitExceeded, userID, clientIP, r.UserAgent(), "rate_limited", nil)
+		writeError(w, http.StatusTooManyRequests, "Muitas tentativas. Aguarde alguns minutos.")
+		return
+	}
+
+	// Parse payload
+	var payload deleteAccountPayload
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		writeError(w, http.StatusBadRequest, "Dados inválidos")
+		return
+	}
+
+	// Validar texto de confirmação
+	confirmTexts := []string{
+		"DELETE MY ACCOUNT",
+		"EXCLUIR MINHA CONTA",
+	}
+	validConfirmation := false
+	normalizedConfirmation := strings.ToUpper(strings.TrimSpace(payload.Confirmation))
+	for _, txt := range confirmTexts {
+		if normalizedConfirmation == txt {
+			validConfirmation = true
+			break
+		}
+	}
+	if !validConfirmation {
+		writeError(w, http.StatusBadRequest, "Texto de confirmação incorreto")
+		return
+	}
+
+	// Buscar usuário
+	user, found := h.store.GetUserByID(userID)
+	if !found {
+		h.auditLogger.LogAuth(security.EventAccountDeletion, userID, clientIP, r.UserAgent(), "user_not_found", nil)
+		writeError(w, http.StatusNotFound, "Usuário não encontrado")
+		return
+	}
+
+	// Debug: verificar se a senha foi recuperada corretamente
+	if user.Password == "" {
+		h.auditLogger.LogAuth(security.EventAccountDeletion, userID, clientIP, r.UserAgent(), "empty_password_hash", nil)
+		writeError(w, http.StatusInternalServerError, "Erro interno - senha não encontrada")
+		return
+	}
+
+	// Verificar senha
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(payload.Password)); err != nil {
+		h.auditLogger.LogAuth(security.EventAccountDeletion, userID, clientIP, r.UserAgent(), "invalid_password", map[string]interface{}{
+			"password_hash_len":  len(user.Password),
+			"input_password_len": len(payload.Password),
+		})
+		writeError(w, http.StatusUnauthorized, "Senha incorreta")
+		return
+	}
+
+	// Registrar auditoria ANTES de deletar (por requisitos legais)
+	h.auditLogger.LogAuth(security.EventAccountDeletion, userID, clientIP, r.UserAgent(), "initiated", map[string]interface{}{
+		"email": maskEmail(user.Email),
+	})
+
+	// Deletar conta e todos os dados
+	if err := h.store.DeleteUser(userID); err != nil {
+		h.auditLogger.LogAuth(security.EventAccountDeletion, userID, clientIP, r.UserAgent(), "error", map[string]interface{}{
+			"error": err.Error(),
+		})
+		writeError(w, http.StatusInternalServerError, "Erro ao excluir conta")
+		return
+	}
+
+	// Limpar cookie de sessão
+	http.SetCookie(w, &http.Cookie{
+		Name:     "famli_session",
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1,
+		HttpOnly: true,
+		Secure:   isSecureContext(r),
+		SameSite: http.SameSiteLaxMode,
+	})
+
+	// Registrar sucesso
+	h.auditLogger.LogAuth(security.EventAccountDeletion, userID, clientIP, r.UserAgent(), "success", nil)
+
+	writeJSON(w, http.StatusOK, map[string]string{
+		"message": "Conta excluída com sucesso. Todos os dados foram removidos.",
+	})
+}
+
+// ExportData exporta todos os dados do usuário (LGPD: Portabilidade)
+//
+// Endpoint: GET /api/auth/export
+//
+// Este endpoint implementa o direito à portabilidade (LGPD Art. 18)
+// Retorna todos os dados do usuário em formato JSON.
+func (h *Handler) ExportData(w http.ResponseWriter, r *http.Request) {
+	clientIP := security.GetClientIP(r)
+	userID := GetUserID(r)
+
+	if userID == "" {
+		writeError(w, http.StatusUnauthorized, "Sessão inválida")
+		return
+	}
+
+	// Exportar dados
+	data, err := h.store.ExportUserData(userID)
+	if err != nil {
+		h.auditLogger.LogAuth(security.EventDataExport, userID, clientIP, r.UserAgent(), "error", nil)
+		writeError(w, http.StatusInternalServerError, "Erro ao exportar dados")
+		return
+	}
+
+	// Registrar exportação
+	h.auditLogger.LogAuth(security.EventDataExport, userID, clientIP, r.UserAgent(), "success", nil)
+
+	// Retornar como download JSON
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Disposition", "attachment; filename=famli-meus-dados.json")
+	json.NewEncoder(w).Encode(data)
+}
+
+// =============================================================================
 // SESSÃO JWT
 // =============================================================================
 

@@ -61,6 +61,7 @@ onMounted(() => {
                 {{ t('landing.hero.ctaSecondary') }}
               </router-link>
             </div>
+            <p class="hero__trust-badge">{{ t('landing.hero.trustBadge') }}</p>
           </div>
           <div class="hero__card">
             <div class="hero__card-header">
@@ -134,23 +135,84 @@ onMounted(() => {
       </div>
     </section>
 
-    <!-- Segurança -->
+    <!-- Diferenciador -->
+    <section class="section section--warm">
+      <div class="container container--narrow">
+        <div class="differentiator">
+          <h2 class="differentiator__title">{{ t('landing.differentiator.title') }}</h2>
+          <p class="differentiator__subtitle">{{ t('landing.differentiator.subtitle') }}</p>
+          <ul class="differentiator__list">
+            <li>
+              <span class="differentiator__icon">📝</span>
+              {{ t('landing.differentiator.point1') }}
+            </li>
+            <li>
+              <span class="differentiator__icon">💬</span>
+              {{ t('landing.differentiator.point2') }}
+            </li>
+            <li>
+              <span class="differentiator__icon">🎯</span>
+              {{ t('landing.differentiator.point3') }}
+            </li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Trust Signals -->
+    <section class="section">
+      <div class="container">
+        <h2 class="section__title text-center">{{ t('landing.trust.title') }}</h2>
+        <p class="section__subtitle text-center">{{ t('landing.trust.subtitle') }}</p>
+        <div class="trust-grid">
+          <div class="trust-card">
+            <span class="trust-card__icon">🔐</span>
+            <h3 class="trust-card__title">{{ t('landing.trust.encryption.title') }}</h3>
+            <p class="trust-card__description">{{ t('landing.trust.encryption.description') }}</p>
+          </div>
+          <div class="trust-card">
+            <span class="trust-card__icon">🎛️</span>
+            <h3 class="trust-card__title">{{ t('landing.trust.control.title') }}</h3>
+            <p class="trust-card__description">{{ t('landing.trust.control.description') }}</p>
+          </div>
+          <div class="trust-card">
+            <span class="trust-card__icon">🛡️</span>
+            <h3 class="trust-card__title">{{ t('landing.trust.privacy.title') }}</h3>
+            <p class="trust-card__description">{{ t('landing.trust.privacy.description') }}</p>
+          </div>
+          <div class="trust-card">
+            <span class="trust-card__icon">🗑️</span>
+            <h3 class="trust-card__title">{{ t('landing.trust.delete.title') }}</h3>
+            <p class="trust-card__description">{{ t('landing.trust.delete.description') }}</p>
+          </div>
+          <div class="trust-card">
+            <span class="trust-card__icon">📜</span>
+            <h3 class="trust-card__title">{{ t('landing.trust.lgpd.title') }}</h3>
+            <p class="trust-card__description">{{ t('landing.trust.lgpd.description') }}</p>
+          </div>
+          <div class="trust-card">
+            <span class="trust-card__icon">👁️</span>
+            <h3 class="trust-card__title">{{ t('landing.trust.opensource.title') }}</h3>
+            <p class="trust-card__description">{{ t('landing.trust.opensource.description') }}</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Segurança (resumo) -->
     <section class="section section--highlight">
       <div class="container container--narrow">
         <div class="security-card">
           <h2 class="security-card__title">
             🔒 {{ t('landing.security.title') }}
           </h2>
+          <p class="security-card__subtitle">{{ t('landing.security.subtitle') }}</p>
           <ul class="security-card__list">
-            <li>{{ t('landing.security.item1') }}</li>
-            <li>{{ t('landing.security.item2') }}</li>
-            <li>{{ t('landing.security.item3') }}</li>
-            <li>{{ t('landing.security.item4') }}</li>
+            <li>✓ {{ t('landing.security.item1') }}</li>
+            <li>✓ {{ t('landing.security.item2') }}</li>
+            <li>✓ {{ t('landing.security.item3') }}</li>
+            <li>✓ {{ t('landing.security.item4') }}</li>
           </ul>
-          <p class="security-card__note">
-            {{ t('landing.security.note', { bold: '' }) }}
-            <strong>{{ t('landing.security.notBold') }}</strong>
-          </p>
         </div>
       </div>
     </section>
@@ -423,15 +485,116 @@ onMounted(() => {
   color: var(--color-text-soft);
 }
 
-.security-card__list li::before {
-  content: "✓ ";
-  color: var(--color-success);
-}
-
 .security-card__note {
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
   margin: 0;
+}
+
+.security-card__subtitle {
+  color: var(--color-text-soft);
+  margin-bottom: var(--space-lg);
+}
+
+/* Hero Trust Badge */
+.hero__trust-badge {
+  margin-top: var(--space-lg);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-success-light, rgba(34, 197, 94, 0.1));
+  color: var(--color-success, #16a34a);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  display: inline-block;
+}
+
+/* Differentiator */
+.differentiator {
+  background: var(--color-card);
+  border-radius: var(--radius-xl);
+  padding: var(--space-2xl);
+  text-align: center;
+  box-shadow: var(--shadow-md);
+  border: 2px solid var(--color-primary-soft);
+}
+
+.differentiator__title {
+  font-size: var(--font-size-2xl);
+  color: var(--color-primary);
+  margin-bottom: var(--space-md);
+}
+
+.differentiator__subtitle {
+  font-size: var(--font-size-lg);
+  color: var(--color-text-soft);
+  margin-bottom: var(--space-xl);
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.differentiator__list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  text-align: left;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.differentiator__list li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: var(--font-size-lg);
+  color: var(--color-text);
+}
+
+.differentiator__icon {
+  font-size: 1.5rem;
+}
+
+/* Trust Grid */
+.trust-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-lg);
+}
+
+.trust-card {
+  background: var(--color-card);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl);
+  text-align: center;
+  border: 1px solid var(--color-border-light);
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--transition-normal), box-shadow var(--transition-normal);
+}
+
+.trust-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+}
+
+.trust-card__icon {
+  font-size: 2.5rem;
+  display: block;
+  margin-bottom: var(--space-md);
+}
+
+.trust-card__title {
+  font-size: var(--font-size-base);
+  font-weight: 700;
+  margin-bottom: var(--space-sm);
+  color: var(--color-text);
+}
+
+.trust-card__description {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-soft);
+  margin: 0;
+  line-height: 1.6;
 }
 
 /* Footer */
@@ -502,6 +665,24 @@ onMounted(() => {
   
   .features-grid {
     grid-template-columns: 1fr;
+  }
+
+  .trust-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 650px) {
+  .trust-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .differentiator__list {
+    text-align: center;
+  }
+
+  .differentiator__list li {
+    justify-content: center;
   }
 }
 

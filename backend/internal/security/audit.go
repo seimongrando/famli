@@ -61,6 +61,10 @@ const (
 	EventWhatsAppUnlink          AuditEventType = "WHATSAPP_UNLINK"
 	EventWhatsAppMessageReceived AuditEventType = "WHATSAPP_MESSAGE_RECEIVED"
 	EventWhatsAppWebhookReceived AuditEventType = "WHATSAPP_WEBHOOK_RECEIVED"
+
+	// LGPD - Direitos do Titular
+	EventAccountDeletion AuditEventType = "ACCOUNT_DELETION" // Direito ao esquecimento
+	EventDataExport      AuditEventType = "DATA_EXPORT"      // Direito à portabilidade
 )
 
 // AuditSeverity define a severidade do evento

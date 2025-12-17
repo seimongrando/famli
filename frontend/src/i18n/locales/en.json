@@ -30,12 +30,20 @@
   },
   "landing": {
     "hero": {
-      "title": "Store what matters today.",
-      "titleHighlight": "Give peace of mind",
-      "titleEnd": "to those you love tomorrow.",
-      "subtitle": "A simple and secure space to organize important information, guidance, and memories — made for those who have lived a lot and want to keep everything in order.",
-      "cta": "Get started — it's simple",
-      "ctaSecondary": "I already have an account"
+      "title": "Organize memories, documents, and guidance",
+      "titleHighlight": "for your loved ones",
+      "titleEnd": "— securely and at your own pace.",
+      "subtitle": "Pass on what matters to the right people, when the time comes. No rush, no hassle, with full control over who sees what.",
+      "cta": "Get started — it's free",
+      "ctaSecondary": "I already have an account",
+      "trustBadge": "🔒 Your data stays secure and private"
+    },
+    "differentiator": {
+      "title": "Different from everything else",
+      "subtitle": "It's not a digital vault. It's not a will. It's a space to organize and pass on context — while you still can.",
+      "point1": "Actively organize, don't just archive",
+      "point2": "Explain decisions and leave guidance",
+      "point3": "Choose who sees what, and when"
     },
     "card": {
       "title": "Your care in one place",
@@ -80,13 +88,42 @@
       }
     },
     "security": {
-      "title": "Your data is yours",
+      "title": "Built with security and privacy",
+      "subtitle": "We understand you're storing sensitive information. That's why security isn't optional — it's fundamental.",
       "item1": "Nothing is shared automatically",
       "item2": "You stay in control",
       "item3": "You can delete everything whenever you want",
       "item4": "We don't sell your data to anyone",
       "note": "Adding someone as a trusted person {bold} give automatic access to your information.",
       "notBold": "does not"
+    },
+    "trust": {
+      "title": "Why trust Famli?",
+      "subtitle": "We know that storing important information requires trust. Here's how we protect you:",
+      "encryption": {
+        "title": "Top-tier encryption",
+        "description": "Your data is encrypted with AES-256, the same standard used by banks and governments."
+      },
+      "control": {
+        "title": "You're in total control",
+        "description": "You decide who sees what. Nothing is shared without your explicit permission."
+      },
+      "privacy": {
+        "title": "Privacy guaranteed",
+        "description": "We don't sell, don't share, don't use your data for anything other than the service."
+      },
+      "delete": {
+        "title": "Delete anytime",
+        "description": "Your data is yours. You can export or delete everything at any time."
+      },
+      "lgpd": {
+        "title": "GDPR/LGPD compliant",
+        "description": "We follow Brazil's LGPD, GDPR, and international best practices for data protection."
+      },
+      "opensource": {
+        "title": "Transparency",
+        "description": "Open source for auditing. You can verify how we handle your data."
+      }
     },
     "cta": {
       "title": "Start organizing what matters today",
@@ -158,7 +195,9 @@
       "info": "Information",
       "guardian": "People",
       "memory": "Memories"
-    }
+    },
+    "loadMore": "Load more",
+    "endOfList": "You've reached the end of the list"
   },
   "composer": {
     "title": "What would you like to store today?",
@@ -444,7 +483,30 @@
     "goToAdmin": "Go to Admin",
     "goToBox": "Go to My Box",
     "logout": "Sign Out",
-    "securityNote": "Your data is secure. You can access this page at any time to check your account information."
+    "securityNote": "Your data is secure. You can access this page at any time to check your account information.",
+    "exportError": "Error exporting data. Please try again.",
+    "deleteError": "Error deleting account. Check your password and try again.",
+    "lgpd": {
+      "title": "Your Rights (GDPR/LGPD)",
+      "description": "Under data protection laws, you have the right to data portability and deletion. Use the options below to exercise these rights.",
+      "exportTitle": "Export My Data",
+      "exportDescription": "Download a copy of all your data stored in Famli in JSON format.",
+      "exportButton": "Download Data",
+      "deleteTitle": "Delete My Account",
+      "deleteDescription": "Permanently remove your account and all associated data. This action is irreversible.",
+      "deleteButton": "Delete Account",
+      "deleteModalTitle": "Permanently Delete Account",
+      "deleteWarning1": "By deleting your account, you will lose access to:",
+      "deleteWarningItem1": "All your saved information",
+      "deleteWarningItem2": "Your registered trusted people",
+      "deleteWarningItem3": "All memories and messages",
+      "deleteWarningItem4": "Your Famli Guide progress",
+      "deleteWarning2": "This action is permanent and cannot be undone!",
+      "passwordLabel": "Enter your password to confirm:",
+      "passwordPlaceholder": "Your current password",
+      "confirmationLabel": "Type the text below to confirm:",
+      "deleteConfirmButton": "Permanently Delete My Account"
+    }
   },
   "legal": {
     "lastUpdated": "Last updated",

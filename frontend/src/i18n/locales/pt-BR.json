@@ -30,12 +30,20 @@
   },
   "landing": {
     "hero": {
-      "title": "Guarde o que importa hoje.",
-      "titleHighlight": "Deixe tranquilo",
-      "titleEnd": "quem você ama amanhã.",
-      "subtitle": "Um espaço simples e seguro para organizar informações, orientações e memórias importantes — feito para quem já viveu muita coisa e quer deixar tudo em ordem.",
-      "cta": "Começar agora — é simples",
-      "ctaSecondary": "Já tenho conta"
+      "title": "Organize memórias, documentos e orientações",
+      "titleHighlight": "para seus entes queridos",
+      "titleEnd": "— de forma segura e no seu tempo.",
+      "subtitle": "Transmita o que importa para as pessoas certas, quando for a hora. Sem pressa, sem complicação, com total controle sobre quem vê o quê.",
+      "cta": "Começar agora — é grátis",
+      "ctaSecondary": "Já tenho conta",
+      "trustBadge": "🔒 Seus dados ficam seguros e privados"
+    },
+    "differentiator": {
+      "title": "Diferente de tudo que existe",
+      "subtitle": "Não é um cofre digital. Não é um testamento. É um espaço para organizar e transmitir contexto — enquanto você ainda pode.",
+      "point1": "Organize ativamente, não apenas arquive",
+      "point2": "Explique decisões e deixe orientações",
+      "point3": "Escolha quem vê o quê, e quando"
     },
     "card": {
       "title": "Seu cuidado em um só lugar",
@@ -80,13 +88,42 @@
       }
     },
     "security": {
-      "title": "Seus dados são seus",
+      "title": "Construído com segurança e privacidade",
+      "subtitle": "Entendemos que você está guardando informações sensíveis. Por isso, segurança não é opcional — é fundamental.",
       "item1": "Nada é compartilhado automaticamente",
       "item2": "Você continua no controle",
       "item3": "Pode apagar tudo quando quiser",
       "item4": "Não vendemos seus dados para ninguém",
       "note": "Adicionar alguém como pessoa de confiança {bold} dá acesso automático às suas informações.",
       "notBold": "não"
+    },
+    "trust": {
+      "title": "Por que confiar no Famli?",
+      "subtitle": "Sabemos que guardar informações importantes exige confiança. Veja como protegemos você:",
+      "encryption": {
+        "title": "Criptografia de ponta",
+        "description": "Seus dados são criptografados com AES-256, o mesmo padrão usado por bancos e governos."
+      },
+      "control": {
+        "title": "Você no controle total",
+        "description": "Você decide quem vê o quê. Nada é compartilhado sem sua permissão explícita."
+      },
+      "privacy": {
+        "title": "Privacidade garantida",
+        "description": "Não vendemos, não compartilhamos, não usamos seus dados para nada além do serviço."
+      },
+      "delete": {
+        "title": "Apague quando quiser",
+        "description": "Seus dados são seus. Você pode exportar ou apagar tudo a qualquer momento."
+      },
+      "lgpd": {
+        "title": "Conformidade com LGPD",
+        "description": "Seguimos a Lei Geral de Proteção de Dados do Brasil e as melhores práticas internacionais."
+      },
+      "opensource": {
+        "title": "Transparência",
+        "description": "Código aberto para auditoria. Você pode verificar como tratamos seus dados."
+      }
     },
     "cta": {
       "title": "Comece hoje a organizar o que é importante",
@@ -158,7 +195,9 @@
       "info": "Informações",
       "guardian": "Pessoas",
       "memory": "Memórias"
-    }
+    },
+    "loadMore": "Carregar mais",
+    "endOfList": "Você chegou ao fim da lista"
   },
   "composer": {
     "title": "O que você deseja guardar hoje?",
@@ -444,7 +483,30 @@
     "goToAdmin": "Ir para Administração",
     "goToBox": "Ir para Minha Caixa",
     "logout": "Sair da Conta",
-    "securityNote": "Seus dados estão seguros. Você pode acessar esta página a qualquer momento para verificar suas informações de conta."
+    "securityNote": "Seus dados estão seguros. Você pode acessar esta página a qualquer momento para verificar suas informações de conta.",
+    "exportError": "Erro ao exportar dados. Tente novamente.",
+    "deleteError": "Erro ao excluir conta. Verifique sua senha e tente novamente.",
+    "lgpd": {
+      "title": "Seus Direitos (LGPD)",
+      "description": "Conforme a Lei Geral de Proteção de Dados, você tem direito à portabilidade e exclusão dos seus dados. Use as opções abaixo para exercer esses direitos.",
+      "exportTitle": "Exportar Meus Dados",
+      "exportDescription": "Baixe uma cópia de todos os seus dados armazenados no Famli em formato JSON.",
+      "exportButton": "Baixar Dados",
+      "deleteTitle": "Excluir Minha Conta",
+      "deleteDescription": "Remova permanentemente sua conta e todos os dados associados. Esta ação é irreversível.",
+      "deleteButton": "Excluir Conta",
+      "deleteModalTitle": "Excluir Conta Permanentemente",
+      "deleteWarning1": "Ao excluir sua conta, você perderá acesso a:",
+      "deleteWarningItem1": "Todas as suas informações salvas",
+      "deleteWarningItem2": "Suas pessoas de confiança cadastradas",
+      "deleteWarningItem3": "Todas as memórias e mensagens",
+      "deleteWarningItem4": "Seu progresso no Guia Famli",
+      "deleteWarning2": "Esta ação é permanente e não pode ser desfeita!",
+      "passwordLabel": "Digite sua senha para confirmar:",
+      "passwordPlaceholder": "Sua senha atual",
+      "confirmationLabel": "Digite o texto abaixo para confirmar:",
+      "deleteConfirmButton": "Excluir Minha Conta Permanentemente"
+    }
   },
   "legal": {
     "lastUpdated": "Última atualização",
