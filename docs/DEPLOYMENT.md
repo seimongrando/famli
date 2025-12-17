@@ -367,6 +367,67 @@ services:
         type: SECRET
 ```
 
+### Render (Recomendado para MVP)
+
+O Render oferece uma opção simples e gratuita para deploy com PostgreSQL incluído.
+
+#### Opção 1: Deploy Automático (Blueprint)
+
+Use o arquivo `render.yaml` na raiz do projeto:
+
+```bash
+# 1. Conecte seu repositório ao Render
+# 2. O Render detectará o render.yaml automaticamente
+# 3. Revise e confirme os serviços
+```
+
+#### Opção 2: Deploy Manual
+
+1. **Criar PostgreSQL Database**:
+   - Dashboard → New → PostgreSQL
+   - Plano: Free (para MVP)
+   - Copie a **Internal Database URL**
+
+2. **Criar Web Service**:
+   - Dashboard → New → Web Service
+   - Conecte seu repositório GitHub
+   - **Build Command**: `./scripts/render-build.sh`
+   - **Start Command**: `./scripts/render-start.sh`
+   - **Environment**: Node (inclui Go)
+
+3. **Configurar Variáveis de Ambiente**:
+
+| Variável | Valor |
+|----------|-------|
+| `DATABASE_URL` | (Internal Database URL do PostgreSQL) |
+| `JWT_SECRET` | (gerar com `openssl rand -base64 48`) |
+| `ENCRYPTION_KEY` | (gerar com `openssl rand -base64 48`) |
+| `ENV` | production |
+| `ADMIN_EMAILS` | seu-email@exemplo.com |
+
+4. **Deploy**:
+   - Clique em "Create Web Service"
+   - Aguarde o build (~3-5 minutos)
+
+#### Comandos de Build (Render)
+
+Os scripts de build estão em `scripts/`:
+
+```bash
+# scripts/render-build.sh
+#!/bin/bash
+set -e
+cd frontend && npm ci && npm run build && cd ..
+cd backend && go build -o server . && cd ..
+```
+
+```bash
+# scripts/render-start.sh
+#!/bin/bash
+set -e
+cd backend && ./server
+```
+
 ---
 
 ## Docker
@@ -479,22 +540,32 @@ curl -I https://famli.net
 
 ## Backup
 
-### MVP (MemoryStore)
-
-⚠️ **Aviso**: No MVP, os dados estão em memória e são perdidos ao reiniciar.
-
-### Futuro (PostgreSQL)
+### PostgreSQL
 
 ```bash
-# Backup diário
+# Backup diário (local)
 pg_dump -h localhost -U famli -d famli > backup_$(date +%Y%m%d).sql
 
-# Restaurar
+# Restaurar (local)
 psql -h localhost -U famli -d famli < backup_20240115.sql
 
 # Automatizar com cron
 0 2 * * * pg_dump -h localhost -U famli -d famli | gzip > /backups/famli_$(date +\%Y\%m\%d).sql.gz
 ```
+
+### Render (PostgreSQL Gerenciado)
+
+O Render oferece backups automáticos diários para bancos PostgreSQL pagos.
+Para o plano free:
+
+```bash
+# Instale o psql localmente e use a External Database URL
+pg_dump "postgres://user:pass@host:5432/dbname" > backup_$(date +%Y%m%d).sql
+```
+
+### Sem Banco (Memória)
+
+⚠️ **Aviso**: Se `DATABASE_URL` não estiver configurado, os dados estão em memória e são perdidos ao reiniciar.
 
 ---
 

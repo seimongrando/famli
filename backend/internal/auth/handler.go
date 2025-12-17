@@ -34,7 +34,7 @@ import (
 // Handler gerencia endpoints de autenticação
 type Handler struct {
 	// store é o armazenamento de dados
-	store *storage.MemoryStore
+	store storage.Store
 
 	// jwtSecret é o segredo para assinar tokens JWT
 	jwtSecret string
@@ -57,7 +57,7 @@ type Handler struct {
 //
 // Retorna:
 //   - *Handler: handler configurado
-func NewHandler(store *storage.MemoryStore, secret string) *Handler {
+func NewHandler(store storage.Store, secret string) *Handler {
 	return &Handler{
 		store:           store,
 		jwtSecret:       secret,

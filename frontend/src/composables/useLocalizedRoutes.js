@@ -18,14 +18,18 @@ const routePaths = {
     auth: '/entrar',
     dashboard: '/minha-caixa',
     admin: '/administracao',
-    profile: '/perfil'
+    profile: '/perfil',
+    terms: '/termos',
+    privacy: '/privacidade'
   },
   'en': {
     landing: '/',
     auth: '/login',
     dashboard: '/my-box',
     admin: '/admin',
-    profile: '/profile'
+    profile: '/profile',
+    terms: '/terms',
+    privacy: '/privacy'
   }
 }
 

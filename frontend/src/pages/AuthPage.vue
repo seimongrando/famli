@@ -45,7 +45,8 @@ const mode = ref('login')
 const form = ref({
   name: '',
   email: '',
-  password: ''
+  password: '',
+  termsAccepted: false
 })
 
 // Se a senha é válida (atende todos os requisitos)
@@ -64,8 +65,8 @@ const canSubmit = computed(() => {
     // No login, apenas email e senha são necessários
     return form.value.email && form.value.password
   } else {
-    // No registro, precisa validar a força da senha
-    return form.value.email && form.value.password && isPasswordValid.value
+    // No registro, precisa validar a força da senha e aceite dos termos
+    return form.value.email && form.value.password && isPasswordValid.value && form.value.termsAccepted
   }
 })
 
@@ -209,6 +210,27 @@ async function handleSubmit() {
               :show="true"
               @valid="onPasswordValidChange"
             />
+          </div>
+
+          <!-- Aceite dos termos (apenas registro) -->
+          <div v-if="!isLogin" class="form-group form-group--checkbox">
+            <label class="checkbox-label">
+              <input
+                v-model="form.termsAccepted"
+                type="checkbox"
+                class="checkbox-input"
+              />
+              <span class="checkbox-text">
+                {{ t('legal.termsAndPrivacy') }}
+                <router-link :to="paths.terms" target="_blank" class="link">
+                  {{ t('legal.terms.link') }}
+                </router-link>
+                {{ t('common.and') }}
+                <router-link :to="paths.privacy" target="_blank" class="link">
+                  {{ t('legal.privacy.link') }}
+                </router-link>
+              </span>
+            </label>
           </div>
 
           <!-- Erro -->
@@ -400,5 +422,43 @@ async function handleSubmit() {
   font-size: var(--font-size-sm);
   color: var(--color-text-soft);
   margin: 0;
+}
+
+/* =============================================================================
+   CHECKBOX TERMOS
+   ============================================================================= */
+
+.form-group--checkbox {
+  margin-top: var(--space-lg);
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  cursor: pointer;
+}
+
+.checkbox-input {
+  margin-top: 0.25rem;
+  width: 18px;
+  height: 18px;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}
+
+.checkbox-text {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-soft);
+  line-height: 1.5;
+}
+
+.checkbox-text .link {
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+
+.checkbox-text .link:hover {
+  color: var(--color-primary-light);
 }
 </style>

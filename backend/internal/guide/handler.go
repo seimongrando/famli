@@ -63,10 +63,10 @@ var defaultCards = []storage.GuideCard{
 }
 
 type Handler struct {
-	store *storage.MemoryStore
+	store storage.Store
 }
 
-func NewHandler(store *storage.MemoryStore) *Handler {
+func NewHandler(store storage.Store) *Handler {
 	return &Handler{store: store}
 }
 

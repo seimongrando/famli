@@ -33,7 +33,7 @@ import (
 // Handler gerencia endpoints da Caixa Famli
 type Handler struct {
 	// store é o armazenamento de dados
-	store *storage.MemoryStore
+	store storage.Store
 
 	// auditLogger registra eventos de acesso
 	auditLogger *security.AuditLogger
@@ -46,7 +46,7 @@ type Handler struct {
 //
 // Retorna:
 //   - *Handler: handler configurado
-func NewHandler(store *storage.MemoryStore) *Handler {
+func NewHandler(store storage.Store) *Handler {
 	return &Handler{
 		store:       store,
 		auditLogger: security.GetAuditLogger(),

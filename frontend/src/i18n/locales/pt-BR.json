@@ -445,6 +445,114 @@
     "goToBox": "Ir para Minha Caixa",
     "logout": "Sair da Conta",
     "securityNote": "Seus dados estão seguros. Você pode acessar esta página a qualquer momento para verificar suas informações de conta."
+  },
+  "legal": {
+    "lastUpdated": "Última atualização",
+    "termsAndPrivacy": "Ao criar sua conta, você concorda com os",
+    "terms": {
+      "title": "Termos de Uso",
+      "link": "Termos de Uso",
+      "updatedDate": "17 de dezembro de 2024",
+      "acceptance": {
+        "title": "Aceitação dos Termos",
+        "text": "Ao acessar e usar o Famli, você concorda com estes Termos de Uso. Se você não concordar com qualquer parte destes termos, não use nosso serviço."
+      },
+      "service": {
+        "title": "Descrição do Serviço",
+        "text": "O Famli é uma plataforma para organizar informações importantes, orientações e memórias pessoais. Nossos serviços incluem:",
+        "item1": "Armazenamento seguro de informações pessoais importantes",
+        "item2": "Gerenciamento de pessoas de confiança",
+        "item3": "Espaço para memórias e mensagens pessoais"
+      },
+      "account": {
+        "title": "Sua Conta",
+        "text": "Você é responsável por manter a segurança da sua conta e senha. Notifique-nos imediatamente se suspeitar de qualquer uso não autorizado. Não compartilhe suas credenciais com terceiros."
+      },
+      "content": {
+        "title": "Seu Conteúdo",
+        "text": "Você mantém todos os direitos sobre o conteúdo que adiciona ao Famli. Ao usar nosso serviço, você nos concede uma licença limitada para armazenar e processar seu conteúdo apenas para fornecer o serviço."
+      },
+      "prohibited": {
+        "title": "Uso Proibido",
+        "text": "Você não pode usar o Famli para:",
+        "item1": "Atividades ilegais ou fraudulentas",
+        "item2": "Violar direitos de terceiros",
+        "item3": "Distribuir malware ou conteúdo malicioso"
+      },
+      "termination": {
+        "title": "Encerramento",
+        "text": "Podemos encerrar ou suspender sua conta se você violar estes termos. Você pode encerrar sua conta a qualquer momento através das configurações."
+      },
+      "liability": {
+        "title": "Limitação de Responsabilidade",
+        "text": "O Famli é fornecido 'como está'. Não garantimos disponibilidade ininterrupta. Em nenhuma circunstância seremos responsáveis por danos indiretos ou consequenciais."
+      },
+      "changes": {
+        "title": "Alterações nos Termos",
+        "text": "Podemos atualizar estes termos periodicamente. Notificaremos você sobre mudanças significativas por e-mail ou através do serviço."
+      },
+      "contact": {
+        "title": "Contato",
+        "text": "Para dúvidas sobre estes Termos de Uso, entre em contato conosco:"
+      }
+    },
+    "privacy": {
+      "title": "Política de Privacidade",
+      "link": "Política de Privacidade",
+      "updatedDate": "17 de dezembro de 2024",
+      "intro": {
+        "title": "Introdução",
+        "text": "Sua privacidade é fundamental para nós. Esta política explica como coletamos, usamos e protegemos suas informações pessoais no Famli."
+      },
+      "dataCollected": {
+        "title": "Dados que Coletamos",
+        "text": "Coletamos as seguintes informações:",
+        "account": "Dados de conta",
+        "accountDesc": "E-mail, nome e senha criptografada para autenticação.",
+        "content": "Conteúdo do usuário",
+        "contentDesc": "Informações, memórias e pessoas de confiança que você adiciona.",
+        "usage": "Dados de uso",
+        "usageDesc": "Informações básicas sobre como você usa o serviço."
+      },
+      "dataUse": {
+        "title": "Como Usamos seus Dados",
+        "text": "Usamos suas informações para:",
+        "item1": "Fornecer e manter o serviço Famli",
+        "item2": "Proteger sua conta e dados",
+        "item3": "Melhorar o serviço com base em feedback anônimo"
+      },
+      "security": {
+        "title": "Segurança dos Dados",
+        "text": "Implementamos medidas de segurança robustas para proteger seus dados:",
+        "item1": "Criptografia de ponta a ponta para dados sensíveis",
+        "item2": "Senhas armazenadas com hash bcrypt",
+        "item3": "Comunicação protegida por HTTPS"
+      },
+      "sharing": {
+        "title": "Compartilhamento de Dados",
+        "text": "Não vendemos, alugamos ou compartilhamos seus dados pessoais com terceiros para fins de marketing. Podemos compartilhar dados apenas quando exigido por lei."
+      },
+      "rights": {
+        "title": "Seus Direitos",
+        "text": "Você tem os seguintes direitos sobre seus dados:",
+        "item1": "Acessar todas as informações que guardamos sobre você",
+        "item2": "Corrigir ou atualizar seus dados a qualquer momento",
+        "item3": "Solicitar a exclusão completa da sua conta e dados",
+        "item4": "Exportar seus dados em formato portátil"
+      },
+      "cookies": {
+        "title": "Cookies",
+        "text": "Usamos cookies essenciais apenas para manter sua sessão de login ativa. Não usamos cookies de rastreamento ou publicidade."
+      },
+      "changes": {
+        "title": "Alterações nesta Política",
+        "text": "Podemos atualizar esta política periodicamente. Notificaremos você sobre mudanças significativas por e-mail ou através do serviço."
+      },
+      "contact": {
+        "title": "Contato",
+        "text": "Para dúvidas sobre privacidade, entre em contato conosco:"
+      }
+    }
   }
 }
 

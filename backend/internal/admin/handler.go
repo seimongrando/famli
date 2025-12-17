@@ -60,13 +60,13 @@ func getAdminEmails() []string {
 
 // Handler gerencia endpoints administrativos
 type Handler struct {
-	store       *storage.MemoryStore
+	store       storage.Store
 	startTime   time.Time
 	auditLogger *security.AuditLogger
 }
 
 // NewHandler cria uma nova instância do handler admin
-func NewHandler(store *storage.MemoryStore) *Handler {
+func NewHandler(store storage.Store) *Handler {
 	return &Handler{
 		store:       store,
 		startTime:   time.Now(),

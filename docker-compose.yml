@@ -1,20 +1,64 @@
 # ==============================================================================
 # Famli - Docker Compose
 # ==============================================================================
-# Configuração para rodar o Famli em containers.
+# Configuração para rodar o Famli em containers com PostgreSQL.
 #
-# Uso:
-#   docker-compose up -d       # Iniciar em background
-#   docker-compose logs -f     # Ver logs
-#   docker-compose down        # Parar
+# Uso Local:
+#   docker-compose up -d          # Iniciar todos os serviços
+#   docker-compose logs -f        # Ver logs
+#   docker-compose down           # Parar
+#   docker-compose down -v        # Parar e remover volumes (dados)
+#
+# Apenas banco de dados (para desenvolvimento local):
+#   docker-compose up -d postgres
+#   # Depois rode o backend localmente com DATABASE_URL
 #
 # Produção:
 #   docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 # ==============================================================================
 
-version: '3.8'
-
 services:
+  # ============================================================================
+  # POSTGRES - Banco de Dados
+  # ============================================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: famli-postgres
+    
+    # Variáveis de ambiente
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-famli}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-famli_dev_password}
+      POSTGRES_DB: ${POSTGRES_DB:-famli}
+    
+    # Portas (apenas para desenvolvimento local)
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    
+    # Volumes para persistência
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # Script de inicialização (opcional)
+      - ./backend/internal/storage/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    
+    # Health check
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-famli} -d ${POSTGRES_DB:-famli}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    
+    # Restart policy
+    restart: unless-stopped
+    
+    # Logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   # ============================================================================
   # FAMLI - Aplicação Principal
   # ============================================================================
@@ -28,6 +72,11 @@ services:
     image: famli:${VERSION:-latest}
     container_name: famli
     
+    # Depende do banco de dados
+    depends_on:
+      postgres:
+        condition: service_healthy
+    
     # Portas
     ports:
       - "${PORT:-8080}:8080"
@@ -36,14 +85,16 @@ services:
     environment:
       - ENV=${ENV:-development}
       - PORT=8080
+      - DATABASE_URL=postgres://${POSTGRES_USER:-famli}:${POSTGRES_PASSWORD:-famli_dev_password}@postgres:5432/${POSTGRES_DB:-famli}?sslmode=disable
       - JWT_SECRET=${JWT_SECRET:-dev-secret-change-in-production}
       - ENCRYPTION_KEY=${ENCRYPTION_KEY:-dev-key-change-in-production}
+      - ADMIN_EMAILS=${ADMIN_EMAILS:-}
       - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID:-}
       - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN:-}
       - TWILIO_PHONE_NUMBER=${TWILIO_PHONE_NUMBER:-}
       - WEBHOOK_BASE_URL=${WEBHOOK_BASE_URL:-}
     
-    # Volumes (para persistência futura)
+    # Volumes (para logs, etc.)
     volumes:
       - famli_data:/app/data
     
@@ -79,13 +130,14 @@ services:
 # VOLUMES
 # ==============================================================================
 volumes:
+  postgres_data:
+    driver: local
   famli_data:
     driver: local
 
 # ==============================================================================
-# NETWORKS (para expansão futura com banco de dados, etc.)
+# NETWORKS
 # ==============================================================================
 networks:
   default:
     name: famli_network
-

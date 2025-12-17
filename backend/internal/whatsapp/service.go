@@ -31,7 +31,7 @@ import (
 // Service gerencia toda a lógica de processamento de mensagens WhatsApp
 type Service struct {
 	// store é o armazenamento de dados do Famli
-	store *storage.MemoryStore
+	store storage.Store
 
 	// client é o cliente para enviar mensagens via Twilio
 	client *TwilioClient
@@ -59,7 +59,7 @@ type Service struct {
 //
 // Retorna:
 //   - *Service: instância configurada do serviço
-func NewService(store *storage.MemoryStore, config *Config) *Service {
+func NewService(store storage.Store, config *Config) *Service {
 	var client *TwilioClient
 	if config != nil && config.Enabled {
 		client = NewTwilioClient(config.TwilioAccountSid, config.TwilioAuthToken, config.TwilioPhoneNumber)

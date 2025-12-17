@@ -40,19 +40,42 @@ O **Famli** resolve um problema real: pessoas 50+ acumulam ao longo da vida info
 
 - [Node.js 18+](https://nodejs.org/)
 - [Go 1.21+](https://go.dev/)
+- [Docker](https://www.docker.com/) (para PostgreSQL)
 - [Git](https://git-scm.com/)
 
-### Instalação em 3 passos
+### Opção 1: Docker (Recomendado)
 
 ```bash
 # 1. Clone o repositório
 git clone https://github.com/seu-usuario/famli.git
 cd famli
 
-# 2. Execute o setup (instala dependências + build)
+# 2. Inicie com Docker Compose (inclui PostgreSQL)
+docker-compose up -d
+
+# 3. Pronto! Acesse:
+open http://localhost:8080
+```
+
+### Opção 2: Desenvolvimento Local
+
+```bash
+# 1. Clone o repositório
+git clone https://github.com/seu-usuario/famli.git
+cd famli
+
+# 2. Inicie apenas o PostgreSQL via Docker
+docker-compose up -d postgres
+
+# 3. Configure as variáveis de ambiente
+cp env.example .env
+# Edite .env e configure DATABASE_URL:
+# DATABASE_URL=postgres://famli:famli_dev_password@localhost:5432/famli?sslmode=disable
+
+# 4. Execute o setup (instala dependências + build)
 ./setup.sh
 
-# 3. Inicie o servidor
+# 5. Inicie o servidor
 make run
 ```
 
@@ -61,9 +84,25 @@ make run
 ### Modo Desenvolvimento (com hot reload)
 
 ```bash
-make dev
+# Terminal 1: PostgreSQL
+docker-compose up -d postgres
+
+# Terminal 2: Backend
+cd backend && DATABASE_URL="postgres://famli:famli_dev_password@localhost:5432/famli?sslmode=disable" go run main.go
+
+# Terminal 3: Frontend (hot reload)
+cd frontend && npm run dev
 ```
 Acesse [http://localhost:5173](http://localhost:5173)
+
+### Sem Banco de Dados (Apenas para Testes)
+
+Se não configurar `DATABASE_URL`, o Famli usa armazenamento em memória (dados perdidos ao reiniciar):
+
+```bash
+./setup.sh
+make run
+```
 
 ---
 

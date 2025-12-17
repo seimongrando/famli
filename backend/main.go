@@ -109,8 +109,23 @@ func main() {
 	// INICIALIZAÇÃO DOS SERVIÇOS
 	// =========================================================================
 
-	// Store em memória (MVP)
-	store := storage.NewMemoryStore()
+	// Verificar se há DATABASE_URL para usar PostgreSQL
+	databaseURL := getenv("DATABASE_URL", "")
+	var store storage.Store
+
+	if databaseURL != "" {
+		// Usar PostgreSQL em produção
+		pgStore, err := storage.NewPostgresStore(databaseURL)
+		if err != nil {
+			log.Fatalf("❌ Erro ao conectar ao PostgreSQL: %v", err)
+		}
+		store = pgStore
+		log.Println("💾 Storage: PostgreSQL")
+	} else {
+		// Usar memória em desenvolvimento
+		store = storage.NewMemoryStore()
+		log.Println("💾 Storage: Memória (dados serão perdidos ao reiniciar)")
+	}
 
 	// Encryptor para dados sensíveis
 	encryptor, err := security.NewEncryptor(encryptionKey)

@@ -172,14 +172,27 @@ onMounted(() => {
     <footer class="footer">
       <div class="container">
         <div class="footer__content">
-          <div class="header__brand">
-            <img src="/logo.svg" alt="Famli" class="header__logo" style="height: 32px" />
-            <span class="header__name" style="font-size: 1rem">{{ t('brand.name') }}</span>
+          <div class="footer__brand">
+            <div class="header__brand">
+              <img src="/logo.svg" alt="Famli" class="header__logo" style="height: 32px" />
+              <span class="header__name" style="font-size: 1rem">{{ t('brand.name') }}</span>
+            </div>
+            <p class="footer__tagline">
+              {{ t('brand.slogan') }}
+            </p>
           </div>
-          <p class="footer__tagline">
-            {{ t('brand.slogan') }}
-          </p>
+          <div class="footer__links">
+            <router-link :to="paths.terms" class="footer__link">
+              {{ t('legal.terms.link') }}
+            </router-link>
+            <router-link :to="paths.privacy" class="footer__link">
+              {{ t('legal.privacy.link') }}
+            </router-link>
+          </div>
         </div>
+        <p class="footer__copyright">
+          © {{ new Date().getFullYear() }} Famli. {{ t('privacy.rights.item4') }}
+        </p>
       </div>
     </footer>
   </div>
@@ -430,13 +443,47 @@ onMounted(() => {
 
 .footer__content {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
+  margin-bottom: var(--space-lg);
+}
+
+.footer__brand {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
 }
 
 .footer__tagline {
   color: var(--color-text-muted);
   margin: 0;
+  font-size: var(--font-size-sm);
+}
+
+.footer__links {
+  display: flex;
+  gap: var(--space-lg);
+}
+
+.footer__link {
+  color: var(--color-text-soft);
+  font-size: var(--font-size-sm);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+.footer__link:hover {
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+
+.footer__copyright {
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  margin: 0;
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--color-border-light);
 }
 
 /* Responsive */
@@ -470,8 +517,18 @@ onMounted(() => {
   
   .footer__content {
     flex-direction: column;
-    gap: var(--space-md);
+    gap: var(--space-lg);
     text-align: center;
+    align-items: center;
+  }
+
+  .footer__brand {
+    align-items: center;
+  }
+
+  .footer__links {
+    flex-direction: column;
+    gap: var(--space-sm);
   }
 }
 </style>

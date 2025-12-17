@@ -16,7 +16,8 @@
         frontend-install frontend-dev frontend-build frontend-icons frontend-lint \
         backend-run backend-build backend-test backend-lint \
         mobile-setup mobile-android mobile-ios mobile-sync \
-        docker-build docker-run \
+        docker-build docker-run docker-stop docker-up docker-down \
+        db-up db-down db-reset \
         check-deps
 
 # ==============================================================================
@@ -71,8 +72,12 @@ help:
 	@echo "  make check-deps     - Verifica dependências instaladas"
 	@echo ""
 	@echo "$(GREEN)🐳 Docker:$(NC)"
+	@echo "  make docker-up      - Inicia Famli + PostgreSQL (recomendado)"
+	@echo "  make docker-down    - Para todos os serviços"
 	@echo "  make docker-build   - Build da imagem Docker"
-	@echo "  make docker-run     - Roda container Docker"
+	@echo "  make db-up          - Inicia apenas PostgreSQL (dev local)"
+	@echo "  make db-down        - Para PostgreSQL"
+	@echo "  make db-reset       - Reseta PostgreSQL (remove dados)"
 	@echo ""
 	@echo "$(GREEN)🧹 Utilidades:$(NC)"
 	@echo "  make frontend-icons - Gera ícones PWA/App"
@@ -304,6 +309,48 @@ docker-stop:
 	docker stop famli 2>/dev/null || true
 	docker rm famli 2>/dev/null || true
 	@echo "$(GREEN)✓ Container parado$(NC)"
+
+# Docker Compose (com PostgreSQL)
+docker-up:
+	@echo "$(YELLOW)🐳 Iniciando Famli + PostgreSQL...$(NC)"
+	docker-compose up -d
+	@echo ""
+	@echo "$(GREEN)✓ Serviços iniciados$(NC)"
+	@echo "$(GREEN)Acesse:$(NC) $(BLUE)http://localhost:8080$(NC)"
+	@echo ""
+	@echo "$(YELLOW)Comandos úteis:$(NC)"
+	@echo "  docker-compose logs -f      $(GREEN)# Ver logs$(NC)"
+	@echo "  docker-compose down         $(GREEN)# Parar$(NC)"
+	@echo "  docker-compose down -v      $(GREEN)# Parar e remover dados$(NC)"
+
+docker-down:
+	@echo "$(YELLOW)🐳 Parando serviços...$(NC)"
+	docker-compose down
+	@echo "$(GREEN)✓ Serviços parados$(NC)"
+
+# Apenas PostgreSQL (para desenvolvimento local)
+db-up:
+	@echo "$(YELLOW)🐘 Iniciando PostgreSQL...$(NC)"
+	docker-compose up -d postgres
+	@echo ""
+	@echo "$(GREEN)✓ PostgreSQL iniciado$(NC)"
+	@echo ""
+	@echo "$(YELLOW)Connection string:$(NC)"
+	@echo "  $(BLUE)postgres://famli:famli_dev_password@localhost:5432/famli?sslmode=disable$(NC)"
+	@echo ""
+	@echo "$(YELLOW)Para conectar via psql:$(NC)"
+	@echo "  $(BLUE)psql postgres://famli:famli_dev_password@localhost:5432/famli$(NC)"
+
+db-down:
+	@echo "$(YELLOW)🐘 Parando PostgreSQL...$(NC)"
+	docker-compose stop postgres
+	@echo "$(GREEN)✓ PostgreSQL parado$(NC)"
+
+db-reset:
+	@echo "$(YELLOW)🐘 Resetando PostgreSQL (remove dados!)...$(NC)"
+	docker-compose down -v postgres
+	docker-compose up -d postgres
+	@echo "$(GREEN)✓ PostgreSQL resetado$(NC)"
 
 # ==============================================================================
 # LIMPEZA

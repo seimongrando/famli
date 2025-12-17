@@ -445,6 +445,114 @@
     "goToBox": "Go to My Box",
     "logout": "Sign Out",
     "securityNote": "Your data is secure. You can access this page at any time to check your account information."
+  },
+  "legal": {
+    "lastUpdated": "Last updated",
+    "termsAndPrivacy": "By creating your account, you agree to the",
+    "terms": {
+      "title": "Terms of Service",
+      "link": "Terms of Service",
+      "updatedDate": "December 17, 2024",
+      "acceptance": {
+        "title": "Acceptance of Terms",
+        "text": "By accessing and using Famli, you agree to these Terms of Service. If you do not agree with any part of these terms, do not use our service."
+      },
+      "service": {
+        "title": "Service Description",
+        "text": "Famli is a platform for organizing important information, guidance, and personal memories. Our services include:",
+        "item1": "Secure storage of important personal information",
+        "item2": "Management of trusted people",
+        "item3": "Space for personal memories and messages"
+      },
+      "account": {
+        "title": "Your Account",
+        "text": "You are responsible for maintaining the security of your account and password. Notify us immediately if you suspect any unauthorized use. Do not share your credentials with third parties."
+      },
+      "content": {
+        "title": "Your Content",
+        "text": "You retain all rights to the content you add to Famli. By using our service, you grant us a limited license to store and process your content only to provide the service."
+      },
+      "prohibited": {
+        "title": "Prohibited Use",
+        "text": "You may not use Famli for:",
+        "item1": "Illegal or fraudulent activities",
+        "item2": "Violating third-party rights",
+        "item3": "Distributing malware or malicious content"
+      },
+      "termination": {
+        "title": "Termination",
+        "text": "We may terminate or suspend your account if you violate these terms. You may terminate your account at any time through settings."
+      },
+      "liability": {
+        "title": "Limitation of Liability",
+        "text": "Famli is provided 'as is'. We do not guarantee uninterrupted availability. Under no circumstances shall we be liable for indirect or consequential damages."
+      },
+      "changes": {
+        "title": "Changes to Terms",
+        "text": "We may update these terms periodically. We will notify you of significant changes via email or through the service."
+      },
+      "contact": {
+        "title": "Contact",
+        "text": "For questions about these Terms of Service, contact us:"
+      }
+    },
+    "privacy": {
+      "title": "Privacy Policy",
+      "link": "Privacy Policy",
+      "updatedDate": "December 17, 2024",
+      "intro": {
+        "title": "Introduction",
+        "text": "Your privacy is fundamental to us. This policy explains how we collect, use, and protect your personal information on Famli."
+      },
+      "dataCollected": {
+        "title": "Data We Collect",
+        "text": "We collect the following information:",
+        "account": "Account data",
+        "accountDesc": "Email, name, and encrypted password for authentication.",
+        "content": "User content",
+        "contentDesc": "Information, memories, and trusted people you add.",
+        "usage": "Usage data",
+        "usageDesc": "Basic information about how you use the service."
+      },
+      "dataUse": {
+        "title": "How We Use Your Data",
+        "text": "We use your information to:",
+        "item1": "Provide and maintain the Famli service",
+        "item2": "Protect your account and data",
+        "item3": "Improve the service based on anonymous feedback"
+      },
+      "security": {
+        "title": "Data Security",
+        "text": "We implement robust security measures to protect your data:",
+        "item1": "End-to-end encryption for sensitive data",
+        "item2": "Passwords stored with bcrypt hash",
+        "item3": "Communication protected by HTTPS"
+      },
+      "sharing": {
+        "title": "Data Sharing",
+        "text": "We do not sell, rent, or share your personal data with third parties for marketing purposes. We may share data only when required by law."
+      },
+      "rights": {
+        "title": "Your Rights",
+        "text": "You have the following rights over your data:",
+        "item1": "Access all information we store about you",
+        "item2": "Correct or update your data at any time",
+        "item3": "Request complete deletion of your account and data",
+        "item4": "Export your data in a portable format"
+      },
+      "cookies": {
+        "title": "Cookies",
+        "text": "We use essential cookies only to keep your login session active. We do not use tracking or advertising cookies."
+      },
+      "changes": {
+        "title": "Changes to This Policy",
+        "text": "We may update this policy periodically. We will notify you of significant changes via email or through the service."
+      },
+      "contact": {
+        "title": "Contact",
+        "text": "For privacy questions, contact us:"
+      }
+    }
   }
 }
 

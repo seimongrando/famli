@@ -11,6 +11,8 @@ import AuthPage from './pages/AuthPage.vue'
 import DashboardPage from './pages/DashboardPage.vue'
 import AdminPage from './pages/AdminPage.vue'
 import ProfilePage from './pages/ProfilePage.vue'
+import TermsPage from './pages/TermsPage.vue'
+import PrivacyPolicyPage from './pages/PrivacyPolicyPage.vue'
 
 // Rotas com aliases para suportar múltiplos idiomas
 // URL principal em pt-BR, aliases em en
@@ -46,6 +48,18 @@ const routes = [
     name: 'profile', 
     component: ProfilePage, 
     meta: { requiresAuth: true } 
+  },
+  { 
+    path: '/termos', 
+    alias: ['/terms', '/terms-of-service'],
+    name: 'terms', 
+    component: TermsPage 
+  },
+  { 
+    path: '/privacidade', 
+    alias: ['/privacy', '/privacy-policy'],
+    name: 'privacy', 
+    component: PrivacyPolicyPage 
   },
 ]
 
