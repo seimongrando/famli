@@ -28,10 +28,12 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
@@ -42,6 +44,7 @@ import (
 	"famli/internal/box"
 	"famli/internal/guardian"
 	"famli/internal/guide"
+	"famli/internal/i18n"
 	"famli/internal/security"
 	"famli/internal/settings"
 	"famli/internal/storage"
@@ -276,17 +279,50 @@ func main() {
 
 	if frontendBuilt {
 		fileServer := http.FileServer(http.Dir(staticDir))
+		indexPath := filepath.Join(staticDir, "index.html")
 
-		r.Handle("/*", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			path := filepath.Join(staticDir, r.URL.Path)
+		// Ler o index.html uma vez
+		indexHTML, err := os.ReadFile(indexPath)
+		if err != nil {
+			log.Printf("⚠️  Erro ao ler index.html: %v", err)
+		}
 
-			// SPA fallback
-			if _, err := os.Stat(path); os.IsNotExist(err) {
-				http.ServeFile(w, r, filepath.Join(staticDir, "index.html"))
+		r.Handle("/*", http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			urlPath := req.URL.Path
+			filePath := filepath.Join(staticDir, urlPath)
+
+			// Verificar se é uma rota de página (não um arquivo estático)
+			// Se termina em / ou não tem extensão, é uma rota de página SPA
+			isPageRoute := urlPath == "/" ||
+				(!strings.Contains(filepath.Base(urlPath), ".") &&
+					!strings.HasPrefix(urlPath, "/assets/") &&
+					!strings.HasPrefix(urlPath, "/icons/"))
+
+			// Se é uma rota de página, servir index.html com meta tags localizadas
+			if isPageRoute {
+				// Detectar idioma preferido
+				lang := i18n.GetPreferredLanguage(req)
+
+				// Injetar meta tags no idioma correto
+				localizedHTML := i18n.InjectMetaTags(string(indexHTML), lang)
+
+				w.Header().Set("Content-Type", "text/html; charset=utf-8")
+				io.WriteString(w, localizedHTML)
 				return
 			}
 
-			fileServer.ServeHTTP(w, r)
+			// Para arquivos estáticos, verificar se existe
+			if _, err := os.Stat(filePath); os.IsNotExist(err) {
+				// Arquivo não existe, servir index.html (SPA fallback)
+				lang := i18n.GetPreferredLanguage(req)
+				localizedHTML := i18n.InjectMetaTags(string(indexHTML), lang)
+				w.Header().Set("Content-Type", "text/html; charset=utf-8")
+				io.WriteString(w, localizedHTML)
+				return
+			}
+
+			// Servir arquivo estático
+			fileServer.ServeHTTP(w, req)
 		}))
 	} else {
 		r.Handle("/*", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
