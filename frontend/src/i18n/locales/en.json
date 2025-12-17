@@ -115,7 +115,21 @@
     "noAccount": "Don't have an account?",
     "hasAccount": "Already have an account?",
     "createNow": "Create now",
-    "securityNote": "Your data is protected and only you decide who can see it."
+    "securityNote": "Your data is protected and only you decide who can see it.",
+    "errors": {
+      "invalidCredentials": "Invalid email or password.",
+      "invalidData": "Please fill in all fields correctly.",
+      "invalidEmail": "Please enter a valid email.",
+      "weakPassword": "Password must be at least 8 characters with letters and numbers.",
+      "emailExists": "This email is already registered.",
+      "sessionInvalid": "Your session has expired. Please sign in again.",
+      "sessionNotFound": "Session not found. Please sign in.",
+      "tooManyAttempts": "Too many attempts. Please wait a few minutes and try again.",
+      "serverError": "Server error. Please try again later.",
+      "connectionError": "Connection error. Check your internet and try again.",
+      "registerFailed": "Could not create your account. Please try again.",
+      "generic": "Something went wrong. Please try again."
+    }
   },
   "dashboard": {
     "greeting": {

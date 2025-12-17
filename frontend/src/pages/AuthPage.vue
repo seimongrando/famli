@@ -122,7 +122,7 @@ async function handleSubmit() {
     <!-- Header simples -->
     <header class="auth-header">
       <router-link :to="paths.landing" class="header__brand">
-        <img src="/famli.png" alt="Famli" class="header__logo" />
+        <img src="/logo.svg" alt="Famli" class="header__logo" />
         <span class="header__name">{{ t('brand.name') }}</span>
       </router-link>
       <LanguageSelector />

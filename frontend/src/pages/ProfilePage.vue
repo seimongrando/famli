@@ -54,13 +54,12 @@ onMounted(async () => {
 
 // Actions
 async function handleLogout() {
-  try {
-    await authStore.logout()
-  } catch (err) {
-    console.error('[Profile] Logout error:', err)
-  }
-  // Sempre redirecionar, mesmo se o logout falhar no servidor
-  router.push(paths.value.landing)
+  // Primeiro limpar o usuário do store
+  await authStore.logout()
+  
+  // Usar location.href para garantir redirecionamento completo
+  // e evitar problemas com o navigation guard
+  window.location.href = '/'
 }
 </script>
 

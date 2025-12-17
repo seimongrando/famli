@@ -25,7 +25,7 @@ onMounted(() => {
       <div class="container">
         <div class="landing-header__content">
           <div class="header__brand">
-            <img src="/famli.png" alt="Famli" class="header__logo" />
+            <img src="/logo.svg" alt="Famli" class="header__logo" />
             <span class="header__name">{{ t('brand.name') }}</span>
           </div>
           <nav class="landing-header__nav">
@@ -173,7 +173,7 @@ onMounted(() => {
       <div class="container">
         <div class="footer__content">
           <div class="header__brand">
-            <img src="/famli.png" alt="Famli" class="header__logo" style="height: 32px" />
+            <img src="/logo.svg" alt="Famli" class="header__logo" style="height: 32px" />
             <span class="header__name" style="font-size: 1rem">{{ t('brand.name') }}</span>
           </div>
           <p class="footer__tagline">

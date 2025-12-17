@@ -115,7 +115,21 @@
     "noAccount": "Não tem conta?",
     "hasAccount": "Já tem conta?",
     "createNow": "Criar agora",
-    "securityNote": "Seus dados são protegidos e só você decide quem pode ver."
+    "securityNote": "Seus dados são protegidos e só você decide quem pode ver.",
+    "errors": {
+      "invalidCredentials": "E-mail ou senha incorretos.",
+      "invalidData": "Por favor, preencha todos os campos corretamente.",
+      "invalidEmail": "Por favor, insira um e-mail válido.",
+      "weakPassword": "A senha precisa ter no mínimo 8 caracteres com letras e números.",
+      "emailExists": "Este e-mail já está cadastrado.",
+      "sessionInvalid": "Sua sessão expirou. Por favor, faça login novamente.",
+      "sessionNotFound": "Sessão não encontrada. Por favor, faça login.",
+      "tooManyAttempts": "Muitas tentativas. Aguarde alguns minutos e tente novamente.",
+      "serverError": "Erro no servidor. Tente novamente mais tarde.",
+      "connectionError": "Erro de conexão. Verifique sua internet e tente novamente.",
+      "registerFailed": "Não foi possível criar sua conta. Tente novamente.",
+      "generic": "Algo deu errado. Tente novamente."
+    }
   },
   "dashboard": {
     "greeting": {

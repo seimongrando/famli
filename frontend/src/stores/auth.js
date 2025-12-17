@@ -1,5 +1,44 @@
+// =============================================================================
+// FAMLI - Store de Autenticação
+// =============================================================================
+// Gerencia estado de autenticação do usuário.
+// 
+// Funcionalidades:
+// - Login/Logout/Registro
+// - Verificação de sessão
+// - Mensagens de erro traduzidas
+// =============================================================================
+
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import i18n from '../i18n'
+
+// Mapeamento de erros do backend para chaves i18n
+const errorMap = {
+  'E-mail ou senha incorretos.': 'auth.errors.invalidCredentials',
+  'Dados inválidos.': 'auth.errors.invalidData',
+  'E-mail inválido.': 'auth.errors.invalidEmail',
+  'Senha precisa ter no mínimo 8 caracteres com letras e números.': 'auth.errors.weakPassword',
+  'E-mail já cadastrado.': 'auth.errors.emailExists',
+  'Sessão inválida.': 'auth.errors.sessionInvalid',
+  'Sessão não encontrada': 'auth.errors.sessionNotFound',
+  'Muitas tentativas. Aguarde alguns minutos.': 'auth.errors.tooManyAttempts',
+  'Erro ao preparar sua conta.': 'auth.errors.serverError'
+}
+
+// Função para traduzir erro do backend
+function translateError(backendError, fallbackKey = 'auth.errors.generic') {
+  const { t } = i18n.global
+  
+  // Tentar encontrar tradução pelo mapeamento
+  const translationKey = errorMap[backendError]
+  if (translationKey) {
+    return t(translationKey)
+  }
+  
+  // Se não encontrou, retornar a mensagem original ou fallback
+  return t(fallbackKey)
+}
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref(null)
@@ -37,14 +76,14 @@ export const useAuthStore = defineStore('auth', () => {
       const data = await res.json()
 
       if (!res.ok) {
-        error.value = data.error || 'Erro ao criar conta'
+        error.value = translateError(data.error, 'auth.errors.registerFailed')
         return false
       }
 
       user.value = data.user
       return true
     } catch (e) {
-      error.value = 'Erro de conexão. Tente novamente.'
+      error.value = translateError(null, 'auth.errors.connectionError')
       return false
     } finally {
       loading.value = false
@@ -66,14 +105,14 @@ export const useAuthStore = defineStore('auth', () => {
       const data = await res.json()
 
       if (!res.ok) {
-        error.value = data.error || 'E-mail ou senha incorretos'
+        error.value = translateError(data.error, 'auth.errors.invalidCredentials')
         return false
       }
 
       user.value = data.user
       return true
     } catch (e) {
-      error.value = 'Erro de conexão. Tente novamente.'
+      error.value = translateError(null, 'auth.errors.connectionError')
       return false
     } finally {
       loading.value = false

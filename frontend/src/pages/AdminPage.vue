@@ -25,7 +25,7 @@ import { useLocalizedRoutes } from '../composables/useLocalizedRoutes'
 const { t } = useI18n()
 const router = useRouter()
 const authStore = useAuthStore()
-const { paths } = useLocalizedRoutes()
+const { paths, getPath } = useLocalizedRoutes()
 
 // Estados
 const loading = ref(true)

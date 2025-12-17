@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../stores/auth'
 import { useBoxStore } from '../stores/box'
@@ -16,6 +17,7 @@ import SettingsModal from '../components/SettingsModal.vue'
 import PrivacyModal from '../components/PrivacyModal.vue'
 
 const { t } = useI18n()
+const router = useRouter()
 const authStore = useAuthStore()
 const boxStore = useBoxStore()
 const guideStore = useGuideStore()
@@ -68,6 +70,16 @@ function onComposerSaved(type) {
   }
 }
 
+// Logout com redirecionamento
+async function handleLogout() {
+  // Primeiro limpar o usuário do store
+  await authStore.logout()
+  
+  // Usar replace para evitar que o usuário volte pelo histórico
+  // e forçar navegação para a landing page
+  window.location.href = '/'
+}
+
 // Computed
 const greeting = computed(() => {
   const hour = new Date().getHours()
@@ -96,7 +108,7 @@ onMounted(async () => {
       <div class="container">
         <div class="dashboard-header__content">
           <div class="header__brand">
-            <img src="/famli.png" alt="Famli" class="header__logo" />
+            <img src="/logo.svg" alt="Famli" class="header__logo" />
             <span class="header__name">{{ t('brand.name') }}</span>
           </div>
           
@@ -120,7 +132,7 @@ onMounted(async () => {
             <button class="btn btn--ghost btn--small" @click="showSettings = true">
               {{ t('nav.settings') }}
             </button>
-            <button class="btn btn--ghost btn--small" @click="authStore.logout">
+            <button class="btn btn--ghost btn--small" @click="handleLogout">
               {{ t('nav.logout') }}
             </button>
           </div>
