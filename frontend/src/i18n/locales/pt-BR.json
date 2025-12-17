@@ -346,7 +346,17 @@
   "confirmations": {
     "deleteItem": "Tem certeza que deseja excluir este item?",
     "deleteGuardian": "Tem certeza que deseja remover esta pessoa?",
-    "logout": "Tem certeza que deseja sair?"
+    "logout": "Tem certeza que deseja sair?",
+    "deleteTitle": "Confirmar exclusão",
+    "deleteItemMessage": "Esta ação não pode ser desfeita. O item será removido permanentemente.",
+    "deleteGuardianMessage": "Esta pessoa será removida da sua lista de confiança."
+  },
+  "edit": {
+    "title": "Editar item",
+    "guardianNote": "A edição de pessoas de confiança estará disponível em breve. Por enquanto, você pode remover e adicionar novamente."
+  },
+  "modal": {
+    "confirm": "Confirmar"
   },
   "password": {
     "requirements": "Requisitos da senha",

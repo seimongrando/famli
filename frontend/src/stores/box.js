@@ -95,6 +95,8 @@ export const useBoxStore = defineStore('box', () => {
   }
 
   async function createItem(payload) {
+    console.log('[Box Store] Creating item:', payload.type, payload.title)
+    
     try {
       const res = await fetch('/api/box/items', {
         method: 'POST',
@@ -102,12 +104,19 @@ export const useBoxStore = defineStore('box', () => {
         credentials: 'include',
         body: JSON.stringify(payload)
       })
+      
       if (res.ok) {
         const item = await res.json()
+        console.log('[Box Store] Item created successfully:', item.id)
         items.value.unshift(item)
         return item
+      } else {
+        const errorText = await res.text()
+        console.error('[Box Store] Failed to create item:', res.status, errorText)
+        error.value = 'Erro ao salvar item'
       }
     } catch (e) {
+      console.error('[Box Store] Error creating item:', e)
       error.value = 'Erro ao salvar'
     }
     return null
@@ -150,6 +159,8 @@ export const useBoxStore = defineStore('box', () => {
   }
 
   async function createGuardian(payload) {
+    console.log('[Box Store] Creating guardian:', payload.name)
+    
     try {
       const res = await fetch('/api/guardians', {
         method: 'POST',
@@ -157,12 +168,19 @@ export const useBoxStore = defineStore('box', () => {
         credentials: 'include',
         body: JSON.stringify(payload)
       })
+      
       if (res.ok) {
         const guardian = await res.json()
+        console.log('[Box Store] Guardian created successfully:', guardian.id)
         guardians.value.unshift(guardian)
         return guardian
+      } else {
+        const errorText = await res.text()
+        console.error('[Box Store] Failed to create guardian:', res.status, errorText)
+        error.value = 'Erro ao adicionar pessoa'
       }
     } catch (e) {
+      console.error('[Box Store] Error creating guardian:', e)
       error.value = 'Erro ao adicionar pessoa'
     }
     return null

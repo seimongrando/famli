@@ -28,6 +28,8 @@ const activeTab = ref('caixa') // 'caixa' | 'guia'
 const showSettings = ref(false)
 const showPrivacy = ref(false)
 const selectedComposerType = ref('info')
+const activeGuideCardId = ref(null) // Rastrear qual card do guia está ativo
+const saveSuccess = ref(false) // Feedback visual de sucesso
 
 // Mapear IDs dos cards do guia para tipos do composer
 const cardToComposerType = {
@@ -40,32 +42,42 @@ const cardToComposerType = {
 }
 
 // Função para iniciar tarefa do guia
-function startGuideTask(card) {
-  // Marcar como iniciado
-  guideStore.markProgress(card.id, 'started')
+async function startGuideTask(card) {
+  console.log('[Guide] Starting task:', card.id)
+  
+  // Rastrear o card ativo
+  activeGuideCardId.value = card.id
+  
+  // Marcar como iniciado no backend
+  await guideStore.markProgress(card.id, 'started')
   
   // Definir o tipo correto no composer
   selectedComposerType.value = cardToComposerType[card.id] || 'info'
   
   // Mudar para a aba da caixa
   activeTab.value = 'caixa'
+  
+  // Scroll suave para o composer
+  setTimeout(() => {
+    document.querySelector('.composer')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, 100)
 }
 
 // Função chamada quando um item é salvo no composer
-function onComposerSaved(type) {
-  // Verificar se há um card do guia relacionado que pode ser completado
-  const relatedCards = {
-    'info': ['welcome', 'locations', 'routines', 'access'],
-    'guardian': ['people'],
-    'memory': ['memories']
-  }
+async function onComposerSaved(type) {
+  console.log('[Guide] Item saved, type:', type, 'activeCardId:', activeGuideCardId.value)
   
-  const cards = relatedCards[type] || []
-  for (const cardId of cards) {
-    const status = guideStore.getCardStatus(cardId)
-    if (status === 'started') {
-      guideStore.markProgress(cardId, 'completed')
-      break
+  // Mostrar feedback de sucesso
+  saveSuccess.value = true
+  setTimeout(() => { saveSuccess.value = false }, 3000)
+  
+  // Se temos um card ativo, marcar como concluído
+  if (activeGuideCardId.value) {
+    const expectedType = cardToComposerType[activeGuideCardId.value]
+    if (expectedType === type) {
+      console.log('[Guide] Marking card as completed:', activeGuideCardId.value)
+      await guideStore.markProgress(activeGuideCardId.value, 'completed')
+      activeGuideCardId.value = null // Limpar o card ativo
     }
   }
 }

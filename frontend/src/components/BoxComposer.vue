@@ -41,57 +41,96 @@ const categories = ['saude', 'financas', 'documentos', 'casa', 'familia', 'outro
 const relationships = ['filho', 'neto', 'conjuge', 'irmao', 'amigo', 'outro']
 
 async function saveInfo() {
-  if (!infoForm.value.title) return
-  saving.value = true
-  
-  const result = await boxStore.createItem({
-    type: 'info',
-    title: infoForm.value.title,
-    content: infoForm.value.content,
-    category: infoForm.value.category
-  })
-  
-  if (result) {
-    infoForm.value = { title: '', content: '', category: '' }
-    emit('saved', 'info')
+  if (!infoForm.value.title) {
+    console.log('[Composer] Info form validation failed: title required')
+    return
   }
-  saving.value = false
+  
+  saving.value = true
+  console.log('[Composer] Saving info:', infoForm.value.title)
+  
+  try {
+    const result = await boxStore.createItem({
+      type: 'info',
+      title: infoForm.value.title,
+      content: infoForm.value.content,
+      category: infoForm.value.category
+    })
+    
+    if (result) {
+      console.log('[Composer] Info saved successfully:', result.id)
+      infoForm.value = { title: '', content: '', category: '' }
+      emit('saved', 'info')
+    } else {
+      console.error('[Composer] Info save failed - no result')
+    }
+  } catch (error) {
+    console.error('[Composer] Info save error:', error)
+  } finally {
+    saving.value = false
+  }
 }
 
 async function saveGuardian() {
-  if (!guardianForm.value.name) return
-  saving.value = true
-  
-  const result = await boxStore.createGuardian({
-    name: guardianForm.value.name,
-    email: guardianForm.value.email,
-    phone: guardianForm.value.phone,
-    relationship: guardianForm.value.relationship
-  })
-  
-  if (result) {
-    guardianForm.value = { name: '', email: '', phone: '', relationship: '' }
-    emit('saved', 'guardian')
+  if (!guardianForm.value.name) {
+    console.log('[Composer] Guardian form validation failed: name required')
+    return
   }
-  saving.value = false
+  
+  saving.value = true
+  console.log('[Composer] Saving guardian:', guardianForm.value.name)
+  
+  try {
+    const result = await boxStore.createGuardian({
+      name: guardianForm.value.name,
+      email: guardianForm.value.email,
+      phone: guardianForm.value.phone,
+      relationship: guardianForm.value.relationship
+    })
+    
+    if (result) {
+      console.log('[Composer] Guardian saved successfully:', result.id)
+      guardianForm.value = { name: '', email: '', phone: '', relationship: '' }
+      emit('saved', 'guardian')
+    } else {
+      console.error('[Composer] Guardian save failed - no result')
+    }
+  } catch (error) {
+    console.error('[Composer] Guardian save error:', error)
+  } finally {
+    saving.value = false
+  }
 }
 
 async function saveMemory() {
-  if (!memoryForm.value.title) return
-  saving.value = true
-  
-  const result = await boxStore.createItem({
-    type: 'memory',
-    title: memoryForm.value.title,
-    content: memoryForm.value.content,
-    recipient: memoryForm.value.recipient
-  })
-  
-  if (result) {
-    memoryForm.value = { title: '', content: '', recipient: '' }
-    emit('saved', 'memory')
+  if (!memoryForm.value.title) {
+    console.log('[Composer] Memory form validation failed: title required')
+    return
   }
-  saving.value = false
+  
+  saving.value = true
+  console.log('[Composer] Saving memory:', memoryForm.value.title)
+  
+  try {
+    const result = await boxStore.createItem({
+      type: 'memory',
+      title: memoryForm.value.title,
+      content: memoryForm.value.content,
+      recipient: memoryForm.value.recipient
+    })
+    
+    if (result) {
+      console.log('[Composer] Memory saved successfully:', result.id)
+      memoryForm.value = { title: '', content: '', recipient: '' }
+      emit('saved', 'memory')
+    } else {
+      console.error('[Composer] Memory save failed - no result')
+    }
+  } catch (error) {
+    console.error('[Composer] Memory save error:', error)
+  } finally {
+    saving.value = false
+  }
 }
 </script>
 

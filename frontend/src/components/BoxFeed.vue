@@ -1,12 +1,32 @@
+<!-- =============================================================================
+  FAMLI - Feed da Caixa Famli
+  =============================================================================
+  Exibe todos os itens guardados pelo usuário (informações, memórias, pessoas).
+  
+  Funcionalidades:
+  - Filtros por tipo
+  - Edição de itens
+  - Exclusão com confirmação modal
+  - Formatação de datas e categorias
+============================================================================== -->
+
 <script setup>
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useBoxStore } from '../stores/box'
+import ConfirmModal from './ConfirmModal.vue'
+import EditItemModal from './EditItemModal.vue'
 
 const { t } = useI18n()
 const boxStore = useBoxStore()
 
+// Filtro ativo
 const filter = ref('all')
+
+// Estado dos modais
+const showDeleteModal = ref(false)
+const showEditModal = ref(false)
+const selectedItem = ref(null)
 
 const filters = [
   { id: 'all', labelKey: 'box.filters.all' },
@@ -18,6 +38,14 @@ const filters = [
 const filteredEntries = computed(() => {
   if (filter.value === 'all') return boxStore.unifiedEntries
   return boxStore.unifiedEntries.filter(e => e.kind === filter.value)
+})
+
+// Mensagem de confirmação baseada no tipo
+const deleteMessage = computed(() => {
+  if (!selectedItem.value) return ''
+  return selectedItem.value.kind === 'guardian'
+    ? t('confirmations.deleteGuardianMessage')
+    : t('confirmations.deleteItemMessage')
 })
 
 function formatDate(dateStr) {
@@ -36,19 +64,63 @@ function getTypeLabel(type) {
   return t(key)
 }
 
-async function deleteEntry(entry) {
-  const confirmed = window.confirm(
-    entry.kind === 'guardian' 
-      ? t('confirmations.deleteGuardian')
-      : t('confirmations.deleteItem')
-  )
-  if (!confirmed) return
+function getCategoryLabel(category) {
+  if (!category) return ''
+  const key = `composer.categories.${category}`
+  const translated = t(key)
+  // Se a tradução retornar a própria chave, mostrar o valor original
+  return translated === key ? category : translated
+}
+
+function getRelationshipLabel(relationship) {
+  if (!relationship) return ''
+  const key = `composer.relationships.${relationship}`
+  const translated = t(key)
+  return translated === key ? relationship : translated
+}
+
+// Abrir modal de edição
+function openEditModal(entry) {
+  selectedItem.value = entry
+  showEditModal.value = true
+}
+
+// Abrir modal de exclusão
+function openDeleteModal(entry) {
+  selectedItem.value = entry
+  showDeleteModal.value = true
+}
+
+// Confirmar exclusão
+async function confirmDelete() {
+  if (!selectedItem.value) return
   
-  if (entry.kind === 'guardian') {
-    await boxStore.deleteGuardian(entry.id)
+  if (selectedItem.value.kind === 'guardian') {
+    await boxStore.deleteGuardian(selectedItem.value.id)
   } else {
-    await boxStore.deleteItem(entry.id)
+    await boxStore.deleteItem(selectedItem.value.id)
   }
+  
+  showDeleteModal.value = false
+  selectedItem.value = null
+}
+
+// Cancelar exclusão
+function cancelDelete() {
+  showDeleteModal.value = false
+  selectedItem.value = null
+}
+
+// Fechar modal de edição
+function closeEditModal() {
+  showEditModal.value = false
+  selectedItem.value = null
+}
+
+// Ao salvar edição
+function onEditSaved() {
+  showEditModal.value = false
+  selectedItem.value = null
 }
 </script>
 
@@ -99,25 +171,55 @@ async function deleteEntry(entry) {
           
           <div class="feed-item__meta">
             <span v-if="entry.category" class="feed-item__category">
-              {{ t(`composer.categories.${entry.category}`) }}
+              {{ getCategoryLabel(entry.category) }}
             </span>
             <span v-if="entry.recipient" class="feed-item__recipient">
               {{ entry.recipient }}
             </span>
             <span v-if="entry.relationship" class="feed-item__relationship">
-              {{ t(`composer.relationships.${entry.relationship}`) }}
+              {{ getRelationshipLabel(entry.relationship) }}
             </span>
             <span class="feed-item__date">{{ formatDate(entry.updated_at || entry.created_at) }}</span>
           </div>
         </div>
         
         <div class="feed-item__actions">
-          <button class="btn btn--ghost btn--small" @click="deleteEntry(entry)">
-            {{ t('common.delete') }}
+          <button 
+            class="btn btn--ghost btn--small btn--icon" 
+            @click="openEditModal(entry)"
+            :title="t('common.edit')"
+          >
+            ✏️
+          </button>
+          <button 
+            class="btn btn--ghost btn--small btn--icon btn--danger-text" 
+            @click="openDeleteModal(entry)"
+            :title="t('common.delete')"
+          >
+            🗑️
           </button>
         </div>
       </li>
     </ul>
+    
+    <!-- Modal de Confirmação de Exclusão -->
+    <ConfirmModal
+      :show="showDeleteModal"
+      :title="t('confirmations.deleteTitle')"
+      :message="deleteMessage"
+      :confirm-text="t('common.delete')"
+      type="danger"
+      @confirm="confirmDelete"
+      @cancel="cancelDelete"
+    />
+    
+    <!-- Modal de Edição -->
+    <EditItemModal
+      :show="showEditModal"
+      :item="selectedItem"
+      @save="onEditSaved"
+      @close="closeEditModal"
+    />
   </div>
 </template>
 
@@ -270,6 +372,16 @@ async function deleteEntry(entry) {
 .feed-item__actions {
   display: flex;
   align-items: flex-start;
+  gap: var(--space-xs);
+}
+
+.btn--icon {
+  padding: var(--space-xs);
+  min-width: 32px;
+}
+
+.btn--danger-text:hover {
+  color: #dc2626;
 }
 
 @media (max-width: 600px) {

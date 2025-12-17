@@ -49,6 +49,8 @@ export const useGuideStore = defineStore('guide', () => {
   }
 
   async function markProgress(cardId, status) {
+    console.log('[Guide Store] Marking progress:', cardId, status)
+    
     try {
       const res = await fetch(`/api/guide/progress/${cardId}`, {
         method: 'POST',
@@ -56,11 +58,22 @@ export const useGuideStore = defineStore('guide', () => {
         credentials: 'include',
         body: JSON.stringify({ status })
       })
+      
       if (res.ok) {
         progress.value[cardId] = status
+        console.log('[Guide Store] Progress marked successfully:', cardId, status)
+        return true
+      } else {
+        console.error('[Guide Store] Failed to mark progress:', res.status)
+        // Ainda atualizar localmente para feedback imediato
+        progress.value[cardId] = status
+        return false
       }
     } catch (e) {
-      // Erro silencioso
+      console.error('[Guide Store] Error marking progress:', e)
+      // Atualizar localmente mesmo com erro de rede
+      progress.value[cardId] = status
+      return false
     }
   }
 
