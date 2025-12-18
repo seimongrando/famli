@@ -14,8 +14,6 @@
 #
 # Documentação: https://render.com/docs/blueprint-spec
 # ==============================================================================
-version: "1"
-
 projects:
   - name: Famli
     environments:
@@ -27,7 +25,7 @@ projects:
       - name: famli
         databaseName: famli
         user: famli
-        plan: hobby
+        plan: basic-256mb
         region: oregon
         ipAllowList:
           - source: 0.0.0.0/0
@@ -42,7 +40,7 @@ projects:
         name: famli
         runtime: go
         repo: https://github.com/seimongrando/famli
-        plan: hobby
+        plan: starter
         region: oregon
         branch: main
         buildCommand: cd frontend && npm ci && npm run build && cd ../backend && go build -ldflags="-s -w" -o ../server .
