@@ -371,61 +371,137 @@ services:
 
 O Render oferece uma opção simples e gratuita para deploy com PostgreSQL incluído.
 
-#### Opção 1: Deploy Automático (Blueprint)
+---
 
-Use o arquivo `render.yaml` na raiz do projeto:
+#### Opção 1: Deploy Automático (Blueprint) - RECOMENDADO
 
-```bash
-# 1. Conecte seu repositório ao Render
-# 2. O Render detectará o render.yaml automaticamente
-# 3. Revise e confirme os serviços
-```
+Use o arquivo `render.yaml` na raiz do projeto para criar todos os recursos automaticamente:
 
-#### Opção 2: Deploy Manual
+1. **Acesse o Dashboard do Render**: https://dashboard.render.com
+2. **Clique em "New" → "Blueprint"**
+3. **Conecte seu repositório GitHub**
+4. **O Render detectará o `render.yaml` automaticamente**
+5. **Revise os serviços** (PostgreSQL + Web Service)
+6. **Configure os secrets**:
+   - `ADMIN_EMAILS`: seu-email@exemplo.com
+7. **Clique em "Apply"**
+8. **Aguarde o deploy** (~5-10 minutos)
 
-1. **Criar PostgreSQL Database**:
-   - Dashboard → New → PostgreSQL
-   - Plano: Free (para MVP)
-   - Copie a **Internal Database URL**
+O Blueprint criará automaticamente:
+- ✅ Banco de dados PostgreSQL (famli-db)
+- ✅ Web Service (famli)
+- ✅ Variáveis `DATABASE_URL`, `JWT_SECRET`, `ENCRYPTION_KEY` configuradas
 
-2. **Criar Web Service**:
-   - Dashboard → New → Web Service
-   - Conecte seu repositório GitHub
+---
+
+#### Opção 2: Deploy Manual (passo a passo)
+
+##### Passo 1: Criar o Banco PostgreSQL
+
+1. **Dashboard** → **New** → **PostgreSQL**
+2. Configurar:
+   - **Name**: `famli-db`
+   - **Database**: `famli`
+   - **User**: `famli`
+   - **Region**: Oregon (ou sua preferência)
+   - **Plan**: Free
+3. **Create Database**
+4. **Aguarde** até o status mudar para "Available"
+5. **Copie** a **Internal Database URL** (usaremos depois)
+
+##### Passo 2: Criar o Web Service
+
+1. **Dashboard** → **New** → **Web Service**
+2. **Connect a repository** → selecione seu repositório GitHub
+3. Configurar:
+   - **Name**: `famli`
+   - **Region**: Oregon (mesma do banco)
+   - **Branch**: `main`
+   - **Runtime**: `Node` (inclui Go automaticamente)
    - **Build Command**: `./scripts/render-build.sh`
    - **Start Command**: `./scripts/render-start.sh`
-   - **Environment**: Node (inclui Go)
+   - **Plan**: Free
 
-3. **Configurar Variáveis de Ambiente**:
+##### Passo 3: Configurar Variáveis de Ambiente
 
-| Variável | Valor |
-|----------|-------|
-| `DATABASE_URL` | (Internal Database URL do PostgreSQL) |
-| `JWT_SECRET` | (gerar com `openssl rand -base64 48`) |
-| `ENCRYPTION_KEY` | (gerar com `openssl rand -base64 48`) |
-| `ENV` | production |
-| `ADMIN_EMAILS` | seu-email@exemplo.com |
+Na tela do Web Service, vá em **Environment** e adicione:
 
-4. **Deploy**:
-   - Clique em "Create Web Service"
-   - Aguarde o build (~3-5 minutos)
+| Key | Value | Tipo |
+|-----|-------|------|
+| `DATABASE_URL` | (cole a Internal Database URL do PostgreSQL) | Secret |
+| `JWT_SECRET` | (gerar: `openssl rand -base64 48`) | Secret |
+| `ENCRYPTION_KEY` | (gerar: `openssl rand -base64 48`) | Secret |
+| `ENV` | `production` | Plain |
+| `ADMIN_EMAILS` | `seu-email@exemplo.com` | Secret |
 
-#### Comandos de Build (Render)
+> 💡 **Dica**: Para gerar secrets, execute no terminal:
+> ```bash
+> openssl rand -base64 48
+> ```
 
-Os scripts de build estão em `scripts/`:
+##### Passo 4: Deploy
 
+1. **Create Web Service**
+2. **Aguarde o build** (~5-10 minutos)
+3. O Render mostrará os logs em tempo real
+4. Quando aparecer `🚀 Iniciando Famli...` e `💾 Storage: PostgreSQL`, está pronto!
+
+##### Passo 5: Verificar
+
+1. Acesse a URL do seu app: `https://famli.onrender.com`
+2. Verifique o health: `https://famli.onrender.com/api/health`
+3. Se tudo estiver OK, você verá:
+   ```json
+   {
+     "status": "ok",
+     "storage": "PostgreSQL"
+   }
+   ```
+
+---
+
+#### Troubleshooting (Problemas Comuns)
+
+| Problema | Causa | Solução |
+|----------|-------|---------|
+| `💾 Storage: Memória` | `DATABASE_URL` não configurado | Adicione a variável no Environment |
+| Build falha | Scripts sem permissão | Execute `chmod +x scripts/*.sh` e commit |
+| 500 ao acessar | Frontend não compilou | Verifique logs do build por erros npm |
+| Dados perdidos | Usando memória, não PostgreSQL | Configure `DATABASE_URL` |
+| Admin não funciona | `ADMIN_EMAILS` incorreto | Verifique se o email está exato |
+
+---
+
+#### Atualizando o Deploy
+
+Cada push para a branch `main` fará deploy automático.
+
+Para deploy manual:
+1. Dashboard → seu serviço
+2. **Manual Deploy** → **Deploy latest commit**
+
+---
+
+#### Comandos de Build (Scripts)
+
+Os scripts estão em `scripts/`:
+
+**render-build.sh**:
 ```bash
-# scripts/render-build.sh
 #!/bin/bash
 set -e
+# Build frontend
 cd frontend && npm ci && npm run build && cd ..
-cd backend && go build -o server . && cd ..
+# Build backend
+cd backend && go build -ldflags="-s -w" -o ../server . && cd ..
 ```
 
+**render-start.sh**:
 ```bash
-# scripts/render-start.sh
 #!/bin/bash
 set -e
-cd backend && ./server
+export STATIC_DIR=./frontend/dist
+exec ./server
 ```
 
 ---

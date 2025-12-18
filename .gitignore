@@ -68,7 +68,7 @@ backend/*.test
 backend/*.out
 
 # Vendor (se não for commitado)
-# backend/vendor/
+backend/vendor/
 
 # ==============================================================================
 # MOBILE (Capacitor)

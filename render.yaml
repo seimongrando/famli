@@ -1,60 +1,68 @@
 # ==============================================================================
-# Famli - Configuração do Render (Infrastructure as Code)
+# Famli - Configuração do Render (Blueprint)
 # ==============================================================================
-# Este arquivo permite configurar o deploy automaticamente no Render.
-#
 # Para usar:
 #   1. Vá em https://dashboard.render.com/
 #   2. Clique em "New" > "Blueprint"
-#   3. Conecte seu repositório
+#   3. Conecte seu repositório GitHub
 #   4. O Render detectará este arquivo automaticamente
+#
+# Ou manualmente:
+#   1. Crie um PostgreSQL database primeiro
+#   2. Crie um Web Service apontando para o repositório
+#   3. Configure as variáveis de ambiente manualmente
 #
 # Documentação: https://render.com/docs/blueprint-spec
 # ==============================================================================
-
 version: "1"
 
 projects:
   - name: Famli
     environments:
       - name: Production
-        # ======================================================================
-        # DATABASES
-        # ======================================================================
-        databases:
-          - name: famli
-            databaseName: famli
-            user: famli
-            plan: free
-            region: oregon
-            ipAllowList:
-              - source: 0.0.0.0/0
-                description: everywhere
-            postgresMajorVersion: "18"
+    # ======================================================================
+    # DATABASES
+    # ======================================================================
+    databases:
+      - name: famli
+        databaseName: famli
+        user: famli
+        plan: free
+        region: oregon
+        ipAllowList:
+          - source: 0.0.0.0/0
+            description: everywhere
+        postgresMajorVersion: "18"
 
-        # ======================================================================
-        # SERVICES
-        # ======================================================================
-        services:
-          - type: web
-            name: famli
-            runtime: go
-            repo: https://github.com/seimongrando/famli
-            plan: free
-            region: oregon
-            buildCommand: cd frontend && npm ci && npm run build && cd ../backend && go build -ldflags="-s -w" -o ../server .
-            startCommand: STATIC_DIR=./frontend/dist ./server
-            autoDeployTrigger: commit
-            envVars:
-              - key: DATABASE_URL
-                fromDatabase:
-                  name: famli
-                  property: connectionString
-              - key: ENV
-                value: production
-              - key: JWT_SECRET
-                sync: false
-              - key: ENCRYPTION_KEY
-                sync: false
-              - key: ADMIN_EMAILS
-                sync: false
+    # ======================================================================
+    # SERVICES
+    # ======================================================================
+    services:
+      - type: web
+        name: famli
+        runtime: go
+        repo: https://github.com/seimongrando/famli
+        plan: free
+        region: oregon
+        branch: main
+        buildCommand: cd frontend && npm ci && npm run build && cd ../backend && go build -ldflags="-s -w" -o ../server .
+        startCommand: STATIC_DIR=./frontend/dist ./server
+        autoDeployTrigger: commit
+        healthCheckPath: /api/health
+        envVars:
+          # Conexão com o banco de dados (automática)
+          - key: DATABASE_URL
+            fromDatabase:
+              name: famli
+              property: connectionString
+          # Ambiente
+          - key: ENV
+            value: production
+          # Segredos (configurar manualmente no dashboard)
+          - key: JWT_SECRET
+            generateValue: true
+          - key: ENCRYPTION_KEY
+            generateValue: true
+          # Emails de administradores (configurar no dashboard)
+          - key: ADMIN_EMAILS
+            sync: false
