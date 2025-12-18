@@ -142,6 +142,13 @@ func main() {
 		store = pgStore
 		storageType = "PostgreSQL"
 		log.Println("💾 Storage: PostgreSQL")
+
+		// Limpeza automática de logs antigos na inicialização (economizar espaço)
+		if err := pgStore.CleanupOldLogs(30); err != nil {
+			log.Printf("⚠️  Erro na limpeza de logs: %v", err)
+		} else {
+			log.Println("🧹 Logs antigos (>30 dias): limpos")
+		}
 	} else {
 		// Usar memória em desenvolvimento
 		store = storage.NewMemoryStore()

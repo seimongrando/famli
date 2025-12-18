@@ -53,11 +53,12 @@ var Translations = map[string]Messages{
 		// =======================================================================
 		// GUARDIANS - Pessoas de Confiança
 		// =======================================================================
-		"guardian.invalid_data":  "Dados inválidos.",
-		"guardian.name_required": "Informe o nome da pessoa.",
-		"guardian.add_error":     "Não foi possível adicionar a pessoa.",
-		"guardian.not_found":     "Pessoa não encontrada.",
-		"guardian.deleted":       "Pessoa removida.",
+		"guardian.invalid_data":   "Dados inválidos.",
+		"guardian.name_required":  "Informe o nome da pessoa.",
+		"guardian.add_error":      "Não foi possível adicionar a pessoa.",
+		"guardian.not_found":      "Pessoa não encontrada.",
+		"guardian.deleted":        "Pessoa removida.",
+		"guardian.notes_too_long": "As notas são muito longas. Máximo de 1000 caracteres.",
 
 		// =======================================================================
 		// SETTINGS - Configurações
@@ -94,13 +95,14 @@ var Translations = map[string]Messages{
 		// =======================================================================
 		// FEEDBACK
 		// =======================================================================
-		"feedback.invalid_data":   "Dados inválidos.",
-		"feedback.save_error":     "Não foi possível enviar o feedback.",
-		"feedback.update_error":   "Não foi possível atualizar o feedback.",
-		"feedback.not_found":      "Feedback não encontrado.",
-		"feedback.type_required":  "Selecione o tipo de feedback.",
-		"feedback.send_success":   "Feedback enviado com sucesso!",
-		"feedback.update_success": "Feedback atualizado com sucesso.",
+		"feedback.invalid_data":     "Dados inválidos.",
+		"feedback.save_error":       "Não foi possível enviar o feedback.",
+		"feedback.update_error":     "Não foi possível atualizar o feedback.",
+		"feedback.not_found":        "Feedback não encontrado.",
+		"feedback.type_required":    "Selecione o tipo de feedback.",
+		"feedback.send_success":     "Feedback enviado com sucesso!",
+		"feedback.update_success":   "Feedback atualizado com sucesso.",
+		"feedback.message_too_long": "A mensagem é muito longa. Máximo de 2000 caracteres.",
 
 		// =======================================================================
 		// ANALYTICS
@@ -176,11 +178,12 @@ var Translations = map[string]Messages{
 		// =======================================================================
 		// GUARDIANS - Trusted People
 		// =======================================================================
-		"guardian.invalid_data":  "Invalid data.",
-		"guardian.name_required": "Please provide the person's name.",
-		"guardian.add_error":     "Unable to add person.",
-		"guardian.not_found":     "Person not found.",
-		"guardian.deleted":       "Person removed.",
+		"guardian.invalid_data":   "Invalid data.",
+		"guardian.name_required":  "Please provide the person's name.",
+		"guardian.add_error":      "Unable to add person.",
+		"guardian.not_found":      "Person not found.",
+		"guardian.deleted":        "Person removed.",
+		"guardian.notes_too_long": "Notes are too long. Maximum 1000 characters.",
 
 		// =======================================================================
 		// SETTINGS - Settings
@@ -217,13 +220,14 @@ var Translations = map[string]Messages{
 		// =======================================================================
 		// FEEDBACK
 		// =======================================================================
-		"feedback.invalid_data":   "Invalid data.",
-		"feedback.save_error":     "Unable to send feedback.",
-		"feedback.update_error":   "Unable to update feedback.",
-		"feedback.not_found":      "Feedback not found.",
-		"feedback.type_required":  "Please select a feedback type.",
-		"feedback.send_success":   "Feedback sent successfully!",
-		"feedback.update_success": "Feedback updated successfully.",
+		"feedback.invalid_data":     "Invalid data.",
+		"feedback.save_error":       "Unable to send feedback.",
+		"feedback.update_error":     "Unable to update feedback.",
+		"feedback.not_found":        "Feedback not found.",
+		"feedback.type_required":    "Please select a feedback type.",
+		"feedback.send_success":     "Feedback sent successfully!",
+		"feedback.update_success":   "Feedback updated successfully.",
+		"feedback.message_too_long": "Message is too long. Maximum 2000 characters.",
 
 		// =======================================================================
 		// ANALYTICS

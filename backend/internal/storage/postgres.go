@@ -100,30 +100,30 @@ func (s *PostgresStore) migrate() error {
 			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		)`,
 
-		// Tabela box_items
+		// Tabela box_items (com limite de 10KB para content)
 		`CREATE TABLE IF NOT EXISTS box_items (
 			id VARCHAR(50) PRIMARY KEY,
 			user_id VARCHAR(50) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
 			type VARCHAR(50) NOT NULL DEFAULT 'info',
-			title VARCHAR(500) NOT NULL,
-			content TEXT,
-			category VARCHAR(100),
-			recipient VARCHAR(255),
+			title VARCHAR(200) NOT NULL,
+			content VARCHAR(10000),
+			category VARCHAR(50),
+			recipient VARCHAR(100),
 			is_important BOOLEAN DEFAULT FALSE,
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		)`,
 
-		// Tabela guardians
+		// Tabela guardians (notas limitadas a 1KB)
 		`CREATE TABLE IF NOT EXISTS guardians (
 			id VARCHAR(50) PRIMARY KEY,
 			user_id VARCHAR(50) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-			name VARCHAR(255) NOT NULL,
+			name VARCHAR(100) NOT NULL,
 			email VARCHAR(255),
-			phone VARCHAR(50),
-			relationship VARCHAR(100),
-			role VARCHAR(50) DEFAULT 'viewer',
-			notes TEXT,
+			phone VARCHAR(30),
+			relationship VARCHAR(50),
+			role VARCHAR(20) DEFAULT 'viewer',
+			notes VARCHAR(1000),
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		)`,
@@ -178,6 +178,7 @@ func (s *PostgresStore) migrate() error {
 		// AUDITORIA E SEGURANÇA
 		// =======================================================================
 		// Tabela de auditoria para rastrear ações sensíveis (LGPD)
+		// Removido user_agent para economizar espaço no banco
 		`CREATE TABLE IF NOT EXISTS audit_log (
 			id SERIAL PRIMARY KEY,
 			user_id VARCHAR(50),
@@ -185,7 +186,6 @@ func (s *PostgresStore) migrate() error {
 			resource_type VARCHAR(50),
 			resource_id VARCHAR(50),
 			ip_address VARCHAR(45),
-			user_agent TEXT,
 			details JSONB,
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		)`,
@@ -206,16 +206,16 @@ func (s *PostgresStore) migrate() error {
 		// =======================================================================
 		// FEEDBACK
 		// =======================================================================
+		// Feedbacks com limites de tamanho para economizar espaço
 		`CREATE TABLE IF NOT EXISTS feedbacks (
 			id VARCHAR(50) PRIMARY KEY,
 			user_id VARCHAR(50) REFERENCES users(id) ON DELETE SET NULL,
 			user_email VARCHAR(255),
 			type VARCHAR(50) NOT NULL DEFAULT 'suggestion',
-			message TEXT NOT NULL,
-			page VARCHAR(255),
-			user_agent TEXT,
+			message VARCHAR(2000) NOT NULL,
+			page VARCHAR(100),
 			status VARCHAR(50) NOT NULL DEFAULT 'pending',
-			admin_note TEXT,
+			admin_note VARCHAR(500),
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		)`,
@@ -224,13 +224,13 @@ func (s *PostgresStore) migrate() error {
 		`CREATE INDEX IF NOT EXISTS idx_feedbacks_created ON feedbacks(created_at DESC)`,
 
 		// =======================================================================
-		// ANALYTICS
+		// ANALYTICS (com limpeza automática de eventos antigos)
 		// =======================================================================
 		`CREATE TABLE IF NOT EXISTS analytics_events (
 			id VARCHAR(50) PRIMARY KEY,
 			user_id VARCHAR(50),
 			event_type VARCHAR(50) NOT NULL,
-			page VARCHAR(255),
+			page VARCHAR(100),
 			details JSONB,
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		)`,
@@ -253,6 +253,33 @@ func (s *PostgresStore) migrate() error {
 // Close fecha a conexão com o banco
 func (s *PostgresStore) Close() error {
 	return s.db.Close()
+}
+
+// CleanupOldLogs remove logs e analytics antigos para economizar espaço
+// Deve ser chamado periodicamente (ex: diariamente)
+func (s *PostgresStore) CleanupOldLogs(retentionDays int) error {
+	if retentionDays < 7 {
+		retentionDays = 7 // Mínimo de 7 dias
+	}
+
+	queries := []string{
+		// Limpar audit_log antigos (manter últimos N dias)
+		fmt.Sprintf(`DELETE FROM audit_log WHERE created_at < NOW() - INTERVAL '%d days'`, retentionDays),
+
+		// Limpar analytics_events antigos
+		fmt.Sprintf(`DELETE FROM analytics_events WHERE created_at < NOW() - INTERVAL '%d days'`, retentionDays),
+
+		// Limpar deletion_tokens expirados
+		`DELETE FROM deletion_tokens WHERE expires_at < NOW()`,
+	}
+
+	for _, query := range queries {
+		if _, err := s.db.Exec(query); err != nil {
+			return fmt.Errorf("cleanup error: %w", err)
+		}
+	}
+
+	return nil
 }
 
 // ============================================================================

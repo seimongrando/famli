@@ -3,11 +3,13 @@ package guardian
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 
 	"famli/internal/auth"
 	"famli/internal/i18n"
+	"famli/internal/security"
 	"famli/internal/storage"
 )
 
@@ -52,6 +54,13 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Limitar tamanho das notas (1KB para economizar banco)
+	payload.Notes = strings.TrimSpace(payload.Notes)
+	if len(payload.Notes) > security.MaxNotesLength {
+		writeError(w, http.StatusBadRequest, i18n.Tr(r, "guardian.notes_too_long"))
+		return
+	}
+
 	guardian := &storage.Guardian{
 		Name:         payload.Name,
 		Email:        payload.Email,
@@ -83,6 +92,13 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 
 	if payload.Name == "" {
 		writeError(w, http.StatusBadRequest, i18n.Tr(r, "guardian.name_required"))
+		return
+	}
+
+	// Limitar tamanho das notas (1KB para economizar banco)
+	payload.Notes = strings.TrimSpace(payload.Notes)
+	if len(payload.Notes) > security.MaxNotesLength {
+		writeError(w, http.StatusBadRequest, i18n.Tr(r, "guardian.notes_too_long"))
 		return
 	}
 

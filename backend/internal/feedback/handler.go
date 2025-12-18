@@ -21,10 +21,12 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"famli/internal/auth"
 	"famli/internal/i18n"
+	"famli/internal/security"
 	"famli/internal/storage"
 
 	"github.com/go-chi/chi/v5"
@@ -74,14 +76,16 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Validações
+	// Sanitizar e validar mensagem
+	req.Message = strings.TrimSpace(req.Message)
 	if req.Message == "" {
 		writeError(w, http.StatusBadRequest, i18n.Tr(r, "feedback.invalid_data"))
 		return
 	}
 
-	if len(req.Message) > 5000 {
-		writeError(w, http.StatusBadRequest, i18n.Tr(r, "feedback.invalid_data"))
+	// Limitar tamanho da mensagem (2KB para economizar banco)
+	if len(req.Message) > security.MaxFeedbackLength {
+		writeError(w, http.StatusBadRequest, i18n.Tr(r, "feedback.message_too_long"))
 		return
 	}
 
@@ -100,7 +104,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Criar feedback
+	// Criar feedback (sem user_agent para economizar espaço no banco)
 	feedback := &storage.Feedback{
 		ID:        uuid.New().String(),
 		UserID:    userID,
@@ -108,7 +112,6 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		Type:      storage.FeedbackType(req.Type),
 		Message:   req.Message,
 		Page:      req.Page,
-		UserAgent: r.Header.Get("User-Agent"),
 		Status:    "pending",
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),

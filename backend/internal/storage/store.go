@@ -70,6 +70,9 @@ type Store interface {
 	GetAnalyticsSummary() *AnalyticsSummary
 	GetRecentEvents(limit int) ([]*AnalyticsEvent, error)
 	GetDailyStats(days int) ([]map[string]interface{}, error)
+
+	// Maintenance
+	CleanupOldLogs(retentionDays int) error
 }
 
 // Garantir que as implementações satisfazem a interface

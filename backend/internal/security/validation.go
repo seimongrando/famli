@@ -60,7 +60,9 @@ const (
 	MinPasswordLength = 8     // Mínimo de segurança
 	MaxNameLength     = 100   // Nome de usuário
 	MaxTitleLength    = 200   // Título de item
-	MaxContentLength  = 50000 // Conteúdo de item (50KB)
+	MaxContentLength  = 10000 // Conteúdo de item (10KB - ~2500 palavras)
+	MaxFeedbackLength = 2000  // Feedback do usuário (2KB)
+	MaxNotesLength    = 1000  // Notas de guardião (1KB)
 	MaxPhoneLength    = 20    // Telefone internacional
 	MaxURLLength      = 2048  // URL
 )

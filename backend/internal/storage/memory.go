@@ -892,3 +892,25 @@ func (s *MemoryStore) GetDailyStats(days int) ([]map[string]interface{}, error) 
 
 	return stats, nil
 }
+
+// CleanupOldLogs limpa analytics antigos (no-op para MemoryStore, já que reinicia com o servidor)
+func (s *MemoryStore) CleanupOldLogs(retentionDays int) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if retentionDays < 7 {
+		retentionDays = 7
+	}
+
+	cutoff := time.Now().AddDate(0, 0, -retentionDays)
+	newAnalytics := make([]*AnalyticsEvent, 0)
+
+	for _, e := range s.analytics {
+		if e.CreatedAt.After(cutoff) {
+			newAnalytics = append(newAnalytics, e)
+		}
+	}
+
+	s.analytics = newAnalytics
+	return nil
+}
