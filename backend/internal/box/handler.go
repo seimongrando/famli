@@ -71,16 +71,16 @@ type itemPayload struct {
 //
 // Retorna:
 //   - string: mensagem de erro (vazia se válido)
-func (p *itemPayload) validate() string {
+func (p *itemPayload) validate(r *http.Request) string {
 	// Sanitizar título
 	p.Title = security.SanitizeTitle(p.Title)
 	if p.Title == "" {
-		return "Título é obrigatório"
+		return i18n.Tr(r, "box.title_required")
 	}
 
 	// Verificar tamanho do título
 	if len(p.Title) > security.MaxTitleLength {
-		return "Título muito longo"
+		return i18n.Tr(r, "box.title_too_long")
 	}
 
 	// Sanitizar conteúdo
@@ -88,7 +88,7 @@ func (p *itemPayload) validate() string {
 
 	// Verificar tamanho do conteúdo
 	if len(p.Content) > security.MaxContentLength {
-		return "Conteúdo muito longo"
+		return i18n.Tr(r, "box.content_too_long")
 	}
 
 	// Sanitizar categoria
@@ -104,7 +104,7 @@ func (p *itemPayload) validate() string {
 
 	// Verificar por tentativas de injection
 	if security.ContainsSQLInjection(p.Title) || security.ContainsSQLInjection(p.Content) {
-		return "Conteúdo inválido detectado"
+		return i18n.Tr(r, "box.invalid_detected")
 	}
 
 	return ""
@@ -144,7 +144,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 
 	result, err := h.store.ListBoxItemsPaginated(userID, params)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "Erro ao listar itens")
+		writeError(w, http.StatusInternalServerError, i18n.Tr(r, "box.list_error"))
 		return
 	}
 
@@ -189,7 +189,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Validar e sanitizar
-	if errMsg := payload.validate(); errMsg != "" {
+	if errMsg := payload.validate(r); errMsg != "" {
 		writeError(w, http.StatusBadRequest, errMsg)
 		return
 	}
@@ -245,7 +245,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Validar e sanitizar
-	if errMsg := payload.validate(); errMsg != "" {
+	if errMsg := payload.validate(r); errMsg != "" {
 		writeError(w, http.StatusBadRequest, errMsg)
 		return
 	}
@@ -345,7 +345,7 @@ func (h *Handler) Assistant(w http.ResponseWriter, r *http.Request) {
 
 	// Verificar por conteúdo malicioso
 	if security.ContainsSQLInjection(input) {
-		writeError(w, http.StatusBadRequest, "Pergunta inválida")
+		writeError(w, http.StatusBadRequest, i18n.Tr(r, "box.invalid_query"))
 		return
 	}
 

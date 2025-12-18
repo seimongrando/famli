@@ -40,8 +40,10 @@ import (
 	"github.com/go-chi/cors"
 
 	"famli/internal/admin"
+	"famli/internal/analytics"
 	"famli/internal/auth"
 	"famli/internal/box"
+	"famli/internal/feedback"
 	"famli/internal/guardian"
 	"famli/internal/guide"
 	"famli/internal/i18n"
@@ -112,6 +114,7 @@ func main() {
 	// Verificar se há DATABASE_URL para usar PostgreSQL
 	databaseURL := getenv("DATABASE_URL", "")
 	var store storage.Store
+	var storageType string
 
 	if databaseURL != "" {
 		// Usar PostgreSQL em produção
@@ -120,10 +123,12 @@ func main() {
 			log.Fatalf("❌ Erro ao conectar ao PostgreSQL: %v", err)
 		}
 		store = pgStore
+		storageType = "PostgreSQL"
 		log.Println("💾 Storage: PostgreSQL")
 	} else {
 		// Usar memória em desenvolvimento
 		store = storage.NewMemoryStore()
+		storageType = "Memory"
 		log.Println("💾 Storage: Memória (dados serão perdidos ao reiniciar)")
 	}
 
@@ -142,7 +147,9 @@ func main() {
 	guardianHandler := guardian.NewHandler(store)
 	guideHandler := guide.NewHandler(store)
 	settingsHandler := settings.NewHandler(store)
-	adminHandler := admin.NewHandler(store)
+	adminHandler := admin.NewHandler(store, storageType)
+	feedbackHandler := feedback.NewHandler(store)
+	analyticsHandler := analytics.NewHandler(store)
 
 	// Serviço e handler do WhatsApp
 	whatsappService := whatsapp.NewService(store, whatsappConfig)
@@ -269,6 +276,12 @@ func main() {
 			// WhatsApp (vincular/desvincular)
 			pr.Post("/whatsapp/link", whatsappHandler.Link)
 			pr.Delete("/whatsapp/link", whatsappHandler.Unlink)
+
+			// Feedback - Usuários podem enviar feedback
+			pr.Post("/feedback", feedbackHandler.Create)
+
+			// Analytics - Rastreamento de eventos
+			pr.Post("/analytics/track", analyticsHandler.Track)
 		})
 
 		// ─────────────────────────────────────────────────────────────────────
@@ -289,6 +302,16 @@ func main() {
 			ar.Get("/users", adminHandler.Users)
 			// Atividade recente
 			ar.Get("/activity", adminHandler.Activity)
+
+			// Feedbacks - Gerenciamento de feedbacks dos usuários
+			ar.Get("/feedbacks", feedbackHandler.List)
+			ar.Get("/feedbacks/stats", feedbackHandler.GetStats)
+			ar.Patch("/feedbacks/{id}", feedbackHandler.Update)
+
+			// Analytics - Métricas de uso da aplicação
+			ar.Get("/analytics/summary", analyticsHandler.GetSummary)
+			ar.Get("/analytics/events", analyticsHandler.GetRecentEvents)
+			ar.Get("/analytics/daily", analyticsHandler.GetDailyStats)
 		})
 	})
 

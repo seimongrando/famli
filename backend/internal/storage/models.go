@@ -141,3 +141,85 @@ type UserDataExport struct {
 	Settings   *Settings        `json:"settings"`
 	ExportedAt time.Time        `json:"exported_at"`
 }
+
+// =============================================================================
+// FEEDBACK
+// =============================================================================
+
+// FeedbackType define os tipos de feedback
+type FeedbackType string
+
+const (
+	FeedbackSuggestion FeedbackType = "suggestion" // Sugestão
+	FeedbackProblem    FeedbackType = "problem"    // Problema/Bug
+	FeedbackPraise     FeedbackType = "praise"     // Elogio
+	FeedbackQuestion   FeedbackType = "question"   // Dúvida
+)
+
+// Feedback representa um feedback do usuário
+type Feedback struct {
+	ID        string       `json:"id"`
+	UserID    string       `json:"user_id"`
+	UserEmail string       `json:"user_email,omitempty"` // Para exibição no admin
+	Type      FeedbackType `json:"type"`
+	Message   string       `json:"message"`
+	Page      string       `json:"page,omitempty"` // Página onde estava
+	UserAgent string       `json:"user_agent,omitempty"`
+	Status    string       `json:"status"` // pending, reviewed, resolved
+	AdminNote string       `json:"admin_note,omitempty"`
+	CreatedAt time.Time    `json:"created_at"`
+	UpdatedAt time.Time    `json:"updated_at"`
+}
+
+// =============================================================================
+// ANALYTICS
+// =============================================================================
+
+// AnalyticsEventType define os tipos de eventos rastreados
+type AnalyticsEventType string
+
+const (
+	EventPageView       AnalyticsEventType = "page_view"
+	EventLogin          AnalyticsEventType = "login"
+	EventRegister       AnalyticsEventType = "register"
+	EventCreateItem     AnalyticsEventType = "create_item"
+	EventEditItem       AnalyticsEventType = "edit_item"
+	EventDeleteItem     AnalyticsEventType = "delete_item"
+	EventCreateGuardian AnalyticsEventType = "create_guardian"
+	EventCompleteGuide  AnalyticsEventType = "complete_guide"
+	EventExportData     AnalyticsEventType = "export_data"
+	EventSendFeedback   AnalyticsEventType = "send_feedback"
+)
+
+// AnalyticsEvent representa um evento de analytics
+type AnalyticsEvent struct {
+	ID        string             `json:"id"`
+	UserID    string             `json:"user_id,omitempty"`
+	EventType AnalyticsEventType `json:"event_type"`
+	Page      string             `json:"page,omitempty"`
+	Details   map[string]string  `json:"details,omitempty"`
+	CreatedAt time.Time          `json:"created_at"`
+}
+
+// AnalyticsSummary representa o resumo de analytics para o dashboard
+type AnalyticsSummary struct {
+	// Usuários
+	TotalUsers       int `json:"total_users"`
+	ActiveToday      int `json:"active_today"`
+	ActiveThisWeek   int `json:"active_this_week"`
+	NewUsersToday    int `json:"new_users_today"`
+	NewUsersThisWeek int `json:"new_users_this_week"`
+
+	// Ações
+	TotalItems        int `json:"total_items"`
+	ItemsCreatedToday int `json:"items_created_today"`
+	TotalGuardians    int `json:"total_guardians"`
+
+	// Engajamento
+	EventsToday  int            `json:"events_today"`
+	EventsByType map[string]int `json:"events_by_type"`
+
+	// Feedbacks
+	TotalFeedbacks   int `json:"total_feedbacks"`
+	PendingFeedbacks int `json:"pending_feedbacks"`
+}

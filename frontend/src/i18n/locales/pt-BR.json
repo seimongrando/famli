@@ -14,7 +14,8 @@
     "or": "ou",
     "and": "e",
     "items": "itens",
-    "item": "item"
+    "item": "item",
+    "sending": "Enviando..."
   },
   "brand": {
     "name": "famli",
@@ -426,6 +427,8 @@
       "overview": "Visão Geral",
       "users": "Usuários",
       "activity": "Atividade",
+      "feedbacks": "Feedbacks",
+      "analytics": "Analytics",
       "system": "Sistema"
     },
     "metrics": {
@@ -464,6 +467,33 @@
       "environment": "Ambiente",
       "adminEmails": "Emails de Admin (ADMIN_EMAILS)",
       "noAdminEmails": "Nenhum email configurado (todos os usuários têm acesso em desenvolvimento)"
+    },
+    "feedbacks": {
+      "title": "Feedbacks",
+      "empty": "Nenhum feedback encontrado",
+      "filter": "Filtrar por status",
+      "all": "Todos",
+      "pending": "Pendentes",
+      "reviewed": "Analisados",
+      "resolved": "Resolvidos",
+      "markReviewed": "Marcar como analisado",
+      "markResolved": "Marcar como resolvido",
+      "adminNote": "Nota do admin",
+      "addNote": "Adicionar nota..."
+    },
+    "analytics": {
+      "title": "Analytics",
+      "summary": "Resumo",
+      "dailyChart": "Atividade Diária",
+      "recentEvents": "Eventos Recentes",
+      "activeToday": "Ativos Hoje",
+      "activeThisWeek": "Ativos Esta Semana",
+      "newUsersToday": "Novos Hoje",
+      "newUsersThisWeek": "Novos Esta Semana",
+      "itemsCreatedToday": "Itens Criados Hoje",
+      "eventsToday": "Eventos Hoje",
+      "eventsByType": "Eventos por Tipo",
+      "noData": "Nenhum dado disponível"
     }
   },
   "profile": {
@@ -614,6 +644,20 @@
         "title": "Contato",
         "text": "Para dúvidas sobre privacidade, entre em contato conosco:"
       }
+    }
+  },
+  "feedback": {
+    "title": "Enviar Feedback",
+    "typeLabel": "Tipo de feedback",
+    "messageLabel": "Sua mensagem",
+    "messagePlaceholder": "Conte-nos o que você pensa sobre o Famli...",
+    "submit": "Enviar",
+    "successMessage": "Obrigado pelo seu feedback! Sua opinião é muito importante para nós.",
+    "types": {
+      "suggestion": "Sugestão",
+      "problem": "Problema",
+      "praise": "Elogio",
+      "question": "Dúvida"
     }
   }
 }

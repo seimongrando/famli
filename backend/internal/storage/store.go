@@ -53,6 +53,18 @@ type Store interface {
 
 	// User Data Export (LGPD: Portabilidade)
 	ExportUserData(userID string) (*UserDataExport, error)
+
+	// Feedback
+	CreateFeedback(f *Feedback) error
+	ListFeedbacks(status string, limit int) ([]*Feedback, error)
+	UpdateFeedbackStatus(id, status, adminNote string) error
+	GetFeedbackStats() (total, pending int)
+
+	// Analytics
+	TrackEvent(e *AnalyticsEvent) error
+	GetAnalyticsSummary() *AnalyticsSummary
+	GetRecentEvents(limit int) ([]*AnalyticsEvent, error)
+	GetDailyStats(days int) ([]map[string]interface{}, error)
 }
 
 // Garantir que as implementações satisfazem a interface

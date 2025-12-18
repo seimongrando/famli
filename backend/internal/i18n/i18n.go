@@ -11,42 +11,76 @@ type Messages map[string]string
 // Translations contém todas as traduções por idioma
 var Translations = map[string]Messages{
 	"pt-BR": {
-		// Auth
-		"auth.invalid_data":     "Não foi possível entender os dados.",
-		"auth.email_required":   "Preencha e-mail e senha.",
-		"auth.prepare_error":    "Erro ao preparar sua conta.",
-		"auth.email_exists":     "Este e-mail já está cadastrado.",
-		"auth.create_error":     "Erro ao criar conta.",
-		"auth.session_error":    "Erro ao criar sessão.",
-		"auth.not_found":        "Conta não encontrada.",
-		"auth.invalid_password": "Senha inválida.",
-		"auth.session_expired":  "Sessão expirada.",
-		"auth.session_invalid":  "Sessão inválida.",
-		"auth.logout_success":   "Sessão encerrada.",
+		// =======================================================================
+		// AUTH - Autenticação
+		// =======================================================================
+		"auth.invalid_data":        "Dados inválidos.",
+		"auth.email_required":      "Preencha e-mail e senha.",
+		"auth.email_invalid":       "E-mail inválido.",
+		"auth.password_weak":       "Senha precisa ter no mínimo 8 caracteres com letras e números.",
+		"auth.prepare_error":       "Não foi possível preparar sua conta.",
+		"auth.email_exists":        "Não foi possível criar a conta. Tente outro e-mail.",
+		"auth.create_error":        "Não foi possível criar a conta.",
+		"auth.session_error":       "Não foi possível iniciar a sessão.",
+		"auth.not_found":           "Conta não encontrada.",
+		"auth.invalid_credentials": "E-mail ou senha incorretos.",
+		"auth.session_expired":     "Sessão expirada.",
+		"auth.session_invalid":     "Sessão inválida.",
+		"auth.logout_success":      "Sessão encerrada.",
+		"auth.rate_limit":          "Muitas tentativas. Aguarde alguns minutos.",
+		"auth.user_not_found":      "Usuário não encontrado.",
+		"auth.password_incorrect":  "Senha incorreta.",
+		"auth.delete_confirm":      "Texto de confirmação incorreto.",
+		"auth.delete_error":        "Não foi possível excluir a conta.",
+		"auth.delete_success":      "Conta excluída com sucesso. Todos os dados foram removidos.",
+		"auth.export_error":        "Não foi possível exportar os dados.",
+		"auth.internal_error":      "Não foi possível processar a solicitação.",
 
-		// Box Items
-		"box.invalid_content": "Conteúdo inválido.",
-		"box.title_required":  "Dê um título ao que você quer guardar.",
-		"box.save_error":      "Erro ao guardar.",
-		"box.not_found":       "Item não encontrado.",
-		"box.deleted":         "Item removido.",
+		// =======================================================================
+		// BOX - Itens da Caixa Famli
+		// =======================================================================
+		"box.invalid_content":  "Conteúdo inválido.",
+		"box.title_required":   "Dê um título ao que você quer guardar.",
+		"box.title_too_long":   "Título muito longo.",
+		"box.content_too_long": "Conteúdo muito longo.",
+		"box.invalid_detected": "Conteúdo inválido detectado.",
+		"box.save_error":       "Não foi possível salvar.",
+		"box.list_error":       "Não foi possível carregar os itens.",
+		"box.not_found":        "Item não encontrado.",
+		"box.deleted":          "Item removido.",
+		"box.invalid_query":    "Consulta inválida.",
 
-		// Guardians
+		// =======================================================================
+		// GUARDIANS - Pessoas de Confiança
+		// =======================================================================
 		"guardian.invalid_data":  "Dados inválidos.",
 		"guardian.name_required": "Informe o nome da pessoa.",
-		"guardian.add_error":     "Erro ao adicionar pessoa.",
+		"guardian.add_error":     "Não foi possível adicionar a pessoa.",
 		"guardian.not_found":     "Pessoa não encontrada.",
 		"guardian.deleted":       "Pessoa removida.",
 
-		// Settings
+		// =======================================================================
+		// SETTINGS - Configurações
+		// =======================================================================
 		"settings.invalid_data": "Dados inválidos.",
 
-		// Guide
+		// =======================================================================
+		// GUIDE - Guia Famli
+		// =======================================================================
 		"guide.invalid_data":   "Dados inválidos.",
 		"guide.invalid_status": "Status inválido.",
-		"guide.progress_error": "Erro ao salvar progresso.",
+		"guide.progress_error": "Não foi possível salvar o progresso.",
 
-		// Assistant
+		// =======================================================================
+		// ADMIN - Administração
+		// =======================================================================
+		"admin.not_authenticated": "Não autenticado.",
+		"admin.user_not_found":    "Usuário não encontrado.",
+		"admin.access_denied":     "Acesso não permitido.",
+
+		// =======================================================================
+		// ASSISTANT - Assistente
+		// =======================================================================
 		"assistant.empty_input": "Envie uma mensagem.",
 		"assistant.start":       "Que bom que você está aqui! Sugiro começar pelo mais simples: registre o contato de uma pessoa de confiança. Pode ser um filho, neto ou amigo próximo. Assim, se precisar, alguém saberá que você está cuidando de tudo.",
 		"assistant.passwords":   "Aqui no Famli você não guarda as senhas em si, mas explica onde elas estão. Por exemplo: 'Minhas senhas ficam no aplicativo 1Password, no celular. O e-mail de recuperação é fulano@email.com'. Assim fica seguro e alguém de confiança consegue ajudar se precisar.",
@@ -56,44 +90,111 @@ var Translations = map[string]Messages{
 		"assistant.security":    "Seus dados são seus. Nada é compartilhado automaticamente e você pode apagar tudo quando quiser. Não vendemos nem usamos suas informações para marketing. Adicionar alguém como pessoa de confiança não dá acesso automático às suas informações.",
 		"assistant.help":        "Estou aqui para ajudar! Você pode me perguntar sobre: como começar, como registrar informações importantes, como adicionar pessoas de confiança, ou como deixar mensagens para quem você ama.",
 		"assistant.default":     "Entendi. Estou aqui para ajudar você a organizar o que é importante. Você pode guardar informações, indicar pessoas de confiança ou deixar memórias e mensagens. O que gostaria de fazer?",
+
+		// =======================================================================
+		// FEEDBACK
+		// =======================================================================
+		"feedback.invalid_data":   "Dados inválidos.",
+		"feedback.save_error":     "Não foi possível enviar o feedback.",
+		"feedback.update_error":   "Não foi possível atualizar o feedback.",
+		"feedback.not_found":      "Feedback não encontrado.",
+		"feedback.type_required":  "Selecione o tipo de feedback.",
+		"feedback.send_success":   "Feedback enviado com sucesso!",
+		"feedback.update_success": "Feedback atualizado com sucesso.",
+
+		// =======================================================================
+		// ANALYTICS
+		// =======================================================================
+		"analytics.invalid_data": "Dados inválidos.",
+		"analytics.track_error":  "Não foi possível registrar o evento.",
+
+		// =======================================================================
+		// GUIDE CARDS - Títulos e descrições do Guia Famli
+		// =======================================================================
+		"guide.card.welcome.title":         "Comece por aqui",
+		"guide.card.welcome.description":   "Dê o primeiro passo: registre algo simples, como o telefone de emergência ou um contato importante.",
+		"guide.card.people.title":          "Pessoas importantes",
+		"guide.card.people.description":    "Quem são as pessoas que devem ser avisadas se você precisar de ajuda? Registre aqui seus contatos de confiança.",
+		"guide.card.locations.title":       "Onde estão as coisas importantes",
+		"guide.card.locations.description": "Documentos, chaves, cartões... Explique onde estão as coisas que alguém precisaria encontrar.",
+		"guide.card.routines.title":        "Rotina que não pode parar",
+		"guide.card.routines.description":  "Medicamentos, contas automáticas, pets... O que precisa continuar funcionando mesmo se você não estiver por perto?",
+		"guide.card.access.title":          "Como acessar suas coisas",
+		"guide.card.access.description":    "Explique onde estão suas senhas (não as senhas em si!) e como alguém de confiança pode ajudar a acessar.",
+		"guide.card.memories.title":        "Notas pessoais e memórias",
+		"guide.card.memories.description":  "Mensagens, histórias, recados... Um espaço para deixar algo especial para quem você ama.",
 	},
 	"en": {
-		// Auth
-		"auth.invalid_data":     "Unable to understand the data.",
-		"auth.email_required":   "Please fill in email and password.",
-		"auth.prepare_error":    "Error preparing your account.",
-		"auth.email_exists":     "This email is already registered.",
-		"auth.create_error":     "Error creating account.",
-		"auth.session_error":    "Error creating session.",
-		"auth.not_found":        "Account not found.",
-		"auth.invalid_password": "Invalid password.",
-		"auth.session_expired":  "Session expired.",
-		"auth.session_invalid":  "Invalid session.",
-		"auth.logout_success":   "Session ended.",
+		// =======================================================================
+		// AUTH - Authentication
+		// =======================================================================
+		"auth.invalid_data":        "Invalid data.",
+		"auth.email_required":      "Please fill in email and password.",
+		"auth.email_invalid":       "Invalid email.",
+		"auth.password_weak":       "Password must have at least 8 characters with letters and numbers.",
+		"auth.prepare_error":       "Unable to prepare your account.",
+		"auth.email_exists":        "Unable to create account. Try another email.",
+		"auth.create_error":        "Unable to create account.",
+		"auth.session_error":       "Unable to start session.",
+		"auth.not_found":           "Account not found.",
+		"auth.invalid_credentials": "Invalid email or password.",
+		"auth.session_expired":     "Session expired.",
+		"auth.session_invalid":     "Invalid session.",
+		"auth.logout_success":      "Session ended.",
+		"auth.rate_limit":          "Too many attempts. Please wait a few minutes.",
+		"auth.user_not_found":      "User not found.",
+		"auth.password_incorrect":  "Incorrect password.",
+		"auth.delete_confirm":      "Incorrect confirmation text.",
+		"auth.delete_error":        "Unable to delete account.",
+		"auth.delete_success":      "Account deleted successfully. All data has been removed.",
+		"auth.export_error":        "Unable to export data.",
+		"auth.internal_error":      "Unable to process the request.",
 
-		// Box Items
-		"box.invalid_content": "Invalid content.",
-		"box.title_required":  "Give a title to what you want to store.",
-		"box.save_error":      "Error saving.",
-		"box.not_found":       "Item not found.",
-		"box.deleted":         "Item removed.",
+		// =======================================================================
+		// BOX - Famli Box Items
+		// =======================================================================
+		"box.invalid_content":  "Invalid content.",
+		"box.title_required":   "Give a title to what you want to store.",
+		"box.title_too_long":   "Title is too long.",
+		"box.content_too_long": "Content is too long.",
+		"box.invalid_detected": "Invalid content detected.",
+		"box.save_error":       "Unable to save.",
+		"box.list_error":       "Unable to load items.",
+		"box.not_found":        "Item not found.",
+		"box.deleted":          "Item removed.",
+		"box.invalid_query":    "Invalid query.",
 
-		// Guardians
+		// =======================================================================
+		// GUARDIANS - Trusted People
+		// =======================================================================
 		"guardian.invalid_data":  "Invalid data.",
 		"guardian.name_required": "Please provide the person's name.",
-		"guardian.add_error":     "Error adding person.",
+		"guardian.add_error":     "Unable to add person.",
 		"guardian.not_found":     "Person not found.",
 		"guardian.deleted":       "Person removed.",
 
-		// Settings
+		// =======================================================================
+		// SETTINGS - Settings
+		// =======================================================================
 		"settings.invalid_data": "Invalid data.",
 
-		// Guide
+		// =======================================================================
+		// GUIDE - Famli Guide
+		// =======================================================================
 		"guide.invalid_data":   "Invalid data.",
 		"guide.invalid_status": "Invalid status.",
-		"guide.progress_error": "Error saving progress.",
+		"guide.progress_error": "Unable to save progress.",
 
-		// Assistant
+		// =======================================================================
+		// ADMIN - Administration
+		// =======================================================================
+		"admin.not_authenticated": "Not authenticated.",
+		"admin.user_not_found":    "User not found.",
+		"admin.access_denied":     "Access denied.",
+
+		// =======================================================================
+		// ASSISTANT - Assistant
+		// =======================================================================
 		"assistant.empty_input": "Send a message.",
 		"assistant.start":       "Great that you're here! I suggest starting with something simple: register a trusted person's contact. It could be a son, grandchild, or close friend. That way, if needed, someone will know you're taking care of everything.",
 		"assistant.passwords":   "Here at Famli you don't store the passwords themselves, but explain where they are. For example: 'My passwords are in the 1Password app, on my phone. The recovery email is someone@email.com'. This way it's secure and a trusted person can help if needed.",
@@ -103,6 +204,39 @@ var Translations = map[string]Messages{
 		"assistant.security":    "Your data is yours. Nothing is shared automatically and you can delete everything whenever you want. We don't sell or use your information for marketing. Adding someone as a trusted person doesn't give automatic access to your information.",
 		"assistant.help":        "I'm here to help! You can ask me about: how to start, how to register important information, how to add trusted people, or how to leave messages for those you love.",
 		"assistant.default":     "I understand. I'm here to help you organize what's important. You can store information, indicate trusted people, or leave memories and messages. What would you like to do?",
+
+		// =======================================================================
+		// FEEDBACK
+		// =======================================================================
+		"feedback.invalid_data":   "Invalid data.",
+		"feedback.save_error":     "Unable to send feedback.",
+		"feedback.update_error":   "Unable to update feedback.",
+		"feedback.not_found":      "Feedback not found.",
+		"feedback.type_required":  "Please select a feedback type.",
+		"feedback.send_success":   "Feedback sent successfully!",
+		"feedback.update_success": "Feedback updated successfully.",
+
+		// =======================================================================
+		// ANALYTICS
+		// =======================================================================
+		"analytics.invalid_data": "Invalid data.",
+		"analytics.track_error":  "Unable to record event.",
+
+		// =======================================================================
+		// GUIDE CARDS - Famli Guide titles and descriptions
+		// =======================================================================
+		"guide.card.welcome.title":         "Start here",
+		"guide.card.welcome.description":   "Take the first step: register something simple, like an emergency phone number or an important contact.",
+		"guide.card.people.title":          "Important people",
+		"guide.card.people.description":    "Who should be notified if you need help? Register your trusted contacts here.",
+		"guide.card.locations.title":       "Where important things are",
+		"guide.card.locations.description": "Documents, keys, cards... Explain where things are that someone might need to find.",
+		"guide.card.routines.title":        "Routines that can't stop",
+		"guide.card.routines.description":  "Medications, automatic bills, pets... What needs to keep running even if you're not around?",
+		"guide.card.access.title":          "How to access your things",
+		"guide.card.access.description":    "Explain where your passwords are (not the passwords themselves!) and how a trusted person can help access them.",
+		"guide.card.memories.title":        "Personal notes and memories",
+		"guide.card.memories.description":  "Messages, stories, notes... A space to leave something special for those you love.",
 	},
 }
 

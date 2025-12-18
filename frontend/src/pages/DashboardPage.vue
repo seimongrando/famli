@@ -15,6 +15,7 @@ import BoxFeed from '../components/BoxFeed.vue'
 import AssistantChat from '../components/AssistantChat.vue'
 import SettingsModal from '../components/SettingsModal.vue'
 import PrivacyModal from '../components/PrivacyModal.vue'
+import FeedbackWidget from '../components/FeedbackWidget.vue'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -283,6 +284,9 @@ onMounted(async () => {
     <!-- Modals -->
     <SettingsModal v-if="showSettings" @close="showSettings = false" />
     <PrivacyModal v-if="showPrivacy" @close="showPrivacy = false" />
+    
+    <!-- Feedback Widget -->
+    <FeedbackWidget />
   </div>
 </template>
 

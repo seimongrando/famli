@@ -60,6 +60,26 @@ const health = ref({
 const users = ref([])
 const activity = ref([])
 
+// Dados de Feedback e Analytics
+const feedbacks = ref([])
+const feedbackFilter = ref('all')
+const analyticsSummary = ref({
+  total_users: 0,
+  active_today: 0,
+  active_this_week: 0,
+  new_users_today: 0,
+  new_users_this_week: 0,
+  total_items: 0,
+  items_created_today: 0,
+  total_guardians: 0,
+  events_today: 0,
+  events_by_type: {},
+  total_feedbacks: 0,
+  pending_feedbacks: 0
+})
+const dailyStats = ref([])
+const recentEvents = ref([])
+
 // Cores para gráficos
 const typeColors = {
   info: '#3b82f6',
@@ -111,10 +131,12 @@ async function fetchDashboard() {
       credentials: 'include'
     })
     
-    console.log('[Admin] Dashboard response status:', response.status)
-    
     if (response.status === 401) {
+      // Sessão expirada - redirecionar para login
       error.value = t('admin.sessionExpired')
+      setTimeout(() => {
+        window.location.href = '/'
+      }, 2000)
       return
     }
     
@@ -124,16 +146,12 @@ async function fetchDashboard() {
     }
     
     if (!response.ok) {
-      const errorData = await response.text()
-      console.error('[Admin] Dashboard error:', errorData)
       throw new Error('Failed to fetch dashboard')
     }
     
     const data = await response.json()
-    console.log('[Admin] Dashboard data:', data)
     dashboard.value = data
   } catch (err) {
-    console.error('[Admin] Dashboard fetch error:', err)
     error.value = t('admin.loadError')
   }
 }
@@ -182,13 +200,135 @@ async function fetchActivity() {
   }
 }
 
+// =========================================================================
+// FEEDBACK
+// =========================================================================
+
+async function fetchFeedbacks() {
+  try {
+    const statusParam = feedbackFilter.value !== 'all' ? `?status=${feedbackFilter.value}` : ''
+    const response = await fetch(`/api/admin/feedbacks${statusParam}`, {
+      credentials: 'include'
+    })
+    
+    if (!response.ok) throw new Error('Failed to fetch feedbacks')
+    
+    feedbacks.value = await response.json() || []
+  } catch (err) {
+    console.error('Error fetching feedbacks:', err)
+  }
+}
+
+async function updateFeedbackStatus(id, status, adminNote = '') {
+  try {
+    const response = await fetch(`/api/admin/feedbacks/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ status, admin_note: adminNote })
+    })
+    
+    if (!response.ok) throw new Error('Failed to update feedback')
+    
+    // Recarregar feedbacks
+    await fetchFeedbacks()
+  } catch (err) {
+    console.error('Error updating feedback:', err)
+  }
+}
+
+function feedbackTypeIcon(type) {
+  const icons = {
+    suggestion: '💡',
+    problem: '🐛',
+    praise: '❤️',
+    question: '❓'
+  }
+  return icons[type] || '📝'
+}
+
+function feedbackStatusClass(status) {
+  const classes = {
+    pending: 'status-pending',
+    reviewed: 'status-reviewed',
+    resolved: 'status-resolved'
+  }
+  return classes[status] || ''
+}
+
+// =========================================================================
+// ANALYTICS
+// =========================================================================
+
+async function fetchAnalyticsSummary() {
+  try {
+    const response = await fetch('/api/admin/analytics/summary', {
+      credentials: 'include'
+    })
+    
+    if (!response.ok) throw new Error('Failed to fetch analytics summary')
+    
+    analyticsSummary.value = await response.json()
+  } catch (err) {
+    console.error('Error fetching analytics summary:', err)
+  }
+}
+
+async function fetchDailyStats() {
+  try {
+    const response = await fetch('/api/admin/analytics/daily?days=14', {
+      credentials: 'include'
+    })
+    
+    if (!response.ok) throw new Error('Failed to fetch daily stats')
+    
+    dailyStats.value = await response.json() || []
+  } catch (err) {
+    console.error('Error fetching daily stats:', err)
+  }
+}
+
+async function fetchRecentEvents() {
+  try {
+    const response = await fetch('/api/admin/analytics/events?limit=20', {
+      credentials: 'include'
+    })
+    
+    if (!response.ok) throw new Error('Failed to fetch recent events')
+    
+    recentEvents.value = await response.json() || []
+  } catch (err) {
+    console.error('Error fetching recent events:', err)
+  }
+}
+
+function formatEventTypeLabel(type) {
+  const labels = {
+    'page_view': '📄 Page View',
+    'login': '🔐 Login',
+    'register': '✨ Register',
+    'create_item': '➕ Create Item',
+    'edit_item': '✏️ Edit Item',
+    'delete_item': '🗑️ Delete Item',
+    'create_guardian': '👤 Create Guardian',
+    'complete_guide': '✅ Complete Guide',
+    'export_data': '📤 Export Data',
+    'send_feedback': '💬 Send Feedback'
+  }
+  return labels[type] || type
+}
+
 async function loadAll() {
   loading.value = true
   await Promise.all([
     fetchDashboard(),
     fetchHealth(),
     fetchUsers(),
-    fetchActivity()
+    fetchActivity(),
+    fetchFeedbacks(),
+    fetchAnalyticsSummary(),
+    fetchDailyStats(),
+    fetchRecentEvents()
   ])
   loading.value = false
 }
@@ -283,10 +423,10 @@ onUnmounted(() => {
       <!-- Tabs -->
       <nav class="admin-tabs">
         <button 
-          v-for="tab in ['overview', 'users', 'activity', 'system']" 
+          v-for="tab in ['overview', 'users', 'activity', 'feedbacks', 'analytics', 'system']" 
           :key="tab"
           :class="['admin-tab', { 'admin-tab--active': activeTab === tab }]"
-          @click="activeTab = tab"
+          @click="activeTab = tab; tab === 'feedbacks' && fetchFeedbacks()"
         >
           {{ t(`admin.tabs.${tab}`) }}
         </button>
@@ -555,6 +695,150 @@ onUnmounted(() => {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Feedbacks Tab -->
+      <section v-if="activeTab === 'feedbacks'" class="admin-section">
+        <!-- Filtros -->
+        <div class="feedbacks-filters">
+          <label>{{ t('admin.feedbacks.filter') }}:</label>
+          <select v-model="feedbackFilter" @change="fetchFeedbacks" class="filter-select">
+            <option value="all">{{ t('admin.feedbacks.all') }}</option>
+            <option value="pending">{{ t('admin.feedbacks.pending') }}</option>
+            <option value="reviewed">{{ t('admin.feedbacks.reviewed') }}</option>
+            <option value="resolved">{{ t('admin.feedbacks.resolved') }}</option>
+          </select>
+        </div>
+
+        <!-- Lista de Feedbacks -->
+        <div class="feedbacks-list">
+          <div 
+            v-for="fb in feedbacks" 
+            :key="fb.id"
+            class="feedback-card"
+            :class="feedbackStatusClass(fb.status)"
+          >
+            <div class="feedback-card__header">
+              <span class="feedback-card__type">{{ feedbackTypeIcon(fb.type) }}</span>
+              <span class="feedback-card__email">{{ fb.user_email || 'Anônimo' }}</span>
+              <span class="feedback-card__date">{{ formatTimestamp(fb.created_at) }}</span>
+              <span :class="['feedback-card__status', feedbackStatusClass(fb.status)]">
+                {{ t(`admin.feedbacks.${fb.status}`) }}
+              </span>
+            </div>
+            <div class="feedback-card__message">{{ fb.message }}</div>
+            <div v-if="fb.page" class="feedback-card__page">📍 {{ fb.page }}</div>
+            <div class="feedback-card__actions">
+              <button 
+                v-if="fb.status === 'pending'"
+                class="btn btn-sm btn-secondary"
+                @click="updateFeedbackStatus(fb.id, 'reviewed')"
+              >
+                {{ t('admin.feedbacks.markReviewed') }}
+              </button>
+              <button 
+                v-if="fb.status !== 'resolved'"
+                class="btn btn-sm btn-primary"
+                @click="updateFeedbackStatus(fb.id, 'resolved')"
+              >
+                {{ t('admin.feedbacks.markResolved') }}
+              </button>
+            </div>
+          </div>
+          <p v-if="feedbacks.length === 0" class="feedbacks-empty">
+            {{ t('admin.feedbacks.empty') }}
+          </p>
+        </div>
+      </section>
+
+      <!-- Analytics Tab -->
+      <section v-if="activeTab === 'analytics'" class="admin-section">
+        <!-- Summary Cards -->
+        <div class="analytics-summary">
+          <div class="analytics-card">
+            <div class="analytics-card__value">{{ analyticsSummary.active_today || 0 }}</div>
+            <div class="analytics-card__label">{{ t('admin.analytics.activeToday') }}</div>
+          </div>
+          <div class="analytics-card">
+            <div class="analytics-card__value">{{ analyticsSummary.active_this_week || 0 }}</div>
+            <div class="analytics-card__label">{{ t('admin.analytics.activeThisWeek') }}</div>
+          </div>
+          <div class="analytics-card">
+            <div class="analytics-card__value">{{ analyticsSummary.new_users_today || 0 }}</div>
+            <div class="analytics-card__label">{{ t('admin.analytics.newUsersToday') }}</div>
+          </div>
+          <div class="analytics-card">
+            <div class="analytics-card__value">{{ analyticsSummary.items_created_today || 0 }}</div>
+            <div class="analytics-card__label">{{ t('admin.analytics.itemsCreatedToday') }}</div>
+          </div>
+          <div class="analytics-card">
+            <div class="analytics-card__value">{{ analyticsSummary.events_today || 0 }}</div>
+            <div class="analytics-card__label">{{ t('admin.analytics.eventsToday') }}</div>
+          </div>
+          <div class="analytics-card analytics-card--highlight">
+            <div class="analytics-card__value">{{ analyticsSummary.pending_feedbacks || 0 }}</div>
+            <div class="analytics-card__label">Feedbacks Pendentes</div>
+          </div>
+        </div>
+
+        <!-- Events by Type -->
+        <div class="analytics-events-by-type">
+          <h3>{{ t('admin.analytics.eventsByType') }} (últimos 7 dias)</h3>
+          <div class="events-type-grid">
+            <div 
+              v-for="(count, type) in analyticsSummary.events_by_type" 
+              :key="type"
+              class="event-type-item"
+            >
+              <span class="event-type-label">{{ formatEventTypeLabel(type) }}</span>
+              <span class="event-type-count">{{ count }}</span>
+            </div>
+            <p v-if="Object.keys(analyticsSummary.events_by_type || {}).length === 0" class="no-data">
+              Nenhum evento registrado
+            </p>
+          </div>
+        </div>
+
+        <!-- Daily Chart (texto simples por enquanto) -->
+        <div class="analytics-daily">
+          <h3>{{ t('admin.analytics.dailyChart') }} (últimos 14 dias)</h3>
+          <div class="daily-chart">
+            <div 
+              v-for="day in dailyStats" 
+              :key="day.date"
+              class="daily-bar"
+            >
+              <div 
+                class="daily-bar__fill" 
+                :style="{ height: `${Math.min(day.events * 10, 100)}%` }"
+              ></div>
+              <div class="daily-bar__label">{{ day.date?.slice(-5) }}</div>
+              <div class="daily-bar__value">{{ day.events }}</div>
+            </div>
+            <p v-if="dailyStats.length === 0" class="no-data">
+              Nenhum dado disponível
+            </p>
+          </div>
+        </div>
+
+        <!-- Recent Events -->
+        <div class="analytics-recent">
+          <h3>{{ t('admin.analytics.recentEvents') }}</h3>
+          <div class="recent-events-list">
+            <div 
+              v-for="event in recentEvents.slice(0, 10)" 
+              :key="event.id"
+              class="recent-event"
+            >
+              <span class="recent-event__time">{{ formatTimestamp(event.created_at) }}</span>
+              <span class="recent-event__type">{{ formatEventTypeLabel(event.event_type) }}</span>
+              <span class="recent-event__page">{{ event.page || '-' }}</span>
+            </div>
+            <p v-if="recentEvents.length === 0" class="no-data">
+              Nenhum evento recente
+            </p>
           </div>
         </div>
       </section>
@@ -1021,6 +1305,308 @@ onUnmounted(() => {
   color: var(--color-text-soft);
   font-style: italic;
   font-size: var(--font-size-sm);
+}
+
+/* =============================================================================
+   FEEDBACKS TAB
+============================================================================= */
+
+.feedbacks-filters {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+}
+
+.filter-select {
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: white;
+  font-size: var(--font-size-base);
+  cursor: pointer;
+}
+
+.feedbacks-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.feedback-card {
+  background: white;
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  box-shadow: var(--shadow-sm);
+  border-left: 4px solid var(--color-border);
+}
+
+.feedback-card.status-pending {
+  border-left-color: #f59e0b;
+}
+
+.feedback-card.status-reviewed {
+  border-left-color: #3b82f6;
+}
+
+.feedback-card.status-resolved {
+  border-left-color: #22c55e;
+}
+
+.feedback-card__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  margin-bottom: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+.feedback-card__type {
+  font-size: 1.5rem;
+}
+
+.feedback-card__email {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.feedback-card__date {
+  color: var(--color-text-soft);
+  font-size: var(--font-size-sm);
+}
+
+.feedback-card__status {
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.feedback-card__status.status-pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.feedback-card__status.status-reviewed {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.feedback-card__status.status-resolved {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.feedback-card__message {
+  color: var(--color-text);
+  line-height: 1.6;
+  margin-bottom: var(--space-sm);
+}
+
+.feedback-card__page {
+  color: var(--color-text-soft);
+  font-size: var(--font-size-sm);
+  margin-bottom: var(--space-md);
+}
+
+.feedback-card__actions {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.btn-sm {
+  padding: var(--space-xs) var(--space-md);
+  font-size: var(--font-size-sm);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s;
+}
+
+.btn-secondary {
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.btn-secondary:hover {
+  background: var(--color-border-light);
+}
+
+.btn-primary {
+  background: var(--color-primary);
+  color: white;
+}
+
+.btn-primary:hover {
+  background: var(--color-primary-dark);
+}
+
+.feedbacks-empty {
+  text-align: center;
+  color: var(--color-text-soft);
+  padding: var(--space-xl);
+}
+
+/* =============================================================================
+   ANALYTICS TAB
+============================================================================= */
+
+.analytics-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--space-md);
+  margin-bottom: var(--space-xl);
+}
+
+.analytics-card {
+  background: white;
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  text-align: center;
+  box-shadow: var(--shadow-sm);
+}
+
+.analytics-card--highlight {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+}
+
+.analytics-card__value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.analytics-card--highlight .analytics-card__value {
+  color: #92400e;
+}
+
+.analytics-card__label {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-soft);
+  margin-top: var(--space-xs);
+}
+
+.analytics-events-by-type,
+.analytics-daily,
+.analytics-recent {
+  background: white;
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  margin-bottom: var(--space-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.analytics-events-by-type h3,
+.analytics-daily h3,
+.analytics-recent h3 {
+  margin: 0 0 var(--space-md) 0;
+  font-size: var(--font-size-lg);
+  color: var(--color-text);
+}
+
+.events-type-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--space-sm);
+}
+
+.event-type-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-bg);
+  border-radius: var(--radius-md);
+}
+
+.event-type-label {
+  color: var(--color-text);
+}
+
+.event-type-count {
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.daily-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-xs);
+  height: 150px;
+  padding: var(--space-md) 0;
+}
+
+.daily-bar {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  position: relative;
+}
+
+.daily-bar__fill {
+  width: 100%;
+  background: linear-gradient(to top, var(--color-primary), var(--color-primary-light));
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  min-height: 4px;
+  position: absolute;
+  bottom: 40px;
+}
+
+.daily-bar__label {
+  position: absolute;
+  bottom: 20px;
+  font-size: 0.65rem;
+  color: var(--color-text-soft);
+}
+
+.daily-bar__value {
+  position: absolute;
+  bottom: 0;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.recent-events-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.recent-event {
+  display: grid;
+  grid-template-columns: 120px 1fr 150px;
+  gap: var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-bg);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+}
+
+.recent-event__time {
+  color: var(--color-text-soft);
+}
+
+.recent-event__type {
+  color: var(--color-text);
+}
+
+.recent-event__page {
+  color: var(--color-text-soft);
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.no-data {
+  color: var(--color-text-soft);
+  text-align: center;
+  padding: var(--space-lg);
+  font-style: italic;
 }
 
 /* Responsive */

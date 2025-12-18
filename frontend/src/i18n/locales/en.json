@@ -14,7 +14,8 @@
     "or": "or",
     "and": "and",
     "items": "items",
-    "item": "item"
+    "item": "item",
+    "sending": "Sending..."
   },
   "brand": {
     "name": "famli",
@@ -426,6 +427,8 @@
       "overview": "Overview",
       "users": "Users",
       "activity": "Activity",
+      "feedbacks": "Feedbacks",
+      "analytics": "Analytics",
       "system": "System"
     },
     "metrics": {
@@ -464,6 +467,33 @@
       "environment": "Environment",
       "adminEmails": "Admin Emails (ADMIN_EMAILS)",
       "noAdminEmails": "No emails configured (all users have access in development)"
+    },
+    "feedbacks": {
+      "title": "Feedbacks",
+      "empty": "No feedback found",
+      "filter": "Filter by status",
+      "all": "All",
+      "pending": "Pending",
+      "reviewed": "Reviewed",
+      "resolved": "Resolved",
+      "markReviewed": "Mark as reviewed",
+      "markResolved": "Mark as resolved",
+      "adminNote": "Admin note",
+      "addNote": "Add note..."
+    },
+    "analytics": {
+      "title": "Analytics",
+      "summary": "Summary",
+      "dailyChart": "Daily Activity",
+      "recentEvents": "Recent Events",
+      "activeToday": "Active Today",
+      "activeThisWeek": "Active This Week",
+      "newUsersToday": "New Today",
+      "newUsersThisWeek": "New This Week",
+      "itemsCreatedToday": "Items Created Today",
+      "eventsToday": "Events Today",
+      "eventsByType": "Events by Type",
+      "noData": "No data available"
     }
   },
   "profile": {
@@ -614,6 +644,20 @@
         "title": "Contact",
         "text": "For privacy questions, contact us:"
       }
+    }
+  },
+  "feedback": {
+    "title": "Send Feedback",
+    "typeLabel": "Feedback type",
+    "messageLabel": "Your message",
+    "messagePlaceholder": "Tell us what you think about Famli...",
+    "submit": "Send",
+    "successMessage": "Thank you for your feedback! Your opinion is very important to us.",
+    "types": {
+      "suggestion": "Suggestion",
+      "problem": "Problem",
+      "praise": "Praise",
+      "question": "Question"
     }
   }
 }

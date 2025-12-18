@@ -7,59 +7,42 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"famli/internal/auth"
+	"famli/internal/i18n"
 	"famli/internal/storage"
 )
 
-// Cards pré-definidos do Guia Famli
-var defaultCards = []storage.GuideCard{
-	{
-		ID:          "welcome",
-		Title:       "Comece por aqui",
-		Description: "Dê o primeiro passo: registre algo simples, como o telefone de emergência ou um contato importante.",
-		Icon:        "👋",
-		Order:       1,
-		ItemType:    "info",
-	},
-	{
-		ID:          "people",
-		Title:       "Pessoas importantes",
-		Description: "Quem são as pessoas que devem ser avisadas se você precisar de ajuda? Registre aqui seus contatos de confiança.",
-		Icon:        "👥",
-		Order:       2,
-		ItemType:    "guardian",
-	},
-	{
-		ID:          "locations",
-		Title:       "Onde estão as coisas importantes",
-		Description: "Documentos, chaves, cartões... Explique onde estão as coisas que alguém precisaria encontrar.",
-		Icon:        "📍",
-		Order:       3,
-		ItemType:    "location",
-	},
-	{
-		ID:          "routines",
-		Title:       "Rotina que não pode parar",
-		Description: "Medicamentos, contas automáticas, pets... O que precisa continuar funcionando mesmo se você não estiver por perto?",
-		Icon:        "🔄",
-		Order:       4,
-		ItemType:    "routine",
-	},
-	{
-		ID:          "access",
-		Title:       "Como acessar suas coisas",
-		Description: "Explique onde estão suas senhas (não as senhas em si!) e como alguém de confiança pode ajudar a acessar.",
-		Icon:        "🔑",
-		Order:       5,
-		ItemType:    "access",
-	},
-	{
-		ID:          "memories",
-		Title:       "Notas pessoais e memórias",
-		Description: "Mensagens, histórias, recados... Um espaço para deixar algo especial para quem você ama.",
-		Icon:        "💝",
-		Order:       6,
-		ItemType:    "memory",
-	},
+// CardConfig define a configuração de um card do guia (sem textos)
+type CardConfig struct {
+	ID       string
+	Icon     string
+	Order    int
+	ItemType string
+}
+
+// cardConfigs são as configurações dos cards (sem textos para i18n)
+var cardConfigs = []CardConfig{
+	{ID: "welcome", Icon: "👋", Order: 1, ItemType: "info"},
+	{ID: "people", Icon: "👥", Order: 2, ItemType: "guardian"},
+	{ID: "locations", Icon: "📍", Order: 3, ItemType: "location"},
+	{ID: "routines", Icon: "🔄", Order: 4, ItemType: "routine"},
+	{ID: "access", Icon: "🔑", Order: 5, ItemType: "access"},
+	{ID: "memories", Icon: "💝", Order: 6, ItemType: "memory"},
+}
+
+// getLocalizedCards retorna os cards do guia traduzidos para o locale do request
+func getLocalizedCards(r *http.Request) []storage.GuideCard {
+	cards := make([]storage.GuideCard, len(cardConfigs))
+	for idx, cfg := range cardConfigs {
+		cards[idx] = storage.GuideCard{
+			ID:          cfg.ID,
+			Title:       i18n.Tr(r, "guide.card."+cfg.ID+".title"),
+			Description: i18n.Tr(r, "guide.card."+cfg.ID+".description"),
+			Icon:        cfg.Icon,
+			Order:       cfg.Order,
+			ItemType:    cfg.ItemType,
+		}
+	}
+	return cards
 }
 
 type Handler struct {
@@ -70,10 +53,10 @@ func NewHandler(store storage.Store) *Handler {
 	return &Handler{store: store}
 }
 
-// ListCards retorna os cards do Guia Famli
+// ListCards retorna os cards do Guia Famli (traduzidos)
 func (h *Handler) ListCards(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]interface{}{
-		"cards": defaultCards,
+		"cards": getLocalizedCards(r),
 	})
 }
 
@@ -81,10 +64,11 @@ func (h *Handler) ListCards(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) GetProgress(w http.ResponseWriter, r *http.Request) {
 	userID := auth.GetUserID(r)
 	progress := h.store.GetGuideProgress(userID)
+	cards := getLocalizedCards(r)
 
 	// Montar resposta com status de cada card
-	cardsProgress := make([]map[string]interface{}, len(defaultCards))
-	for i, card := range defaultCards {
+	cardsProgress := make([]map[string]interface{}, len(cards))
+	for i, card := range cards {
 		status := "pending"
 		if p, ok := progress[card.ID]; ok {
 			status = p.Status
@@ -110,7 +94,7 @@ func (h *Handler) MarkCardProgress(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-		writeError(w, http.StatusBadRequest, "Dados inválidos.")
+		writeError(w, http.StatusBadRequest, i18n.Tr(r, "guide.invalid_data"))
 		return
 	}
 
@@ -122,13 +106,13 @@ func (h *Handler) MarkCardProgress(w http.ResponseWriter, r *http.Request) {
 		"skipped":   true,
 	}
 	if !validStatuses[payload.Status] {
-		writeError(w, http.StatusBadRequest, "Status inválido.")
+		writeError(w, http.StatusBadRequest, i18n.Tr(r, "guide.invalid_status"))
 		return
 	}
 
 	progress, err := h.store.UpdateGuideProgress(userID, cardID, payload.Status)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "Erro ao salvar progresso.")
+		writeError(w, http.StatusInternalServerError, i18n.Tr(r, "guide.progress_error"))
 		return
 	}
 

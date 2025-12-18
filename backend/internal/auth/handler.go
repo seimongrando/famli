@@ -23,6 +23,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 
+	"famli/internal/i18n"
 	"famli/internal/security"
 	"famli/internal/storage"
 )
@@ -108,28 +109,28 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 			"endpoint": "register",
 		})
 		w.Header().Set("Retry-After", itoa(int(retryAfter.Seconds())))
-		writeError(w, http.StatusTooManyRequests, "Muitas tentativas. Aguarde alguns minutos.")
+		writeError(w, http.StatusTooManyRequests, i18n.Tr(r, "auth.rate_limit"))
 		return
 	}
 
 	// Decodificar payload
 	var payload registerPayload
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-		writeError(w, http.StatusBadRequest, "Dados inválidos.")
+		writeError(w, http.StatusBadRequest, i18n.Tr(r, "auth.invalid_data"))
 		return
 	}
 
 	// Validar e sanitizar email
 	email, err := security.ValidateEmail(payload.Email)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "E-mail inválido.")
+		writeError(w, http.StatusBadRequest, i18n.Tr(r, "auth.email_invalid"))
 		return
 	}
 
 	// Validar força da senha
 	strength, err := security.ValidatePassword(payload.Password)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "Senha precisa ter no mínimo 8 caracteres com letras e números.")
+		writeError(w, http.StatusBadRequest, i18n.Tr(r, "auth.password_weak"))
 		return
 	}
 
@@ -142,7 +143,7 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 		h.auditLogger.LogSecurity(security.EventSuspiciousActivity, clientIP, map[string]interface{}{
 			"error": "bcrypt failed",
 		})
-		writeError(w, http.StatusInternalServerError, "Erro ao preparar sua conta.")
+		writeError(w, http.StatusInternalServerError, i18n.Tr(r, "auth.prepare_error"))
 		return
 	}
 
@@ -153,16 +154,16 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 			// Não revelar se o email existe (proteção contra enumeração)
 			// Usar mesma mensagem de sucesso após delay
 			time.Sleep(100 * time.Millisecond) // Timing attack protection
-			writeError(w, http.StatusBadRequest, "Não foi possível criar a conta. Tente outro e-mail.")
+			writeError(w, http.StatusBadRequest, i18n.Tr(r, "auth.email_exists"))
 			return
 		}
-		writeError(w, http.StatusBadRequest, "Erro ao criar conta.")
+		writeError(w, http.StatusBadRequest, i18n.Tr(r, "auth.create_error"))
 		return
 	}
 
-	// Criar sessão
-	if err := h.setSession(w, user.ID, r); err != nil {
-		writeError(w, http.StatusInternalServerError, "Erro ao criar sessão.")
+	// Criar sessão (inclui email no token para contexto)
+	if err := h.setSession(w, user.ID, user.Email, r); err != nil {
+		writeError(w, http.StatusInternalServerError, i18n.Tr(r, "auth.session_error"))
 		return
 	}
 
@@ -172,11 +173,15 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 		"password_strength": strength,
 	})
 
+	// Verificar se é admin para retornar na resposta
+	isAdmin := checkIsAdmin(user.Email)
+
 	writeJSON(w, http.StatusCreated, map[string]interface{}{
 		"user": map[string]interface{}{
-			"id":    user.ID,
-			"email": user.Email,
-			"name":  user.Name,
+			"id":       user.ID,
+			"email":    user.Email,
+			"name":     user.Name,
+			"is_admin": isAdmin,
 		},
 	})
 }
@@ -204,14 +209,14 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 			"endpoint": "login",
 		})
 		w.Header().Set("Retry-After", itoa(int(retryAfter.Seconds())))
-		writeError(w, http.StatusTooManyRequests, "Muitas tentativas. Aguarde alguns minutos.")
+		writeError(w, http.StatusTooManyRequests, i18n.Tr(r, "auth.rate_limit"))
 		return
 	}
 
 	// Decodificar payload
 	var payload loginPayload
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-		writeError(w, http.StatusBadRequest, "Dados inválidos.")
+		writeError(w, http.StatusBadRequest, i18n.Tr(r, "auth.invalid_data"))
 		return
 	}
 
@@ -244,27 +249,31 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		})
 
 		// Mensagem genérica (não revela se email existe)
-		writeError(w, http.StatusUnauthorized, "E-mail ou senha incorretos.")
+		writeError(w, http.StatusUnauthorized, i18n.Tr(r, "auth.invalid_credentials"))
 		return
 	}
 
 	// Login bem-sucedido
 	h.loginLimiter.RecordSuccess(clientIP)
 
-	// Criar sessão
-	if err := h.setSession(w, user.ID, r); err != nil {
-		writeError(w, http.StatusInternalServerError, "Erro ao criar sessão.")
+	// Criar sessão (inclui email no token para contexto)
+	if err := h.setSession(w, user.ID, user.Email, r); err != nil {
+		writeError(w, http.StatusInternalServerError, i18n.Tr(r, "auth.session_error"))
 		return
 	}
 
 	// Registrar evento
 	h.auditLogger.LogAuth(security.EventLoginSuccess, user.ID, clientIP, r.UserAgent(), "success", nil)
 
+	// Verificar se é admin para retornar na resposta
+	isAdmin := checkIsAdmin(user.Email)
+
 	writeJSON(w, http.StatusOK, map[string]interface{}{
 		"user": map[string]interface{}{
-			"id":    user.ID,
-			"email": user.Email,
-			"name":  user.Name,
+			"id":       user.ID,
+			"email":    user.Email,
+			"name":     user.Name,
+			"is_admin": isAdmin,
 		},
 	})
 }
@@ -286,14 +295,14 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) Me(w http.ResponseWriter, r *http.Request) {
 	userID := GetUserID(r)
 	if userID == "" {
-		writeError(w, http.StatusUnauthorized, "Sessão expirada.")
+		writeError(w, http.StatusUnauthorized, i18n.Tr(r, "auth.session_expired"))
 		return
 	}
 
 	user, ok := h.store.GetUserByID(userID)
 	if !ok {
 		h.auditLogger.LogAuth(security.EventTokenInvalid, userID, security.GetClientIP(r), r.UserAgent(), "failure", nil)
-		writeError(w, http.StatusUnauthorized, "Sessão inválida.")
+		writeError(w, http.StatusUnauthorized, i18n.Tr(r, "auth.session_invalid"))
 		return
 	}
 
@@ -355,7 +364,7 @@ func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 	// Registrar logout (já usa o AuditLogger que funciona)
 	h.auditLogger.LogAuth(security.EventLogout, userID, clientIP, r.UserAgent(), "success", nil)
 
-	writeJSON(w, http.StatusOK, map[string]string{"message": "Sessão encerrada."})
+	writeJSON(w, http.StatusOK, map[string]string{"message": i18n.Tr(r, "auth.logout_success")})
 }
 
 // =============================================================================
@@ -389,7 +398,7 @@ func (h *Handler) DeleteAccount(w http.ResponseWriter, r *http.Request) {
 	userID := GetUserID(r)
 
 	if userID == "" {
-		writeError(w, http.StatusUnauthorized, "Sessão inválida")
+		writeError(w, http.StatusUnauthorized, i18n.Tr(r, "auth.session_invalid"))
 		return
 	}
 
@@ -397,14 +406,14 @@ func (h *Handler) DeleteAccount(w http.ResponseWriter, r *http.Request) {
 	allowed, _ := h.loginLimiter.Allow(clientIP)
 	if !allowed {
 		h.auditLogger.LogAuth(security.EventRateLimitExceeded, userID, clientIP, r.UserAgent(), "rate_limited", nil)
-		writeError(w, http.StatusTooManyRequests, "Muitas tentativas. Aguarde alguns minutos.")
+		writeError(w, http.StatusTooManyRequests, i18n.Tr(r, "auth.rate_limit"))
 		return
 	}
 
 	// Parse payload
 	var payload deleteAccountPayload
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-		writeError(w, http.StatusBadRequest, "Dados inválidos")
+		writeError(w, http.StatusBadRequest, i18n.Tr(r, "auth.invalid_data"))
 		return
 	}
 
@@ -422,7 +431,7 @@ func (h *Handler) DeleteAccount(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if !validConfirmation {
-		writeError(w, http.StatusBadRequest, "Texto de confirmação incorreto")
+		writeError(w, http.StatusBadRequest, i18n.Tr(r, "auth.delete_confirm"))
 		return
 	}
 
@@ -430,14 +439,14 @@ func (h *Handler) DeleteAccount(w http.ResponseWriter, r *http.Request) {
 	user, found := h.store.GetUserByID(userID)
 	if !found {
 		h.auditLogger.LogAuth(security.EventAccountDeletion, userID, clientIP, r.UserAgent(), "user_not_found", nil)
-		writeError(w, http.StatusNotFound, "Usuário não encontrado")
+		writeError(w, http.StatusNotFound, i18n.Tr(r, "auth.user_not_found"))
 		return
 	}
 
 	// Debug: verificar se a senha foi recuperada corretamente
 	if user.Password == "" {
 		h.auditLogger.LogAuth(security.EventAccountDeletion, userID, clientIP, r.UserAgent(), "empty_password_hash", nil)
-		writeError(w, http.StatusInternalServerError, "Erro interno - senha não encontrada")
+		writeError(w, http.StatusInternalServerError, i18n.Tr(r, "auth.internal_error"))
 		return
 	}
 
@@ -447,7 +456,7 @@ func (h *Handler) DeleteAccount(w http.ResponseWriter, r *http.Request) {
 			"password_hash_len":  len(user.Password),
 			"input_password_len": len(payload.Password),
 		})
-		writeError(w, http.StatusUnauthorized, "Senha incorreta")
+		writeError(w, http.StatusUnauthorized, i18n.Tr(r, "auth.password_incorrect"))
 		return
 	}
 
@@ -461,7 +470,7 @@ func (h *Handler) DeleteAccount(w http.ResponseWriter, r *http.Request) {
 		h.auditLogger.LogAuth(security.EventAccountDeletion, userID, clientIP, r.UserAgent(), "error", map[string]interface{}{
 			"error": err.Error(),
 		})
-		writeError(w, http.StatusInternalServerError, "Erro ao excluir conta")
+		writeError(w, http.StatusInternalServerError, i18n.Tr(r, "auth.delete_error"))
 		return
 	}
 
@@ -480,7 +489,7 @@ func (h *Handler) DeleteAccount(w http.ResponseWriter, r *http.Request) {
 	h.auditLogger.LogAuth(security.EventAccountDeletion, userID, clientIP, r.UserAgent(), "success", nil)
 
 	writeJSON(w, http.StatusOK, map[string]string{
-		"message": "Conta excluída com sucesso. Todos os dados foram removidos.",
+		"message": i18n.Tr(r, "auth.delete_success"),
 	})
 }
 
@@ -495,7 +504,7 @@ func (h *Handler) ExportData(w http.ResponseWriter, r *http.Request) {
 	userID := GetUserID(r)
 
 	if userID == "" {
-		writeError(w, http.StatusUnauthorized, "Sessão inválida")
+		writeError(w, http.StatusUnauthorized, i18n.Tr(r, "auth.session_invalid"))
 		return
 	}
 
@@ -503,7 +512,7 @@ func (h *Handler) ExportData(w http.ResponseWriter, r *http.Request) {
 	data, err := h.store.ExportUserData(userID)
 	if err != nil {
 		h.auditLogger.LogAuth(security.EventDataExport, userID, clientIP, r.UserAgent(), "error", nil)
-		writeError(w, http.StatusInternalServerError, "Erro ao exportar dados")
+		writeError(w, http.StatusInternalServerError, i18n.Tr(r, "auth.export_error"))
 		return
 	}
 
@@ -521,16 +530,19 @@ func (h *Handler) ExportData(w http.ResponseWriter, r *http.Request) {
 // =============================================================================
 
 // setSession cria um token JWT e define o cookie de sessão
-func (h *Handler) setSession(w http.ResponseWriter, userID string, r *http.Request) error {
+// Inclui o email no token para facilitar identificação em feedbacks e logs
+func (h *Handler) setSession(w http.ResponseWriter, userID, email string, r *http.Request) error {
 	now := time.Now()
+	sessionDuration := 7 * 24 * time.Hour
 
 	// Claims do token
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"sub": userID,                             // Subject (ID do usuário)
-		"exp": now.Add(7 * 24 * time.Hour).Unix(), // Expira em 7 dias
-		"iat": now.Unix(),                         // Issued at
-		"nbf": now.Unix(),                         // Not before
-		"jti": generateJTI(),                      // JWT ID único
+		"sub":   userID,                          // Subject (ID do usuário)
+		"email": email,                           // Email do usuário (para contexto)
+		"exp":   now.Add(sessionDuration).Unix(), // Expira em 7 dias
+		"iat":   now.Unix(),                      // Issued at
+		"nbf":   now.Unix(),                      // Not before
+		"jti":   generateJTI(),                   // JWT ID único
 	})
 
 	// Assinar token

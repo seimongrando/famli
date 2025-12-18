@@ -7,6 +7,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"famli/internal/auth"
+	"famli/internal/i18n"
 	"famli/internal/storage"
 )
 
@@ -42,12 +43,12 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 
 	var payload guardianPayload
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-		writeError(w, http.StatusBadRequest, "Dados inválidos.")
+		writeError(w, http.StatusBadRequest, i18n.Tr(r, "guardian.invalid_data"))
 		return
 	}
 
 	if payload.Name == "" {
-		writeError(w, http.StatusBadRequest, "Informe o nome da pessoa.")
+		writeError(w, http.StatusBadRequest, i18n.Tr(r, "guardian.name_required"))
 		return
 	}
 
@@ -62,7 +63,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 
 	created, err := h.store.CreateGuardian(userID, guardian)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "Erro ao adicionar pessoa.")
+		writeError(w, http.StatusInternalServerError, i18n.Tr(r, "guardian.add_error"))
 		return
 	}
 
@@ -76,12 +77,12 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 
 	var payload guardianPayload
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-		writeError(w, http.StatusBadRequest, "Dados inválidos.")
+		writeError(w, http.StatusBadRequest, i18n.Tr(r, "guardian.invalid_data"))
 		return
 	}
 
 	if payload.Name == "" {
-		writeError(w, http.StatusBadRequest, "Informe o nome da pessoa.")
+		writeError(w, http.StatusBadRequest, i18n.Tr(r, "guardian.name_required"))
 		return
 	}
 
@@ -95,7 +96,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 
 	updated, err := h.store.UpdateGuardian(userID, guardianID, updates)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "Pessoa não encontrada.")
+		writeError(w, http.StatusNotFound, i18n.Tr(r, "guardian.not_found"))
 		return
 	}
 
@@ -108,11 +109,11 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	guardianID := chi.URLParam(r, "guardianID")
 
 	if err := h.store.DeleteGuardian(userID, guardianID); err != nil {
-		writeError(w, http.StatusNotFound, "Pessoa não encontrada.")
+		writeError(w, http.StatusNotFound, i18n.Tr(r, "guardian.not_found"))
 		return
 	}
 
-	writeJSON(w, http.StatusOK, map[string]string{"message": "Pessoa removida."})
+	writeJSON(w, http.StatusOK, map[string]string{"message": i18n.Tr(r, "guardian.deleted")})
 }
 
 func writeJSON(w http.ResponseWriter, status int, payload interface{}) {

@@ -24,6 +24,8 @@ type MemoryStore struct {
 	guardians    map[string]map[string]*Guardian      // userID -> guardianID -> guardian
 	progress     map[string]map[string]*GuideProgress // userID -> cardID -> progress
 	settings     map[string]*Settings
+	feedbacks    map[string]*Feedback // feedbackID -> feedback
+	analytics    []*AnalyticsEvent    // Lista de eventos
 
 	userSeq     int64
 	itemSeq     int64
@@ -39,6 +41,8 @@ func NewMemoryStore() *MemoryStore {
 		guardians:    make(map[string]map[string]*Guardian),
 		progress:     make(map[string]map[string]*GuideProgress),
 		settings:     make(map[string]*Settings),
+		feedbacks:    make(map[string]*Feedback),
+		analytics:    make([]*AnalyticsEvent, 0),
 	}
 }
 
@@ -633,4 +637,176 @@ func (s *MemoryStore) ListUsers() []*User {
 		users = append(users, copyUser)
 	}
 	return users
+}
+
+// ============ FEEDBACK ============
+
+// CreateFeedback salva um novo feedback
+func (s *MemoryStore) CreateFeedback(f *Feedback) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.feedbacks[f.ID] = f
+	return nil
+}
+
+// ListFeedbacks retorna todos os feedbacks
+func (s *MemoryStore) ListFeedbacks(status string, limit int) ([]*Feedback, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	result := make([]*Feedback, 0)
+	count := 0
+	for _, f := range s.feedbacks {
+		if status != "" && status != "all" && f.Status != status {
+			continue
+		}
+		result = append(result, f)
+		count++
+		if count >= limit {
+			break
+		}
+	}
+	return result, nil
+}
+
+// UpdateFeedbackStatus atualiza o status de um feedback
+func (s *MemoryStore) UpdateFeedbackStatus(id, status, adminNote string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if f, ok := s.feedbacks[id]; ok {
+		f.Status = status
+		f.AdminNote = adminNote
+		f.UpdatedAt = time.Now()
+		return nil
+	}
+	return ErrNotFound
+}
+
+// GetFeedbackStats retorna estatísticas de feedbacks
+func (s *MemoryStore) GetFeedbackStats() (total, pending int) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	for _, f := range s.feedbacks {
+		total++
+		if f.Status == "pending" {
+			pending++
+		}
+	}
+	return
+}
+
+// ============ ANALYTICS ============
+
+// TrackEvent registra um evento de analytics
+func (s *MemoryStore) TrackEvent(e *AnalyticsEvent) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	// Limitar a 10000 eventos para não estourar memória
+	if len(s.analytics) > 10000 {
+		s.analytics = s.analytics[1000:] // Remover os 1000 mais antigos
+	}
+	s.analytics = append(s.analytics, e)
+	return nil
+}
+
+// GetAnalyticsSummary retorna o resumo de analytics
+func (s *MemoryStore) GetAnalyticsSummary() *AnalyticsSummary {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	summary := &AnalyticsSummary{
+		EventsByType: make(map[string]int),
+	}
+	summary.TotalUsers = len(s.users)
+
+	for _, items := range s.items {
+		summary.TotalItems += len(items)
+	}
+	for _, guards := range s.guardians {
+		summary.TotalGuardians += len(guards)
+	}
+
+	today := time.Now().Truncate(24 * time.Hour)
+	weekAgo := today.AddDate(0, 0, -7)
+
+	activeUsers := make(map[string]bool)
+	for _, e := range s.analytics {
+		summary.EventsByType[string(e.EventType)]++
+		if e.CreatedAt.After(today) {
+			summary.EventsToday++
+			if e.UserID != "" {
+				activeUsers[e.UserID] = true
+			}
+		}
+	}
+	summary.ActiveToday = len(activeUsers)
+
+	for _, user := range s.users {
+		if user.CreatedAt.After(today) {
+			summary.NewUsersToday++
+		}
+		if user.CreatedAt.After(weekAgo) {
+			summary.NewUsersThisWeek++
+		}
+	}
+
+	summary.TotalFeedbacks, summary.PendingFeedbacks = s.GetFeedbackStats()
+
+	return summary
+}
+
+// GetRecentEvents retorna os eventos mais recentes
+func (s *MemoryStore) GetRecentEvents(limit int) ([]*AnalyticsEvent, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	if len(s.analytics) == 0 {
+		return []*AnalyticsEvent{}, nil
+	}
+
+	start := len(s.analytics) - limit
+	if start < 0 {
+		start = 0
+	}
+
+	result := make([]*AnalyticsEvent, 0, limit)
+	for i := len(s.analytics) - 1; i >= start; i-- {
+		result = append(result, s.analytics[i])
+	}
+
+	return result, nil
+}
+
+// GetDailyStats retorna estatísticas diárias
+func (s *MemoryStore) GetDailyStats(days int) ([]map[string]interface{}, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	// Simplificado para MemoryStore
+	stats := make([]map[string]interface{}, 0)
+	today := time.Now().Truncate(24 * time.Hour)
+
+	for i := days - 1; i >= 0; i-- {
+		day := today.AddDate(0, 0, -i)
+		dayStats := map[string]interface{}{
+			"date":   day.Format("2006-01-02"),
+			"events": 0,
+			"users":  0,
+		}
+
+		users := make(map[string]bool)
+		for _, e := range s.analytics {
+			eventDay := e.CreatedAt.Truncate(24 * time.Hour)
+			if eventDay.Equal(day) {
+				dayStats["events"] = dayStats["events"].(int) + 1
+				if e.UserID != "" {
+					users[e.UserID] = true
+				}
+			}
+		}
+		dayStats["users"] = len(users)
+		stats = append(stats, dayStats)
+	}
+
+	return stats, nil
 }

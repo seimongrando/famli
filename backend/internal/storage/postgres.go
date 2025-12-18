@@ -18,8 +18,8 @@ package storage
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 	"strings"
 	"time"
@@ -61,7 +61,7 @@ func NewPostgresStore(databaseURL string) (*PostgresStore, error) {
 	}
 	if encryptionKey == "" {
 		encryptionKey = "famli-dev-encryption-key-32chars!" // Apenas para desenvolvimento
-		log.Println("⚠️  AVISO: Usando chave de criptografia padrão (apenas para desenvolvimento)")
+		// Aviso será logado pelo main.go
 	}
 
 	encryptor, err := security.NewEncryptor(encryptionKey)
@@ -79,8 +79,6 @@ func NewPostgresStore(databaseURL string) (*PostgresStore, error) {
 		return nil, fmt.Errorf("erro nas migrações: %w", err)
 	}
 
-	log.Println("✅ PostgreSQL conectado com sucesso")
-	log.Println("🔐 Criptografia de dados habilitada")
 	return store, nil
 }
 
@@ -198,6 +196,43 @@ func (s *PostgresStore) migrate() error {
 		)`,
 		`CREATE INDEX IF NOT EXISTS idx_deletion_tokens_user ON deletion_tokens(user_id)`,
 		`CREATE INDEX IF NOT EXISTS idx_deletion_tokens_expires ON deletion_tokens(expires_at)`,
+
+		// =======================================================================
+		// FEEDBACK
+		// =======================================================================
+		`CREATE TABLE IF NOT EXISTS feedbacks (
+			id VARCHAR(50) PRIMARY KEY,
+			user_id VARCHAR(50) REFERENCES users(id) ON DELETE SET NULL,
+			user_email VARCHAR(255),
+			type VARCHAR(50) NOT NULL DEFAULT 'suggestion',
+			message TEXT NOT NULL,
+			page VARCHAR(255),
+			user_agent TEXT,
+			status VARCHAR(50) NOT NULL DEFAULT 'pending',
+			admin_note TEXT,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		)`,
+		`CREATE INDEX IF NOT EXISTS idx_feedbacks_user ON feedbacks(user_id)`,
+		`CREATE INDEX IF NOT EXISTS idx_feedbacks_status ON feedbacks(status)`,
+		`CREATE INDEX IF NOT EXISTS idx_feedbacks_created ON feedbacks(created_at DESC)`,
+
+		// =======================================================================
+		// ANALYTICS
+		// =======================================================================
+		`CREATE TABLE IF NOT EXISTS analytics_events (
+			id VARCHAR(50) PRIMARY KEY,
+			user_id VARCHAR(50),
+			event_type VARCHAR(50) NOT NULL,
+			page VARCHAR(255),
+			details JSONB,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		)`,
+		`CREATE INDEX IF NOT EXISTS idx_analytics_user ON analytics_events(user_id)`,
+		`CREATE INDEX IF NOT EXISTS idx_analytics_type ON analytics_events(event_type)`,
+		`CREATE INDEX IF NOT EXISTS idx_analytics_created ON analytics_events(created_at DESC)`,
+		// Nota: Índice parcial com CURRENT_DATE não é permitido (não-IMMUTABLE)
+		// Consultas usam WHERE created_at >= date_trunc('day', CURRENT_TIMESTAMP) no runtime
 	}
 
 	for _, migration := range migrations {
@@ -261,7 +296,8 @@ func (s *PostgresStore) GetUserByEmail(email string) (*User, bool) {
 		return nil, false
 	}
 	if err != nil {
-		log.Printf("[PostgreSQL] Erro ao buscar usuário por email: %v", err)
+		// Erro de banco é tratado como usuário não encontrado
+		// O chamador deve decidir como lidar com isso
 		return nil, false
 	}
 
@@ -281,7 +317,7 @@ func (s *PostgresStore) GetUserByID(id string) (*User, bool) {
 		return nil, false
 	}
 	if err != nil {
-		log.Printf("[PostgreSQL] Erro ao buscar usuário por ID: %v", err)
+		// Erro de banco é tratado como usuário não encontrado
 		return nil, false
 	}
 
@@ -302,7 +338,7 @@ func (s *PostgresStore) DeleteUser(userID string) error {
 		return ErrNotFound
 	}
 
-	log.Printf("[PostgreSQL] Usuário %s e todos os dados relacionados foram deletados (LGPD)", userID)
+	// Auditoria de deleção deve ser feita pelo chamador
 	return nil
 }
 
@@ -342,14 +378,15 @@ func (s *PostgresStore) ExportUserData(userID string) (*UserDataExport, error) {
 // ============================================================================
 
 // encryptSensitive criptografa um valor se não estiver vazio
+// Em caso de erro, retorna o valor original (fallback seguro)
 func (s *PostgresStore) encryptSensitive(value string) string {
 	if value == "" || s.encryptor == nil {
 		return value
 	}
 	encrypted, err := s.encryptor.Encrypt(value)
 	if err != nil {
-		log.Printf("[PostgreSQL] Aviso: falha ao criptografar valor: %v", err)
-		return value // Retorna valor original se falhar
+		// Fallback: retorna valor original se a criptografia falhar
+		return value
 	}
 	return encrypted
 }
@@ -378,6 +415,7 @@ func (s *PostgresStore) GetBoxItems(userID string) ([]*BoxItem, error) {
 }
 
 // ListBoxItems lista todos os itens (CUIDADO: sem paginação, usar apenas para exportação)
+// Em caso de erro, retorna lista vazia (comportamento esperado para exportação)
 func (s *PostgresStore) ListBoxItems(userID string) []*BoxItem {
 	// Query com campos específicos (não usa SELECT *)
 	rows, err := s.db.Query(`
@@ -388,7 +426,6 @@ func (s *PostgresStore) ListBoxItems(userID string) []*BoxItem {
 		LIMIT 1000
 	`, userID)
 	if err != nil {
-		log.Printf("[PostgreSQL] Erro ao listar itens: %v", err)
 		return []*BoxItem{}
 	}
 	defer rows.Close()
@@ -403,7 +440,7 @@ func (s *PostgresStore) ListBoxItems(userID string) []*BoxItem {
 			&item.IsImportant, &item.CreatedAt, &item.UpdatedAt,
 		)
 		if err != nil {
-			log.Printf("[PostgreSQL] Erro ao escanear item: %v", err)
+			// Pular itens com erro de leitura
 			continue
 		}
 		// Descriptografar dados sensíveis
@@ -460,7 +497,7 @@ func (s *PostgresStore) ListBoxItemsPaginated(userID string, params *PaginationP
 			&item.IsImportant, &item.UpdatedAt,
 		)
 		if err != nil {
-			log.Printf("[PostgreSQL] Erro ao escanear item: %v", err)
+			// Pular itens com erro de leitura
 			continue
 		}
 		item.Title = s.decryptSensitive(title.String)
@@ -605,6 +642,7 @@ func (s *PostgresStore) GetGuardians(userID string) ([]*Guardian, error) {
 }
 
 // ListGuardians lista todos os guardiões (CUIDADO: sem paginação)
+// Em caso de erro, retorna lista vazia
 func (s *PostgresStore) ListGuardians(userID string) []*Guardian {
 	rows, err := s.db.Query(`
 		SELECT id, user_id, name, email, phone, relationship, role, notes, created_at, updated_at
@@ -614,7 +652,6 @@ func (s *PostgresStore) ListGuardians(userID string) []*Guardian {
 		LIMIT 100
 	`, userID)
 	if err != nil {
-		log.Printf("[PostgreSQL] Erro ao listar guardiões: %v", err)
 		return []*Guardian{}
 	}
 	defer rows.Close()
@@ -629,7 +666,7 @@ func (s *PostgresStore) ListGuardians(userID string) []*Guardian {
 			&g.CreatedAt, &g.UpdatedAt,
 		)
 		if err != nil {
-			log.Printf("[PostgreSQL] Erro ao escanear guardião: %v", err)
+			// Pular guardiões com erro de leitura
 			continue
 		}
 		// Descriptografar dados sensíveis (PII)
@@ -822,10 +859,9 @@ func (s *PostgresStore) DeleteGuardian(userID, guardianID string) error {
 func (s *PostgresStore) GetGuideProgress(userID string) map[string]*GuideProgress {
 	rows, err := s.db.Query(`
 		SELECT user_id, card_id, status, completed_at
-		FROM guide_progress WHERE user_id = $1
+		FROM guide_progress WHERE user_id = $1 LIMIT 50
 	`, userID)
 	if err != nil {
-		log.Printf("[PostgreSQL] Erro ao buscar progresso: %v", err)
 		return map[string]*GuideProgress{}
 	}
 	defer rows.Close()
@@ -939,8 +975,8 @@ func (s *PostgresStore) GetStats() *Stats {
 	// Total de guardiões
 	s.db.QueryRow(`SELECT COUNT(*) FROM guardians`).Scan(&stats.TotalGuardians)
 
-	// Itens por tipo
-	rows, _ := s.db.Query(`SELECT type, COUNT(*) FROM box_items GROUP BY type`)
+	// Itens por tipo (máximo 20 tipos diferentes)
+	rows, _ := s.db.Query(`SELECT type, COUNT(*) FROM box_items GROUP BY type LIMIT 20`)
 	if rows != nil {
 		defer rows.Close()
 		for rows.Next() {
@@ -951,8 +987,8 @@ func (s *PostgresStore) GetStats() *Stats {
 		}
 	}
 
-	// Itens por categoria
-	rows2, _ := s.db.Query(`SELECT category, COUNT(*) FROM box_items WHERE category != '' GROUP BY category`)
+	// Itens por categoria (máximo 20 categorias)
+	rows2, _ := s.db.Query(`SELECT category, COUNT(*) FROM box_items WHERE category != '' GROUP BY category LIMIT 20`)
 	if rows2 != nil {
 		defer rows2.Close()
 		for rows2.Next() {
@@ -968,7 +1004,7 @@ func (s *PostgresStore) GetStats() *Stats {
 
 func (s *PostgresStore) ListUsers() []*User {
 	rows, err := s.db.Query(`
-		SELECT id, email, name, created_at FROM users ORDER BY created_at DESC
+		SELECT id, email, name, created_at FROM users ORDER BY created_at DESC LIMIT 500
 	`)
 	if err != nil {
 		return []*User{}
@@ -985,4 +1021,213 @@ func (s *PostgresStore) ListUsers() []*User {
 	}
 
 	return users
+}
+
+// ============================================================================
+// FEEDBACK
+// ============================================================================
+
+// CreateFeedback salva um novo feedback
+func (s *PostgresStore) CreateFeedback(f *Feedback) error {
+	_, err := s.db.Exec(`
+		INSERT INTO feedbacks (id, user_id, user_email, type, message, page, user_agent, status, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+	`, f.ID, f.UserID, f.UserEmail, f.Type, f.Message, f.Page, f.UserAgent, f.Status, f.CreatedAt, f.UpdatedAt)
+	return err
+}
+
+// ListFeedbacks retorna todos os feedbacks (para admin)
+func (s *PostgresStore) ListFeedbacks(status string, limit int) ([]*Feedback, error) {
+	var query string
+	var args []interface{}
+
+	if status != "" && status != "all" {
+		query = `
+			SELECT id, user_id, user_email, type, message, page, user_agent, status, admin_note, created_at, updated_at
+			FROM feedbacks WHERE status = $1 ORDER BY created_at DESC LIMIT $2
+		`
+		args = []interface{}{status, limit}
+	} else {
+		query = `
+			SELECT id, user_id, user_email, type, message, page, user_agent, status, admin_note, created_at, updated_at
+			FROM feedbacks ORDER BY created_at DESC LIMIT $1
+		`
+		args = []interface{}{limit}
+	}
+
+	rows, err := s.db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var feedbacks []*Feedback
+	for rows.Next() {
+		var f Feedback
+		var userID, userEmail, page, userAgent, adminNote sql.NullString
+		err := rows.Scan(&f.ID, &userID, &userEmail, &f.Type, &f.Message, &page, &userAgent, &f.Status, &adminNote, &f.CreatedAt, &f.UpdatedAt)
+		if err != nil {
+			continue
+		}
+		f.UserID = userID.String
+		f.UserEmail = userEmail.String
+		f.Page = page.String
+		f.UserAgent = userAgent.String
+		f.AdminNote = adminNote.String
+		feedbacks = append(feedbacks, &f)
+	}
+
+	return feedbacks, nil
+}
+
+// UpdateFeedbackStatus atualiza o status de um feedback
+func (s *PostgresStore) UpdateFeedbackStatus(id, status, adminNote string) error {
+	_, err := s.db.Exec(`
+		UPDATE feedbacks SET status = $1, admin_note = $2, updated_at = $3 WHERE id = $4
+	`, status, adminNote, time.Now(), id)
+	return err
+}
+
+// GetFeedbackStats retorna estatísticas de feedbacks
+func (s *PostgresStore) GetFeedbackStats() (total, pending int) {
+	s.db.QueryRow(`SELECT COUNT(*) FROM feedbacks`).Scan(&total)
+	s.db.QueryRow(`SELECT COUNT(*) FROM feedbacks WHERE status = 'pending'`).Scan(&pending)
+	return
+}
+
+// ============================================================================
+// ANALYTICS
+// ============================================================================
+
+// TrackEvent registra um evento de analytics
+func (s *PostgresStore) TrackEvent(e *AnalyticsEvent) error {
+	detailsJSON, _ := json.Marshal(e.Details)
+	_, err := s.db.Exec(`
+		INSERT INTO analytics_events (id, user_id, event_type, page, details, created_at)
+		VALUES ($1, $2, $3, $4, $5, $6)
+	`, e.ID, e.UserID, e.EventType, e.Page, detailsJSON, e.CreatedAt)
+	return err
+}
+
+// GetAnalyticsSummary retorna o resumo de analytics
+func (s *PostgresStore) GetAnalyticsSummary() *AnalyticsSummary {
+	summary := &AnalyticsSummary{
+		EventsByType: make(map[string]int),
+	}
+
+	// Total de usuários
+	s.db.QueryRow(`SELECT COUNT(*) FROM users`).Scan(&summary.TotalUsers)
+
+	// Usuários novos hoje
+	s.db.QueryRow(`SELECT COUNT(*) FROM users WHERE created_at >= CURRENT_DATE`).Scan(&summary.NewUsersToday)
+
+	// Usuários novos esta semana
+	s.db.QueryRow(`SELECT COUNT(*) FROM users WHERE created_at >= CURRENT_DATE - INTERVAL '7 days'`).Scan(&summary.NewUsersThisWeek)
+
+	// Usuários ativos hoje (com eventos)
+	s.db.QueryRow(`SELECT COUNT(DISTINCT user_id) FROM analytics_events WHERE created_at >= CURRENT_DATE AND user_id IS NOT NULL`).Scan(&summary.ActiveToday)
+
+	// Usuários ativos esta semana
+	s.db.QueryRow(`SELECT COUNT(DISTINCT user_id) FROM analytics_events WHERE created_at >= CURRENT_DATE - INTERVAL '7 days' AND user_id IS NOT NULL`).Scan(&summary.ActiveThisWeek)
+
+	// Total de itens
+	s.db.QueryRow(`SELECT COUNT(*) FROM box_items`).Scan(&summary.TotalItems)
+
+	// Itens criados hoje
+	s.db.QueryRow(`SELECT COUNT(*) FROM box_items WHERE created_at >= CURRENT_DATE`).Scan(&summary.ItemsCreatedToday)
+
+	// Total de guardiões
+	s.db.QueryRow(`SELECT COUNT(*) FROM guardians`).Scan(&summary.TotalGuardians)
+
+	// Eventos hoje
+	s.db.QueryRow(`SELECT COUNT(*) FROM analytics_events WHERE created_at >= CURRENT_DATE`).Scan(&summary.EventsToday)
+
+	// Eventos por tipo (últimos 7 dias, máximo 30 tipos)
+	rows, err := s.db.Query(`
+		SELECT event_type, COUNT(*) as count
+		FROM analytics_events
+		WHERE created_at >= CURRENT_DATE - INTERVAL '7 days'
+		GROUP BY event_type
+		ORDER BY count DESC
+		LIMIT 30
+	`)
+	if err == nil {
+		defer rows.Close()
+		for rows.Next() {
+			var eventType string
+			var count int
+			rows.Scan(&eventType, &count)
+			summary.EventsByType[eventType] = count
+		}
+	}
+
+	// Feedbacks
+	summary.TotalFeedbacks, summary.PendingFeedbacks = s.GetFeedbackStats()
+
+	return summary
+}
+
+// GetRecentEvents retorna os eventos mais recentes
+func (s *PostgresStore) GetRecentEvents(limit int) ([]*AnalyticsEvent, error) {
+	rows, err := s.db.Query(`
+		SELECT id, user_id, event_type, page, details, created_at
+		FROM analytics_events
+		ORDER BY created_at DESC
+		LIMIT $1
+	`, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var events []*AnalyticsEvent
+	for rows.Next() {
+		var e AnalyticsEvent
+		var userID, page sql.NullString
+		var detailsJSON []byte
+		err := rows.Scan(&e.ID, &userID, &e.EventType, &page, &detailsJSON, &e.CreatedAt)
+		if err != nil {
+			continue
+		}
+		e.UserID = userID.String
+		e.Page = page.String
+		if len(detailsJSON) > 0 {
+			json.Unmarshal(detailsJSON, &e.Details)
+		}
+		events = append(events, &e)
+	}
+
+	return events, nil
+}
+
+// GetDailyStats retorna estatísticas diárias para gráficos
+func (s *PostgresStore) GetDailyStats(days int) ([]map[string]interface{}, error) {
+	rows, err := s.db.Query(`
+		SELECT 
+			DATE(created_at) as date,
+			COUNT(*) as events,
+			COUNT(DISTINCT user_id) as users
+		FROM analytics_events
+		WHERE created_at >= CURRENT_DATE - $1 * INTERVAL '1 day'
+		GROUP BY DATE(created_at)
+		ORDER BY date
+	`, days)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var stats []map[string]interface{}
+	for rows.Next() {
+		var date time.Time
+		var events, users int
+		rows.Scan(&date, &events, &users)
+		stats = append(stats, map[string]interface{}{
+			"date":   date.Format("2006-01-02"),
+			"events": events,
+			"users":  users,
+		})
+	}
+
+	return stats, nil
 }

@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"famli/internal/auth"
+	"famli/internal/i18n"
 	"famli/internal/storage"
 )
 
@@ -36,7 +37,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 
 	var payload settingsPayload
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-		writeError(w, http.StatusBadRequest, "Dados inválidos.")
+		writeError(w, http.StatusBadRequest, i18n.Tr(r, "settings.invalid_data"))
 		return
 	}
 

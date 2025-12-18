@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"famli/internal/auth"
+	"famli/internal/i18n"
 	"famli/internal/security"
 	"famli/internal/storage"
 )
@@ -61,14 +62,16 @@ func getAdminEmails() []string {
 // Handler gerencia endpoints administrativos
 type Handler struct {
 	store       storage.Store
+	storageType string // Tipo de storage: "PostgreSQL" ou "Memory"
 	startTime   time.Time
 	auditLogger *security.AuditLogger
 }
 
 // NewHandler cria uma nova instância do handler admin
-func NewHandler(store storage.Store) *Handler {
+func NewHandler(store storage.Store, storageType string) *Handler {
 	return &Handler{
 		store:       store,
+		storageType: storageType,
 		startTime:   time.Now(),
 		auditLogger: security.GetAuditLogger(),
 	}
@@ -84,31 +87,29 @@ func (h *Handler) AdminOnly(next http.Handler) http.Handler {
 		// Obter userID do contexto usando a função correta do pacote auth
 		userID := auth.GetUserID(r)
 		if userID == "" {
-			writeError(w, http.StatusUnauthorized, "Não autenticado")
+			writeError(w, http.StatusUnauthorized, i18n.Tr(r, "admin.not_authenticated"))
 			return
 		}
 
 		// Buscar usuário
 		user, ok := h.store.GetUserByID(userID)
 		if !ok {
-			writeError(w, http.StatusUnauthorized, "Usuário não encontrado")
+			writeError(w, http.StatusUnauthorized, i18n.Tr(r, "admin.user_not_found"))
 			return
 		}
 
 		// Verificar se é admin
 		if !isAdmin(user.Email) {
+			// Logar apenas tentativas não autorizadas (importante para segurança)
 			h.auditLogger.LogSecurity(security.EventUnauthorizedAccess, security.GetClientIP(r), map[string]interface{}{
-				"user_id":  userID,
 				"email":    user.Email,
 				"resource": "admin",
 			})
-			writeError(w, http.StatusForbidden, "Acesso negado")
+			writeError(w, http.StatusForbidden, i18n.Tr(r, "admin.access_denied"))
 			return
 		}
 
-		// Registrar acesso admin
-		h.auditLogger.LogDataAccess(userID, security.GetClientIP(r), "admin", "access", "success")
-
+		// Não logar acessos normais ao admin - seria muito verboso
 		next.ServeHTTP(w, r)
 	})
 }
@@ -120,59 +121,18 @@ func isAdmin(email string) bool {
 	adminEmails := getAdminEmails()
 	env := os.Getenv("ENV")
 
-	// Debug log usando AuditLogger para garantir visibilidade
-	auditLogger := security.GetAuditLogger()
-	auditLogger.Log(security.AuditEvent{
-		Type:     security.EventDataAccess,
-		Severity: security.SeverityInfo,
-		Resource: "admin_check",
-		Action:   "verify_permission",
-		Result:   "checking",
-		Details: map[string]interface{}{
-			"email":        email,
-			"admin_emails": adminEmails,
-			"env":          env,
-		},
-	})
-
+	// Verificar se está na lista
 	for _, adminEmail := range adminEmails {
 		if email == adminEmail {
-			auditLogger.Log(security.AuditEvent{
-				Type:     security.EventDataAccess,
-				Severity: security.SeverityInfo,
-				Resource: "admin_check",
-				Action:   "verify_permission",
-				Result:   "granted",
-				Details:  map[string]interface{}{"email": email},
-			})
 			return true
 		}
 	}
 
 	// Em desenvolvimento, se não houver admins configurados, permitir qualquer usuário autenticado
 	if len(adminEmails) == 0 && env != "production" {
-		auditLogger.Log(security.AuditEvent{
-			Type:     security.EventDataAccess,
-			Severity: security.SeverityInfo,
-			Resource: "admin_check",
-			Action:   "verify_permission",
-			Result:   "granted_dev_mode",
-			Details:  map[string]interface{}{"reason": "no admins configured in dev"},
-		})
 		return true
 	}
 
-	auditLogger.Log(security.AuditEvent{
-		Type:     security.EventUnauthorizedAccess,
-		Severity: security.SeverityWarning,
-		Resource: "admin_check",
-		Action:   "verify_permission",
-		Result:   "denied",
-		Details: map[string]interface{}{
-			"email":        email,
-			"admin_emails": adminEmails,
-		},
-	})
 	return false
 }
 
@@ -256,7 +216,7 @@ func (h *Handler) Health(w http.ResponseWriter, r *http.Request) {
 			"go_version": runtime.Version(),
 		},
 		"storage": map[string]interface{}{
-			"type":   "memory",
+			"type":   h.storageType,
 			"status": "ok",
 		},
 		"timestamp": time.Now().UTC().Format(time.RFC3339),
