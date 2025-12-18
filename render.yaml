@@ -27,7 +27,7 @@ projects:
       - name: famli
         databaseName: famli
         user: famli
-        plan: free
+        plan: hobby
         region: oregon
         ipAllowList:
           - source: 0.0.0.0/0
@@ -42,7 +42,7 @@ projects:
         name: famli
         runtime: go
         repo: https://github.com/seimongrando/famli
-        plan: free
+        plan: hobby
         region: oregon
         branch: main
         buildCommand: cd frontend && npm ci && npm run build && cd ../backend && go build -ldflags="-s -w" -o ../server .
@@ -65,4 +65,16 @@ projects:
             generateValue: true
           # Emails de administradores (configurar no dashboard)
           - key: ADMIN_EMAILS
+            sync: false
+          # OAuth - Google (opcional, configurar no dashboard)
+          - key: GOOGLE_CLIENT_ID
+            sync: false
+          # OAuth - Apple (opcional, configurar no dashboard)
+          - key: APPLE_CLIENT_ID
+            sync: false
+          - key: APPLE_TEAM_ID
+            sync: false
+          - key: APPLE_KEY_ID
+            sync: false
+          - key: APPLE_PRIVATE_KEY
             sync: false
