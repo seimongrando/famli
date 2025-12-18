@@ -45,13 +45,25 @@ func NormalizePagination(p *PaginationParams) *PaginationParams {
 // USUÁRIOS
 // =============================================================================
 
+// AuthProvider define os provedores de autenticação suportados
+type AuthProvider string
+
+const (
+	AuthProviderEmail  AuthProvider = "email"  // Login com email/senha
+	AuthProviderGoogle AuthProvider = "google" // Login com Google
+	AuthProviderApple  AuthProvider = "apple"  // Login com Apple
+)
+
 // User representa um usuário do Famli
 type User struct {
-	ID        string    `json:"id"`
-	Email     string    `json:"email"`
-	Name      string    `json:"name,omitempty"`
-	Password  string    `json:"-"`
-	CreatedAt time.Time `json:"created_at"`
+	ID         string       `json:"id"`
+	Email      string       `json:"email"`
+	Name       string       `json:"name,omitempty"`
+	Password   string       `json:"-"`
+	Provider   AuthProvider `json:"provider,omitempty"`    // Provedor de autenticação
+	ProviderID string       `json:"provider_id,omitempty"` // ID do usuário no provedor
+	AvatarURL  string       `json:"avatar_url,omitempty"`  // URL do avatar (Google/Apple)
+	CreatedAt  time.Time    `json:"created_at"`
 }
 
 // ItemType define os tipos de itens na Caixa Famli

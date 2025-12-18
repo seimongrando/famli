@@ -560,7 +560,7 @@ curl -I http://famli.net
 Se você encontrar uma vulnerabilidade de segurança, por favor:
 
 1. **NÃO** abra uma issue pública
-2. Envie email para: security@famli.net
+2. Envie email para: famli@famli.me
 3. Inclua:
    - Descrição detalhada
    - Passos para reproduzir

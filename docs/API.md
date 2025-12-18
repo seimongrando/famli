@@ -596,3 +596,4 @@ X-RateLimit-Reset: 1642255200
 
 *Última atualização: Dezembro 2024*
 
+

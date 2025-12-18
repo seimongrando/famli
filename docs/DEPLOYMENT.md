@@ -102,6 +102,12 @@ TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 TWILIO_AUTH_TOKEN=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 TWILIO_PHONE_NUMBER=whatsapp:+14155238886
 WEBHOOK_BASE_URL=https://famli.net
+
+# OAuth - Login Social (opcional)
+GOOGLE_CLIENT_ID=xxxxxxxxxxxx.apps.googleusercontent.com
+APPLE_CLIENT_ID=com.famli.app
+APPLE_TEAM_ID=XXXXXXXXXX
+APPLE_KEY_ID=XXXXXXXXXX
 ```
 
 ### Gerar Segredos

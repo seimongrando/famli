@@ -154,6 +154,10 @@
     "hasAccount": "Já tem conta?",
     "createNow": "Criar agora",
     "securityNote": "Seus dados são protegidos e só você decide quem pode ver.",
+    "orContinueWith": "ou continue com",
+    "continueWithGoogle": "Continuar com Google",
+    "continueWithApple": "Continuar com Apple",
+    "socialLoginError": "Erro ao fazer login. Tente novamente.",
     "errors": {
       "invalidCredentials": "E-mail ou senha incorretos.",
       "invalidData": "Por favor, preencha todos os campos corretamente.",

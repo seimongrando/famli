@@ -47,6 +47,7 @@ import (
 	"famli/internal/guardian"
 	"famli/internal/guide"
 	"famli/internal/i18n"
+	"famli/internal/oauth"
 	"famli/internal/security"
 	"famli/internal/settings"
 	"famli/internal/storage"
@@ -82,6 +83,15 @@ func main() {
 		Enabled:           getenv("TWILIO_ACCOUNT_SID", "") != "",
 	}
 
+	// Configuração do OAuth (Google, Apple)
+	oauthConfig := &oauth.Config{
+		GoogleClientID:  getenv("GOOGLE_CLIENT_ID", ""),
+		AppleClientID:   getenv("APPLE_CLIENT_ID", ""),
+		AppleTeamID:     getenv("APPLE_TEAM_ID", ""),
+		AppleKeyID:      getenv("APPLE_KEY_ID", ""),
+		ApplePrivateKey: getenv("APPLE_PRIVATE_KEY", ""),
+	}
+
 	// =========================================================================
 	// LOG DE INICIALIZAÇÃO
 	// =========================================================================
@@ -94,6 +104,13 @@ func main() {
 		log.Println("📱 WhatsApp: habilitado")
 	} else {
 		log.Println("📱 WhatsApp: desabilitado")
+	}
+
+	if oauthConfig.GoogleClientID != "" {
+		log.Println("🔐 Google OAuth: habilitado")
+	}
+	if oauthConfig.AppleClientID != "" {
+		log.Println("🍎 Apple Sign In: habilitado")
 	}
 
 	// =========================================================================
@@ -150,6 +167,7 @@ func main() {
 	adminHandler := admin.NewHandler(store, storageType)
 	feedbackHandler := feedback.NewHandler(store)
 	analyticsHandler := analytics.NewHandler(store)
+	oauthHandler := oauth.NewHandler(store, jwtSecret, oauthConfig)
 
 	// Serviço e handler do WhatsApp
 	whatsappService := whatsapp.NewService(store, whatsappConfig)
@@ -222,6 +240,11 @@ func main() {
 		// Autenticação (rate limit adicional no handler)
 		api.Post("/auth/register", authHandler.Register)
 		api.Post("/auth/login", authHandler.Login)
+
+		// OAuth - Login Social (Google, Apple)
+		api.Post("/auth/oauth/google", oauthHandler.Google)
+		api.Post("/auth/oauth/apple", oauthHandler.Apple)
+		api.Get("/auth/oauth/status", oauthHandler.Status)
 
 		// Webhook do WhatsApp (chamado pelo Twilio)
 		api.Group(func(wh chi.Router) {

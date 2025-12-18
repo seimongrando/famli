@@ -16,6 +16,11 @@ type Store interface {
 	GetUserByID(id string) (*User, bool)
 	DeleteUser(userID string) error // LGPD: Direito ao esquecimento
 
+	// Social Auth (Google, Apple)
+	CreateOrUpdateSocialUser(provider AuthProvider, providerID, email, name, avatarURL string) (*User, error)
+	GetUserByProvider(provider AuthProvider, providerID string) (*User, bool)
+	LinkSocialProvider(userID string, provider AuthProvider, providerID string) error
+
 	// Box Items (métodos legacy para compatibilidade)
 	GetBoxItems(userID string) ([]*BoxItem, error)
 	ListBoxItems(userID string) []*BoxItem

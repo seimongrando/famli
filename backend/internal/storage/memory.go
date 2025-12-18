@@ -18,14 +18,15 @@ var (
 type MemoryStore struct {
 	mu sync.RWMutex
 
-	users        map[string]*User
-	usersByEmail map[string]string
-	items        map[string]map[string]*BoxItem       // userID -> itemID -> item
-	guardians    map[string]map[string]*Guardian      // userID -> guardianID -> guardian
-	progress     map[string]map[string]*GuideProgress // userID -> cardID -> progress
-	settings     map[string]*Settings
-	feedbacks    map[string]*Feedback // feedbackID -> feedback
-	analytics    []*AnalyticsEvent    // Lista de eventos
+	users           map[string]*User
+	usersByEmail    map[string]string
+	usersByProvider map[string]string                    // "provider:providerID" -> userID
+	items           map[string]map[string]*BoxItem       // userID -> itemID -> item
+	guardians       map[string]map[string]*Guardian      // userID -> guardianID -> guardian
+	progress        map[string]map[string]*GuideProgress // userID -> cardID -> progress
+	settings        map[string]*Settings
+	feedbacks       map[string]*Feedback // feedbackID -> feedback
+	analytics       []*AnalyticsEvent    // Lista de eventos
 
 	userSeq     int64
 	itemSeq     int64
@@ -35,14 +36,15 @@ type MemoryStore struct {
 // NewMemoryStore cria uma nova instância do store
 func NewMemoryStore() *MemoryStore {
 	return &MemoryStore{
-		users:        make(map[string]*User),
-		usersByEmail: make(map[string]string),
-		items:        make(map[string]map[string]*BoxItem),
-		guardians:    make(map[string]map[string]*Guardian),
-		progress:     make(map[string]map[string]*GuideProgress),
-		settings:     make(map[string]*Settings),
-		feedbacks:    make(map[string]*Feedback),
-		analytics:    make([]*AnalyticsEvent, 0),
+		users:           make(map[string]*User),
+		usersByEmail:    make(map[string]string),
+		usersByProvider: make(map[string]string),
+		items:           make(map[string]map[string]*BoxItem),
+		guardians:       make(map[string]map[string]*Guardian),
+		progress:        make(map[string]map[string]*GuideProgress),
+		settings:        make(map[string]*Settings),
+		feedbacks:       make(map[string]*Feedback),
+		analytics:       make([]*AnalyticsEvent, 0),
 	}
 }
 
@@ -116,6 +118,86 @@ func (s *MemoryStore) DeleteUser(userID string) error {
 
 	// Remover o usuário
 	delete(s.users, userID)
+
+	return nil
+}
+
+// ============ SOCIAL AUTH ============
+
+// CreateOrUpdateSocialUser cria ou atualiza um usuário via login social
+func (s *MemoryStore) CreateOrUpdateSocialUser(provider AuthProvider, providerID, email, name, avatarURL string) (*User, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	providerKey := fmt.Sprintf("%s:%s", provider, providerID)
+	normalized := strings.ToLower(strings.TrimSpace(email))
+
+	// Verificar se já existe pelo provider
+	if userID, ok := s.usersByProvider[providerKey]; ok {
+		user := s.users[userID]
+		user.Name = name
+		user.AvatarURL = avatarURL
+		return user, nil
+	}
+
+	// Verificar se já existe pelo email
+	if userID, ok := s.usersByEmail[normalized]; ok {
+		user := s.users[userID]
+		user.Provider = provider
+		user.ProviderID = providerID
+		user.AvatarURL = avatarURL
+		s.usersByProvider[providerKey] = userID
+		return user, nil
+	}
+
+	// Criar novo usuário
+	s.userSeq++
+	user := &User{
+		ID:         fmt.Sprintf("usr_%d", s.userSeq),
+		Email:      email,
+		Name:       name,
+		Provider:   provider,
+		ProviderID: providerID,
+		AvatarURL:  avatarURL,
+		CreatedAt:  time.Now(),
+	}
+
+	s.users[user.ID] = user
+	s.usersByEmail[normalized] = user.ID
+	s.usersByProvider[providerKey] = user.ID
+
+	return user, nil
+}
+
+// GetUserByProvider busca um usuário pelo provedor de autenticação
+func (s *MemoryStore) GetUserByProvider(provider AuthProvider, providerID string) (*User, bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	providerKey := fmt.Sprintf("%s:%s", provider, providerID)
+	userID, ok := s.usersByProvider[providerKey]
+	if !ok {
+		return nil, false
+	}
+	user, exists := s.users[userID]
+	return user, exists
+}
+
+// LinkSocialProvider vincula um provedor social a um usuário existente
+func (s *MemoryStore) LinkSocialProvider(userID string, provider AuthProvider, providerID string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	user, exists := s.users[userID]
+	if !exists {
+		return ErrNotFound
+	}
+
+	user.Provider = provider
+	user.ProviderID = providerID
+
+	providerKey := fmt.Sprintf("%s:%s", provider, providerID)
+	s.usersByProvider[providerKey] = userID
 
 	return nil
 }

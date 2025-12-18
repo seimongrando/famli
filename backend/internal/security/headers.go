@@ -184,10 +184,10 @@ func buildDefaultCSP(isDevelopment bool) string {
 		// Padrão: bloquear tudo que não for explicitamente permitido
 		"default-src 'self'",
 
-		// Scripts: próprio domínio
+		// Scripts: próprio domínio + Google Sign-In + Apple Sign-In
 		// 'unsafe-eval' necessário para Vue.js runtime compilation
 		// Em produção, idealmente usaríamos templates pré-compilados
-		"script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+		"script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://appleid.cdn-apple.com",
 
 		// Estilos: próprio domínio + Google Fonts + inline (necessário para Vue)
 		"style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
@@ -198,10 +198,13 @@ func buildDefaultCSP(isDevelopment bool) string {
 		// Imagens: próprio domínio + data URIs + https
 		"img-src 'self' data: https: blob:",
 
-		// Conexões: próprio domínio + Google Fonts (service worker) + WebSocket em dev
-		"connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com" + conditionalCSP(isDevelopment, " ws://localhost:* wss://localhost:*"),
+		// Conexões: próprio domínio + Google Fonts + OAuth providers + WebSocket em dev
+		"connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://accounts.google.com https://oauth2.googleapis.com https://appleid.apple.com" + conditionalCSP(isDevelopment, " ws://localhost:* wss://localhost:*"),
 
-		// Frames: bloquear (prevenção de clickjacking adicional)
+		// Frame sources: permitir popups do Google e Apple para OAuth
+		"frame-src 'self' https://accounts.google.com https://appleid.apple.com",
+
+		// Frames: bloquear outros sites de incorporar nossa página (prevenção de clickjacking)
 		"frame-ancestors 'none'",
 
 		// Formulários: apenas próprio domínio

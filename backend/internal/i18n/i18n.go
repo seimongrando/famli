@@ -109,6 +109,15 @@ var Translations = map[string]Messages{
 		"analytics.track_error":  "Não foi possível registrar o evento.",
 
 		// =======================================================================
+		// OAUTH - Login Social
+		// =======================================================================
+		"oauth.google_not_configured": "Login com Google não está configurado.",
+		"oauth.apple_not_configured":  "Login com Apple não está configurado.",
+		"oauth.token_required":        "Token de autenticação é obrigatório.",
+		"oauth.invalid_token":         "Token de autenticação inválido.",
+		"oauth.email_not_verified":    "O e-mail precisa estar verificado.",
+
+		// =======================================================================
 		// GUIDE CARDS - Títulos e descrições do Guia Famli
 		// =======================================================================
 		"guide.card.welcome.title":         "Comece por aqui",
@@ -221,6 +230,15 @@ var Translations = map[string]Messages{
 		// =======================================================================
 		"analytics.invalid_data": "Invalid data.",
 		"analytics.track_error":  "Unable to record event.",
+
+		// =======================================================================
+		// OAUTH - Social Login
+		// =======================================================================
+		"oauth.google_not_configured": "Google login is not configured.",
+		"oauth.apple_not_configured":  "Apple login is not configured.",
+		"oauth.token_required":        "Authentication token is required.",
+		"oauth.invalid_token":         "Invalid authentication token.",
+		"oauth.email_not_verified":    "Email must be verified.",
 
 		// =======================================================================
 		// GUIDE CARDS - Famli Guide titles and descriptions

@@ -41,3 +41,4 @@ export const availableLocales = [
 
 export default i18n
 
+

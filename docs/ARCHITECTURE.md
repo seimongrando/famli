@@ -504,3 +504,4 @@ frontend/src/
 
 *Última atualização: Dezembro 2024*
 
+

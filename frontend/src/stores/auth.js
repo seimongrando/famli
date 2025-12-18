@@ -194,6 +194,66 @@ export const useAuthStore = defineStore('auth', () => {
     lastSessionCheck.value = 0
   }
 
+  // Login via Google OAuth
+  async function loginWithGoogle(idToken) {
+    loading.value = true
+    error.value = ''
+
+    try {
+      const res = await fetch('/api/auth/oauth/google', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ token: idToken })
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        error.value = translateError(data.error, 'auth.socialLoginError')
+        return false
+      }
+
+      user.value = data.user
+      return true
+    } catch (e) {
+      error.value = translateError(null, 'auth.errors.connectionError')
+      return false
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // Login via Apple OAuth
+  async function loginWithApple(idToken) {
+    loading.value = true
+    error.value = ''
+
+    try {
+      const res = await fetch('/api/auth/oauth/apple', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ token: idToken })
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        error.value = translateError(data.error, 'auth.socialLoginError')
+        return false
+      }
+
+      user.value = data.user
+      return true
+    } catch (e) {
+      error.value = translateError(null, 'auth.errors.connectionError')
+      return false
+    } finally {
+      loading.value = false
+    }
+  }
+
   function clearError() {
     error.value = ''
   }
@@ -229,6 +289,8 @@ export const useAuthStore = defineStore('auth', () => {
     register,
     login,
     logout,
+    loginWithGoogle,
+    loginWithApple,
     clearError,
     handleSessionError,
     authenticatedFetch

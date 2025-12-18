@@ -65,7 +65,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build \
 FROM alpine:3.19
 
 # Metadados
-LABEL maintainer="Famli <contato@famli.net>"
+LABEL maintainer="Famli <famli@famli.me>"
 LABEL description="Famli - Organize o que importa"
 LABEL version="${VERSION:-dev}"
 
@@ -104,4 +104,5 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 
 # Comando de inicialização
 CMD ["./famli"]
+
 

@@ -212,8 +212,8 @@ Proprietary - All rights reserved.
 
 ## 🤝 Contato
 
-- **Email**: contato@famli.net
-- **Website**: https://famli.net
+- **Email**: famli@famli.me
+- **Website**: https://famli.me
 
 ---
 

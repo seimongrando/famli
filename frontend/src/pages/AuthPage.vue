@@ -16,7 +16,7 @@ Segurança:
 ============================================================================= -->
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../stores/auth'
@@ -33,6 +33,119 @@ const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 const { paths } = useLocalizedRoutes()
+
+// =============================================================================
+// SOCIAL LOGIN
+// =============================================================================
+
+const oauthStatus = ref({ google: { enabled: false }, apple: { enabled: false } })
+const socialLoginLoading = ref(false)
+
+// Verificar status do OAuth ao montar
+async function checkOAuthStatus() {
+  try {
+    const res = await fetch('/api/auth/oauth/status')
+    if (res.ok) {
+      oauthStatus.value = await res.json()
+    }
+  } catch (e) {
+    // OAuth não disponível
+  }
+}
+
+// Inicializar Google Sign-In
+function initGoogleSignIn() {
+  if (!oauthStatus.value.google.enabled) return
+  
+  // Carregar script do Google se não existir
+  if (!window.google && !document.getElementById('google-gsi-script')) {
+    const script = document.createElement('script')
+    script.id = 'google-gsi-script'
+    script.src = 'https://accounts.google.com/gsi/client'
+    script.async = true
+    script.defer = true
+    script.onload = renderGoogleButton
+    document.head.appendChild(script)
+  } else if (window.google) {
+    renderGoogleButton()
+  }
+}
+
+function renderGoogleButton() {
+  if (!window.google || !oauthStatus.value.google.client_id) return
+  
+  window.google.accounts.id.initialize({
+    client_id: oauthStatus.value.google.client_id,
+    callback: handleGoogleCallback,
+    auto_select: false,
+    cancel_on_tap_outside: true
+  })
+  
+  // Renderizar botão customizado
+  const container = document.getElementById('google-signin-btn')
+  if (container) {
+    window.google.accounts.id.renderButton(container, {
+      theme: 'outline',
+      size: 'large',
+      width: '100%',
+      text: 'continue_with',
+      shape: 'rectangular',
+      logo_alignment: 'center'
+    })
+  }
+}
+
+async function handleGoogleCallback(response) {
+  if (response.credential) {
+    socialLoginLoading.value = true
+    const success = await authStore.loginWithGoogle(response.credential)
+    socialLoginLoading.value = false
+    if (success) {
+      router.push(paths.value.dashboard)
+    }
+  }
+}
+
+// Apple Sign In (usando API nativa do browser)
+async function handleAppleLogin() {
+  if (!window.AppleID) {
+    // Carregar script da Apple se necessário
+    const script = document.createElement('script')
+    script.src = 'https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js'
+    script.onload = () => performAppleLogin()
+    document.head.appendChild(script)
+  } else {
+    performAppleLogin()
+  }
+}
+
+async function performAppleLogin() {
+  try {
+    socialLoginLoading.value = true
+    
+    window.AppleID.auth.init({
+      clientId: oauthStatus.value.apple.client_id,
+      scope: 'name email',
+      redirectURI: window.location.origin + '/auth',
+      usePopup: true
+    })
+    
+    const response = await window.AppleID.auth.signIn()
+    
+    if (response.authorization?.id_token) {
+      const success = await authStore.loginWithApple(response.authorization.id_token)
+      if (success) {
+        router.push(paths.value.dashboard)
+      }
+    }
+  } catch (e) {
+    if (e.error !== 'popup_closed_by_user') {
+      authStore.error = t('auth.socialLoginError')
+    }
+  } finally {
+    socialLoginLoading.value = false
+  }
+}
 
 // =============================================================================
 // ESTADO
@@ -74,13 +187,22 @@ const canSubmit = computed(() => {
 // LIFECYCLE
 // =============================================================================
 
-onMounted(() => {
+onMounted(async () => {
   // Definir modo baseado na query string
   mode.value = route.query.mode === 'register' ? 'register' : 'login'
   
   // Se já autenticado, redirecionar para dashboard
   if (authStore.isAuthenticated) {
     router.push(paths.value.dashboard)
+    return
+  }
+
+  // Verificar status do OAuth
+  await checkOAuthStatus()
+  
+  // Inicializar Google Sign-In se disponível
+  if (oauthStatus.value.google.enabled) {
+    initGoogleSignIn()
   }
 })
 
@@ -256,6 +378,31 @@ async function handleSubmit() {
             }}
           </button>
         </form>
+
+        <!-- Login Social -->
+        <div v-if="oauthStatus.google.enabled || oauthStatus.apple.enabled" class="social-login">
+          <div class="social-divider">
+            <span>{{ t('auth.orContinueWith') }}</span>
+          </div>
+
+          <div class="social-buttons">
+            <!-- Google Sign-In -->
+            <div v-if="oauthStatus.google.enabled" id="google-signin-btn" class="social-btn-container"></div>
+
+            <!-- Apple Sign-In -->
+            <button 
+              v-if="oauthStatus.apple.enabled"
+              @click="handleAppleLogin"
+              class="social-btn social-btn--apple"
+              :disabled="socialLoginLoading"
+            >
+              <svg class="social-btn__icon" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.53 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
+              </svg>
+              <span>{{ t('auth.continueWithApple') }}</span>
+            </button>
+          </div>
+        </div>
 
         <!-- Alternar modo -->
         <p class="auth-switch">
@@ -460,5 +607,95 @@ async function handleSubmit() {
 
 .checkbox-text .link:hover {
   color: var(--color-primary-light);
+}
+
+/* =============================================================================
+   SOCIAL LOGIN
+   ============================================================================= */
+
+.social-login {
+  margin-top: var(--space-lg);
+}
+
+.social-divider {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+}
+
+.social-divider::before,
+.social-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--color-border);
+}
+
+.social-divider span {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-soft);
+  white-space: nowrap;
+}
+
+.social-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.social-btn-container {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.social-btn-container > div {
+  width: 100% !important;
+}
+
+.social-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  width: 100%;
+  padding: var(--space-md);
+  border-radius: var(--radius-md);
+  font-family: var(--font-family);
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  border: 1px solid var(--color-border);
+}
+
+.social-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.social-btn__icon {
+  width: 20px;
+  height: 20px;
+}
+
+.social-btn--apple {
+  background: #000;
+  color: #fff;
+  border-color: #000;
+}
+
+.social-btn--apple:hover:not(:disabled) {
+  background: #333;
+}
+
+.social-btn--google {
+  background: #fff;
+  color: #333;
+}
+
+.social-btn--google:hover:not(:disabled) {
+  background: var(--color-bg-warm);
 }
 </style>

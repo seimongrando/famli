@@ -152,9 +152,15 @@ func (s *PostgresStore) migrate() error {
 		// =======================================================================
 		// ÍNDICES PARA PERFORMANCE
 		// =======================================================================
+		// Colunas para Social Auth (Google, Apple)
+		`ALTER TABLE users ADD COLUMN IF NOT EXISTS provider VARCHAR(50) DEFAULT 'email'`,
+		`ALTER TABLE users ADD COLUMN IF NOT EXISTS provider_id VARCHAR(255)`,
+		`ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT`,
+
 		// Índices de usuários
 		`CREATE INDEX IF NOT EXISTS idx_users_email ON users(LOWER(email))`,
 		`CREATE INDEX IF NOT EXISTS idx_users_created_at ON users(created_at DESC)`,
+		`CREATE INDEX IF NOT EXISTS idx_users_provider ON users(provider, provider_id) WHERE provider_id IS NOT NULL`,
 
 		// Índices de box_items (performance em listagens e filtros)
 		`CREATE INDEX IF NOT EXISTS idx_box_items_user ON box_items(user_id)`,
@@ -339,6 +345,118 @@ func (s *PostgresStore) DeleteUser(userID string) error {
 	}
 
 	// Auditoria de deleção deve ser feita pelo chamador
+	return nil
+}
+
+// ============================================================================
+// SOCIAL AUTH (Google, Apple)
+// ============================================================================
+
+// CreateOrUpdateSocialUser cria ou atualiza um usuário via login social
+func (s *PostgresStore) CreateOrUpdateSocialUser(provider AuthProvider, providerID, email, name, avatarURL string) (*User, error) {
+	normalized := strings.ToLower(strings.TrimSpace(email))
+	now := time.Now()
+
+	// Primeiro, tentar encontrar pelo provider + providerID
+	existingUser, found := s.GetUserByProvider(provider, providerID)
+	if found {
+		// Atualizar informações se necessário
+		_, err := s.db.Exec(`
+			UPDATE users SET name = $1, avatar_url = $2, updated_at = $3
+			WHERE id = $4
+		`, name, avatarURL, now, existingUser.ID)
+		if err != nil {
+			return nil, fmt.Errorf("erro ao atualizar usuário social: %w", err)
+		}
+		existingUser.Name = name
+		existingUser.AvatarURL = avatarURL
+		return existingUser, nil
+	}
+
+	// Verificar se já existe usuário com este email
+	existingByEmail, foundByEmail := s.GetUserByEmail(normalized)
+	if foundByEmail {
+		// Vincular o provedor ao usuário existente
+		err := s.LinkSocialProvider(existingByEmail.ID, provider, providerID)
+		if err != nil {
+			return nil, err
+		}
+		// Atualizar avatar se não tiver
+		if existingByEmail.AvatarURL == "" && avatarURL != "" {
+			s.db.Exec(`UPDATE users SET avatar_url = $1, updated_at = $2 WHERE id = $3`, avatarURL, now, existingByEmail.ID)
+		}
+		existingByEmail.Provider = provider
+		existingByEmail.ProviderID = providerID
+		existingByEmail.AvatarURL = avatarURL
+		return existingByEmail, nil
+	}
+
+	// Criar novo usuário
+	id := fmt.Sprintf("usr_%d", now.UnixNano())
+	_, err := s.db.Exec(`
+		INSERT INTO users (id, email, name, password, provider, provider_id, avatar_url, created_at, updated_at)
+		VALUES ($1, $2, $3, '', $4, $5, $6, $7, $8)
+	`, id, email, name, provider, providerID, avatarURL, now, now)
+
+	if err != nil {
+		if strings.Contains(err.Error(), "duplicate") || strings.Contains(err.Error(), "unique") {
+			return nil, ErrAlreadyExists
+		}
+		return nil, fmt.Errorf("erro ao criar usuário social: %w", err)
+	}
+
+	return &User{
+		ID:         id,
+		Email:      email,
+		Name:       name,
+		Provider:   provider,
+		ProviderID: providerID,
+		AvatarURL:  avatarURL,
+		CreatedAt:  now,
+	}, nil
+}
+
+// GetUserByProvider busca um usuário pelo provedor de autenticação
+func (s *PostgresStore) GetUserByProvider(provider AuthProvider, providerID string) (*User, bool) {
+	var user User
+	var name, avatarURL sql.NullString
+
+	err := s.db.QueryRow(`
+		SELECT id, email, name, password, provider, provider_id, avatar_url, created_at
+		FROM users WHERE provider = $1 AND provider_id = $2
+	`, provider, providerID).Scan(
+		&user.ID, &user.Email, &name, &user.Password,
+		&user.Provider, &user.ProviderID, &avatarURL, &user.CreatedAt,
+	)
+
+	if err == sql.ErrNoRows {
+		return nil, false
+	}
+	if err != nil {
+		return nil, false
+	}
+
+	user.Name = name.String
+	user.AvatarURL = avatarURL.String
+	return &user, true
+}
+
+// LinkSocialProvider vincula um provedor social a um usuário existente
+func (s *PostgresStore) LinkSocialProvider(userID string, provider AuthProvider, providerID string) error {
+	result, err := s.db.Exec(`
+		UPDATE users SET provider = $1, provider_id = $2, updated_at = $3
+		WHERE id = $4
+	`, provider, providerID, time.Now(), userID)
+
+	if err != nil {
+		return fmt.Errorf("erro ao vincular provedor social: %w", err)
+	}
+
+	rows, _ := result.RowsAffected()
+	if rows == 0 {
+		return ErrNotFound
+	}
+
 	return nil
 }
 
