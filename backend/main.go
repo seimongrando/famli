@@ -50,6 +50,7 @@ import (
 	"famli/internal/oauth"
 	"famli/internal/security"
 	"famli/internal/settings"
+	"famli/internal/share"
 	"famli/internal/storage"
 	"famli/internal/whatsapp"
 )
@@ -175,6 +176,7 @@ func main() {
 	feedbackHandler := feedback.NewHandler(store)
 	analyticsHandler := analytics.NewHandler(store)
 	oauthHandler := oauth.NewHandler(store, jwtSecret, oauthConfig)
+	shareHandler := share.NewHandler(store)
 
 	// Serviço e handler do WhatsApp
 	whatsappService := whatsapp.NewService(store, whatsappConfig)
@@ -248,6 +250,10 @@ func main() {
 		api.Post("/auth/register", authHandler.Register)
 		api.Post("/auth/login", authHandler.Login)
 
+		// Recuperação de senha
+		api.Post("/auth/forgot-password", authHandler.ForgotPassword)
+		api.Post("/auth/reset-password", authHandler.ResetPassword)
+
 		// OAuth - Login Social (Google, Apple)
 		api.Post("/auth/oauth/google", oauthHandler.Google)
 		api.Post("/auth/oauth/apple", oauthHandler.Apple)
@@ -312,6 +318,25 @@ func main() {
 
 			// Analytics - Rastreamento de eventos
 			pr.Post("/analytics/track", analyticsHandler.Track)
+
+			// Share - Gerenciar links de compartilhamento
+			pr.Post("/share/links", shareHandler.CreateLink)
+			pr.Get("/share/links", shareHandler.ListLinks)
+			pr.Delete("/share/links/{id}", shareHandler.DeleteLink)
+		})
+
+		// ─────────────────────────────────────────────────────────────────────
+		// ROTAS PÚBLICAS DE COMPARTILHAMENTO (não requerem autenticação)
+		// ─────────────────────────────────────────────────────────────────────
+
+		api.Route("/shared", func(sr chi.Router) {
+			// Rate limit para prevenir brute force em PINs
+			sr.Use(apiLimiter.Middleware(security.GetClientIP))
+
+			// Acessar conteúdo compartilhado
+			sr.Get("/{token}", shareHandler.AccessShared)
+			// Verificar PIN e acessar
+			sr.Post("/{token}/verify", shareHandler.VerifyPIN)
 		})
 
 		// ─────────────────────────────────────────────────────────────────────

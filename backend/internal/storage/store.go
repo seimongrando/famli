@@ -14,7 +14,9 @@ type Store interface {
 	CreateUser(email, hashedPassword, name string) (*User, error)
 	GetUserByEmail(email string) (*User, bool)
 	GetUserByID(id string) (*User, bool)
-	DeleteUser(userID string) error // LGPD: Direito ao esquecimento
+	UpdateUserPassword(userID, hashedPassword string) error
+	UpdateUserLocale(userID, locale string) error // Atualiza idioma preferido
+	DeleteUser(userID string) error               // LGPD: Direito ao esquecimento
 
 	// Social Auth (Google, Apple)
 	CreateOrUpdateSocialUser(provider AuthProvider, providerID, email, name, avatarURL string) (*User, error)
@@ -70,6 +72,25 @@ type Store interface {
 	GetAnalyticsSummary() *AnalyticsSummary
 	GetRecentEvents(limit int) ([]*AnalyticsEvent, error)
 	GetDailyStats(days int) ([]map[string]interface{}, error)
+
+	// Share Links (Compartilhamento com Guardiões)
+	CreateShareLink(link *ShareLink) error
+	GetShareLinkByToken(token string) (*ShareLink, error)
+	GetShareLinksByUser(userID string) ([]*ShareLink, error)
+	UpdateShareLink(link *ShareLink) error
+	DeleteShareLink(userID, linkID string) error
+	RecordShareLinkAccess(access *ShareLinkAccess) error
+	IncrementShareLinkUsage(linkID string) error
+
+	// Password Reset (Recuperação de Senha)
+	CreatePasswordResetToken(token *PasswordResetToken) error
+	GetPasswordResetToken(tokenHash string) (*PasswordResetToken, error)
+	MarkPasswordResetTokenUsed(tokenID string) error
+	CleanupExpiredPasswordResetTokens() error
+
+	// Emergency Protocol (Protocolo de Emergência)
+	GetEmergencyProtocol(userID string) (*EmergencyProtocol, error)
+	UpdateEmergencyProtocol(protocol *EmergencyProtocol) error
 
 	// Maintenance
 	CleanupOldLogs(retentionDays int) error

@@ -26,7 +26,7 @@ import (
 
 	"famli/internal/security"
 
-	_ "github.com/lib/pq"
+	"github.com/lib/pq"
 )
 
 // PostgresStore implementa armazenamento com PostgreSQL
@@ -96,9 +96,19 @@ func (s *PostgresStore) migrate() error {
 			password VARCHAR(255) NOT NULL,
 			terms_accepted BOOLEAN DEFAULT FALSE,
 			terms_accepted_at TIMESTAMP,
+			locale VARCHAR(10) DEFAULT 'pt-BR',
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		)`,
+		// Migration: adicionar coluna locale se não existir
+		`DO $$ 
+		BEGIN 
+			IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+				WHERE table_name = 'users' AND column_name = 'locale') 
+			THEN 
+				ALTER TABLE users ADD COLUMN locale VARCHAR(10) DEFAULT 'pt-BR';
+			END IF;
+		END $$`,
 
 		// Tabela box_items (com limite de 10KB para content)
 		`CREATE TABLE IF NOT EXISTS box_items (
@@ -239,6 +249,69 @@ func (s *PostgresStore) migrate() error {
 		`CREATE INDEX IF NOT EXISTS idx_analytics_created ON analytics_events(created_at DESC)`,
 		// Nota: Índice parcial com CURRENT_DATE não é permitido (não-IMMUTABLE)
 		// Consultas usam WHERE created_at >= date_trunc('day', CURRENT_TIMESTAMP) no runtime
+
+		// =======================================================================
+		// COMPARTILHAMENTO E ACESSO (Links para Guardiões)
+		// =======================================================================
+		`CREATE TABLE IF NOT EXISTS share_links (
+			id VARCHAR(50) PRIMARY KEY,
+			user_id VARCHAR(50) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+			guardian_id VARCHAR(50) REFERENCES guardians(id) ON DELETE SET NULL,
+			token VARCHAR(100) NOT NULL UNIQUE,
+			type VARCHAR(20) NOT NULL DEFAULT 'normal',
+			name VARCHAR(100) NOT NULL,
+			pin_hash VARCHAR(255),
+			categories TEXT[],
+			expires_at TIMESTAMP,
+			max_uses INT DEFAULT 0,
+			usage_count INT DEFAULT 0,
+			last_used_at TIMESTAMP,
+			is_active BOOLEAN DEFAULT TRUE,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		)`,
+		`CREATE INDEX IF NOT EXISTS idx_share_links_user ON share_links(user_id)`,
+		`CREATE INDEX IF NOT EXISTS idx_share_links_token ON share_links(token) WHERE is_active = TRUE`,
+		`CREATE INDEX IF NOT EXISTS idx_share_links_guardian ON share_links(guardian_id)`,
+
+		// Registro de acessos aos links
+		`CREATE TABLE IF NOT EXISTS share_link_accesses (
+			id VARCHAR(50) PRIMARY KEY,
+			share_link_id VARCHAR(50) NOT NULL REFERENCES share_links(id) ON DELETE CASCADE,
+			ip_address VARCHAR(45),
+			user_agent VARCHAR(500),
+			accessed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		)`,
+		`CREATE INDEX IF NOT EXISTS idx_share_accesses_link ON share_link_accesses(share_link_id)`,
+
+		// =======================================================================
+		// RECUPERAÇÃO DE SENHA
+		// =======================================================================
+		`CREATE TABLE IF NOT EXISTS password_reset_tokens (
+			id VARCHAR(50) PRIMARY KEY,
+			user_id VARCHAR(50) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+			token_hash VARCHAR(255) NOT NULL,
+			expires_at TIMESTAMP NOT NULL,
+			used_at TIMESTAMP,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		)`,
+		`CREATE INDEX IF NOT EXISTS idx_password_reset_user ON password_reset_tokens(user_id)`,
+		`CREATE INDEX IF NOT EXISTS idx_password_reset_expires ON password_reset_tokens(expires_at)`,
+
+		// =======================================================================
+		// PROTOCOLO DE EMERGÊNCIA
+		// =======================================================================
+		`CREATE TABLE IF NOT EXISTS emergency_protocols (
+			user_id VARCHAR(50) PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+			is_active BOOLEAN DEFAULT FALSE,
+			activated_at TIMESTAMP,
+			activated_by VARCHAR(50),
+			deactivated_at TIMESTAMP,
+			reason VARCHAR(500),
+			notify_guardians BOOLEAN DEFAULT TRUE,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		)`,
 	}
 
 	for _, migration := range migrations {
@@ -320,10 +393,11 @@ func (s *PostgresStore) GetUserByEmail(email string) (*User, bool) {
 	normalized := strings.ToLower(strings.TrimSpace(email))
 
 	var user User
+	var locale sql.NullString
 	err := s.db.QueryRow(`
-		SELECT id, email, name, password, created_at
+		SELECT id, email, name, password, locale, created_at
 		FROM users WHERE LOWER(email) = $1
-	`, normalized).Scan(&user.ID, &user.Email, &user.Name, &user.Password, &user.CreatedAt)
+	`, normalized).Scan(&user.ID, &user.Email, &user.Name, &user.Password, &locale, &user.CreatedAt)
 
 	if err == sql.ErrNoRows {
 		return nil, false
@@ -334,17 +408,21 @@ func (s *PostgresStore) GetUserByEmail(email string) (*User, bool) {
 		return nil, false
 	}
 
+	if locale.Valid {
+		user.Locale = locale.String
+	}
+
 	return &user, true
 }
 
 func (s *PostgresStore) GetUserByID(id string) (*User, bool) {
 	var user User
-	var name sql.NullString
+	var name, locale sql.NullString
 
 	err := s.db.QueryRow(`
-		SELECT id, email, name, password, created_at
+		SELECT id, email, name, password, locale, created_at
 		FROM users WHERE id = $1
-	`, id).Scan(&user.ID, &user.Email, &name, &user.Password, &user.CreatedAt)
+	`, id).Scan(&user.ID, &user.Email, &name, &user.Password, &locale, &user.CreatedAt)
 
 	if err == sql.ErrNoRows {
 		return nil, false
@@ -355,7 +433,42 @@ func (s *PostgresStore) GetUserByID(id string) (*User, bool) {
 	}
 
 	user.Name = name.String
+	if locale.Valid {
+		user.Locale = locale.String
+	}
 	return &user, true
+}
+
+// UpdateUserPassword atualiza a senha de um usuário
+func (s *PostgresStore) UpdateUserPassword(userID, hashedPassword string) error {
+	result, err := s.db.Exec(`UPDATE users SET password = $1, updated_at = $2 WHERE id = $3`,
+		hashedPassword, time.Now(), userID)
+	if err != nil {
+		return fmt.Errorf("erro ao atualizar senha: %w", err)
+	}
+
+	rows, _ := result.RowsAffected()
+	if rows == 0 {
+		return ErrNotFound
+	}
+
+	return nil
+}
+
+// UpdateUserLocale atualiza o idioma preferido do usuário
+func (s *PostgresStore) UpdateUserLocale(userID, locale string) error {
+	result, err := s.db.Exec(`UPDATE users SET locale = $1, updated_at = $2 WHERE id = $3`,
+		locale, time.Now(), userID)
+	if err != nil {
+		return fmt.Errorf("erro ao atualizar locale: %w", err)
+	}
+
+	rows, _ := result.RowsAffected()
+	if rows == 0 {
+		return ErrNotFound
+	}
+
+	return nil
 }
 
 // DeleteUser remove um usuário e todos os seus dados (LGPD: Direito ao esquecimento)
@@ -1375,4 +1488,240 @@ func (s *PostgresStore) GetDailyStats(days int) ([]map[string]interface{}, error
 	}
 
 	return stats, nil
+}
+
+// ============================================================================
+// SHARE LINKS (Compartilhamento com Guardiões)
+// ============================================================================
+
+// CreateShareLink cria um novo link de compartilhamento
+func (s *PostgresStore) CreateShareLink(link *ShareLink) error {
+	_, err := s.db.Exec(`
+		INSERT INTO share_links (id, user_id, guardian_id, token, type, name, pin_hash, categories, expires_at, max_uses, is_active, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+	`, link.ID, link.UserID, nullString(link.GuardianID), link.Token, link.Type, link.Name,
+		nullString(link.PIN), pq.Array(link.Categories), link.ExpiresAt, link.MaxUses, link.IsActive, link.CreatedAt, link.UpdatedAt)
+	return err
+}
+
+// GetShareLinkByToken busca um link pelo token
+func (s *PostgresStore) GetShareLinkByToken(token string) (*ShareLink, error) {
+	var link ShareLink
+	var guardianID, pinHash sql.NullString
+	var expiresAt, lastUsedAt sql.NullTime
+	var categories pq.StringArray
+
+	err := s.db.QueryRow(`
+		SELECT id, user_id, guardian_id, token, type, name, pin_hash, categories, expires_at, max_uses, usage_count, last_used_at, is_active, created_at, updated_at
+		FROM share_links
+		WHERE token = $1 AND is_active = TRUE
+	`, token).Scan(&link.ID, &link.UserID, &guardianID, &link.Token, &link.Type, &link.Name,
+		&pinHash, &categories, &expiresAt, &link.MaxUses, &link.UsageCount, &lastUsedAt, &link.IsActive, &link.CreatedAt, &link.UpdatedAt)
+
+	if err == sql.ErrNoRows {
+		return nil, ErrNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	link.GuardianID = guardianID.String
+	link.PIN = pinHash.String
+	link.Categories = categories
+	if expiresAt.Valid {
+		link.ExpiresAt = &expiresAt.Time
+	}
+	if lastUsedAt.Valid {
+		link.LastUsedAt = &lastUsedAt.Time
+	}
+
+	return &link, nil
+}
+
+// GetShareLinksByUser lista todos os links de um usuário
+func (s *PostgresStore) GetShareLinksByUser(userID string) ([]*ShareLink, error) {
+	rows, err := s.db.Query(`
+		SELECT id, user_id, guardian_id, type, name, categories, expires_at, max_uses, usage_count, last_used_at, is_active, created_at, updated_at
+		FROM share_links
+		WHERE user_id = $1
+		ORDER BY created_at DESC
+		LIMIT 100
+	`, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var links []*ShareLink
+	for rows.Next() {
+		var link ShareLink
+		var guardianID sql.NullString
+		var expiresAt, lastUsedAt sql.NullTime
+		var categories pq.StringArray
+
+		err := rows.Scan(&link.ID, &link.UserID, &guardianID, &link.Type, &link.Name,
+			&categories, &expiresAt, &link.MaxUses, &link.UsageCount, &lastUsedAt, &link.IsActive, &link.CreatedAt, &link.UpdatedAt)
+		if err != nil {
+			continue
+		}
+
+		link.GuardianID = guardianID.String
+		link.Categories = categories
+		if expiresAt.Valid {
+			link.ExpiresAt = &expiresAt.Time
+		}
+		if lastUsedAt.Valid {
+			link.LastUsedAt = &lastUsedAt.Time
+		}
+		links = append(links, &link)
+	}
+
+	return links, nil
+}
+
+// UpdateShareLink atualiza um link
+func (s *PostgresStore) UpdateShareLink(link *ShareLink) error {
+	_, err := s.db.Exec(`
+		UPDATE share_links SET name = $1, categories = $2, expires_at = $3, max_uses = $4, is_active = $5, updated_at = $6
+		WHERE id = $7 AND user_id = $8
+	`, link.Name, pq.Array(link.Categories), link.ExpiresAt, link.MaxUses, link.IsActive, time.Now(), link.ID, link.UserID)
+	return err
+}
+
+// DeleteShareLink remove um link
+func (s *PostgresStore) DeleteShareLink(userID, linkID string) error {
+	result, err := s.db.Exec(`DELETE FROM share_links WHERE id = $1 AND user_id = $2`, linkID, userID)
+	if err != nil {
+		return err
+	}
+	rows, _ := result.RowsAffected()
+	if rows == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
+// RecordShareLinkAccess registra um acesso a um link
+func (s *PostgresStore) RecordShareLinkAccess(access *ShareLinkAccess) error {
+	_, err := s.db.Exec(`
+		INSERT INTO share_link_accesses (id, share_link_id, ip_address, user_agent, accessed_at)
+		VALUES ($1, $2, $3, $4, $5)
+	`, access.ID, access.ShareLinkID, access.IPAddress, access.UserAgent, access.AccessedAt)
+	return err
+}
+
+// IncrementShareLinkUsage incrementa o contador de uso
+func (s *PostgresStore) IncrementShareLinkUsage(linkID string) error {
+	_, err := s.db.Exec(`
+		UPDATE share_links SET usage_count = usage_count + 1, last_used_at = $1 WHERE id = $2
+	`, time.Now(), linkID)
+	return err
+}
+
+// ============================================================================
+// PASSWORD RESET (Recuperação de Senha)
+// ============================================================================
+
+// CreatePasswordResetToken cria um token de recuperação
+func (s *PostgresStore) CreatePasswordResetToken(token *PasswordResetToken) error {
+	// Invalidar tokens anteriores do usuário
+	s.db.Exec(`UPDATE password_reset_tokens SET used_at = $1 WHERE user_id = $2 AND used_at IS NULL`, time.Now(), token.UserID)
+
+	_, err := s.db.Exec(`
+		INSERT INTO password_reset_tokens (id, user_id, token_hash, expires_at, created_at)
+		VALUES ($1, $2, $3, $4, $5)
+	`, token.ID, token.UserID, token.Token, token.ExpiresAt, token.CreatedAt)
+	return err
+}
+
+// GetPasswordResetToken busca um token válido
+func (s *PostgresStore) GetPasswordResetToken(tokenHash string) (*PasswordResetToken, error) {
+	var token PasswordResetToken
+	var usedAt sql.NullTime
+
+	err := s.db.QueryRow(`
+		SELECT id, user_id, token_hash, expires_at, used_at, created_at
+		FROM password_reset_tokens
+		WHERE token_hash = $1 AND used_at IS NULL AND expires_at > $2
+	`, tokenHash, time.Now()).Scan(&token.ID, &token.UserID, &token.Token, &token.ExpiresAt, &usedAt, &token.CreatedAt)
+
+	if err == sql.ErrNoRows {
+		return nil, ErrNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	if usedAt.Valid {
+		token.UsedAt = &usedAt.Time
+	}
+
+	return &token, nil
+}
+
+// MarkPasswordResetTokenUsed marca um token como usado
+func (s *PostgresStore) MarkPasswordResetTokenUsed(tokenID string) error {
+	_, err := s.db.Exec(`UPDATE password_reset_tokens SET used_at = $1 WHERE id = $2`, time.Now(), tokenID)
+	return err
+}
+
+// CleanupExpiredPasswordResetTokens remove tokens expirados
+func (s *PostgresStore) CleanupExpiredPasswordResetTokens() error {
+	_, err := s.db.Exec(`DELETE FROM password_reset_tokens WHERE expires_at < $1 OR used_at IS NOT NULL`, time.Now().Add(-24*time.Hour))
+	return err
+}
+
+// ============================================================================
+// EMERGENCY PROTOCOL (Protocolo de Emergência)
+// ============================================================================
+
+// GetEmergencyProtocol busca o protocolo de emergência de um usuário
+func (s *PostgresStore) GetEmergencyProtocol(userID string) (*EmergencyProtocol, error) {
+	var protocol EmergencyProtocol
+	var activatedAt, deactivatedAt sql.NullTime
+	var activatedBy, reason sql.NullString
+
+	err := s.db.QueryRow(`
+		SELECT user_id, is_active, activated_at, activated_by, deactivated_at, reason, notify_guardians
+		FROM emergency_protocols WHERE user_id = $1
+	`, userID).Scan(&protocol.UserID, &protocol.IsActive, &activatedAt, &activatedBy, &deactivatedAt, &reason, &protocol.NotifyGuardians)
+
+	if err == sql.ErrNoRows {
+		// Retornar protocolo padrão (não ativado)
+		return &EmergencyProtocol{UserID: userID, IsActive: false, NotifyGuardians: true}, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	if activatedAt.Valid {
+		protocol.ActivatedAt = &activatedAt.Time
+	}
+	if deactivatedAt.Valid {
+		protocol.DeactivatedAt = &deactivatedAt.Time
+	}
+	protocol.ActivatedBy = activatedBy.String
+	protocol.Reason = reason.String
+
+	return &protocol, nil
+}
+
+// UpdateEmergencyProtocol atualiza o protocolo de emergência
+func (s *PostgresStore) UpdateEmergencyProtocol(protocol *EmergencyProtocol) error {
+	_, err := s.db.Exec(`
+		INSERT INTO emergency_protocols (user_id, is_active, activated_at, activated_by, deactivated_at, reason, notify_guardians, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		ON CONFLICT (user_id) DO UPDATE SET 
+			is_active = $2, activated_at = $3, activated_by = $4, deactivated_at = $5, reason = $6, notify_guardians = $7, updated_at = $8
+	`, protocol.UserID, protocol.IsActive, protocol.ActivatedAt, nullString(protocol.ActivatedBy),
+		protocol.DeactivatedAt, nullString(protocol.Reason), protocol.NotifyGuardians, time.Now())
+	return err
+}
+
+// nullString retorna sql.NullString para strings vazias
+func nullString(s string) sql.NullString {
+	if s == "" {
+		return sql.NullString{}
+	}
+	return sql.NullString{String: s, Valid: true}
 }

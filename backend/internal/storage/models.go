@@ -63,6 +63,7 @@ type User struct {
 	Provider   AuthProvider `json:"provider,omitempty"`    // Provedor de autenticação
 	ProviderID string       `json:"provider_id,omitempty"` // ID do usuário no provedor
 	AvatarURL  string       `json:"avatar_url,omitempty"`  // URL do avatar (Google/Apple)
+	Locale     string       `json:"locale,omitempty"`      // Idioma preferido (ex: "pt-BR", "en")
 	CreatedAt  time.Time    `json:"created_at"`
 }
 
@@ -234,4 +235,77 @@ type AnalyticsSummary struct {
 	// Feedbacks
 	TotalFeedbacks   int `json:"total_feedbacks"`
 	PendingFeedbacks int `json:"pending_feedbacks"`
+}
+
+// =============================================================================
+// COMPARTILHAMENTO E ACESSO
+// =============================================================================
+
+// ShareLinkType define os tipos de link de compartilhamento
+type ShareLinkType string
+
+const (
+	ShareLinkNormal    ShareLinkType = "normal"    // Acesso normal (guardião pode ver)
+	ShareLinkEmergency ShareLinkType = "emergency" // Acesso de emergência (protocolo ativado)
+	ShareLinkMemorial  ShareLinkType = "memorial"  // Acesso memorial (pós-falecimento)
+)
+
+// ShareLink representa um link de compartilhamento para guardiões
+type ShareLink struct {
+	ID         string        `json:"id"`
+	UserID     string        `json:"user_id"`
+	GuardianID string        `json:"guardian_id,omitempty"` // Se vinculado a um guardião específico
+	Token      string        `json:"-"`                     // Token secreto (não expor na API)
+	Type       ShareLinkType `json:"type"`
+	Name       string        `json:"name"`       // Nome para identificar o link
+	PIN        string        `json:"-"`          // PIN opcional para acesso (hash)
+	Categories []string      `json:"categories"` // Categorias permitidas (vazio = todas)
+	ExpiresAt  *time.Time    `json:"expires_at"` // Nulo = nunca expira
+	MaxUses    int           `json:"max_uses"`   // 0 = ilimitado
+	UsageCount int           `json:"usage_count"`
+	LastUsedAt *time.Time    `json:"last_used_at"`
+	IsActive   bool          `json:"is_active"`
+	CreatedAt  time.Time     `json:"created_at"`
+	UpdatedAt  time.Time     `json:"updated_at"`
+}
+
+// ShareLinkAccess registra cada acesso a um link de compartilhamento
+type ShareLinkAccess struct {
+	ID          string    `json:"id"`
+	ShareLinkID string    `json:"share_link_id"`
+	IPAddress   string    `json:"ip_address"`
+	UserAgent   string    `json:"user_agent"`
+	AccessedAt  time.Time `json:"accessed_at"`
+}
+
+// PasswordResetToken representa um token de recuperação de senha
+type PasswordResetToken struct {
+	ID        string     `json:"id"`
+	UserID    string     `json:"user_id"`
+	Token     string     `json:"-"` // Token secreto (hash)
+	ExpiresAt time.Time  `json:"expires_at"`
+	UsedAt    *time.Time `json:"used_at"`
+	CreatedAt time.Time  `json:"created_at"`
+}
+
+// EmergencyProtocol representa o estado do protocolo de emergência
+type EmergencyProtocol struct {
+	UserID          string     `json:"user_id"`
+	IsActive        bool       `json:"is_active"`
+	ActivatedAt     *time.Time `json:"activated_at"`
+	ActivatedBy     string     `json:"activated_by,omitempty"` // ID do guardião que ativou
+	DeactivatedAt   *time.Time `json:"deactivated_at"`
+	Reason          string     `json:"reason,omitempty"` // Motivo da ativação
+	NotifyGuardians bool       `json:"notify_guardians"` // Notificar outros guardiões
+}
+
+// SharedView representa a visualização compartilhada para um guardião
+type SharedView struct {
+	UserName   string        `json:"user_name"`
+	UserEmail  string        `json:"user_email,omitempty"` // Apenas se autorizado
+	Items      []*BoxItem    `json:"items"`
+	Guardians  []*Guardian   `json:"guardians,omitempty"` // Apenas em modo memorial
+	Message    string        `json:"message,omitempty"`   // Mensagem personalizada
+	LinkType   ShareLinkType `json:"link_type"`
+	AccessedAt time.Time     `json:"accessed_at"`
 }

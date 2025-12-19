@@ -18,6 +18,7 @@ import { useAuthStore } from '../stores/auth'
 import { useLocalizedRoutes } from '../composables/useLocalizedRoutes'
 import LanguageSelector from '../components/LanguageSelector.vue'
 import ConfirmModal from '../components/ConfirmModal.vue'
+import ShareLinksManager from '../components/ShareLinksManager.vue'
 
 const { t, locale } = useI18n()
 const router = useRouter()
@@ -246,6 +247,11 @@ async function confirmDeleteAccount() {
             </span>
           </div>
         </div>
+      </div>
+
+      <!-- Share Links Section -->
+      <div class="profile-section">
+        <ShareLinksManager />
       </div>
 
       <!-- Actions Section -->

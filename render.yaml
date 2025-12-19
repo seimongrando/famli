@@ -76,3 +76,16 @@ projects:
             sync: false
           - key: APPLE_PRIVATE_KEY
             sync: false
+          # Email - Mailtrap (configurar no dashboard)
+          - key: EMAIL_PROVIDER
+            value: mailtrap
+          - key: MAILTRAP_API_TOKEN
+            sync: false
+          - key: MAILTRAP_SANDBOX
+            value: "false"  # "true" para testes, "false" para produção
+          - key: MAILTRAP_INBOX_ID
+            sync: false  # Obrigatório apenas para sandbox
+          - key: EMAIL_FROM
+            value: noreply@famli.me
+          - key: EMAIL_FROM_NAME
+            value: Famli

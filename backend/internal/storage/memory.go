@@ -18,33 +18,44 @@ var (
 type MemoryStore struct {
 	mu sync.RWMutex
 
-	users           map[string]*User
-	usersByEmail    map[string]string
-	usersByProvider map[string]string                    // "provider:providerID" -> userID
-	items           map[string]map[string]*BoxItem       // userID -> itemID -> item
-	guardians       map[string]map[string]*Guardian      // userID -> guardianID -> guardian
-	progress        map[string]map[string]*GuideProgress // userID -> cardID -> progress
-	settings        map[string]*Settings
-	feedbacks       map[string]*Feedback // feedbackID -> feedback
-	analytics       []*AnalyticsEvent    // Lista de eventos
+	users               map[string]*User
+	usersByEmail        map[string]string
+	usersByProvider     map[string]string                    // "provider:providerID" -> userID
+	items               map[string]map[string]*BoxItem       // userID -> itemID -> item
+	guardians           map[string]map[string]*Guardian      // userID -> guardianID -> guardian
+	progress            map[string]map[string]*GuideProgress // userID -> cardID -> progress
+	settings            map[string]*Settings
+	feedbacks           map[string]*Feedback           // feedbackID -> feedback
+	analytics           []*AnalyticsEvent              // Lista de eventos
+	shareLinks          map[string]*ShareLink          // linkID -> link
+	shareLinksByToken   map[string]string              // token -> linkID
+	shareLinkAccesses   []*ShareLinkAccess             // Lista de acessos
+	passwordResetTokens map[string]*PasswordResetToken // tokenHash -> token
+	emergencyProtocols  map[string]*EmergencyProtocol  // userID -> protocol
 
 	userSeq     int64
 	itemSeq     int64
 	guardianSeq int64
+	linkSeq     int64
 }
 
 // NewMemoryStore cria uma nova instância do store
 func NewMemoryStore() *MemoryStore {
 	return &MemoryStore{
-		users:           make(map[string]*User),
-		usersByEmail:    make(map[string]string),
-		usersByProvider: make(map[string]string),
-		items:           make(map[string]map[string]*BoxItem),
-		guardians:       make(map[string]map[string]*Guardian),
-		progress:        make(map[string]map[string]*GuideProgress),
-		settings:        make(map[string]*Settings),
-		feedbacks:       make(map[string]*Feedback),
-		analytics:       make([]*AnalyticsEvent, 0),
+		users:               make(map[string]*User),
+		usersByEmail:        make(map[string]string),
+		usersByProvider:     make(map[string]string),
+		items:               make(map[string]map[string]*BoxItem),
+		guardians:           make(map[string]map[string]*Guardian),
+		progress:            make(map[string]map[string]*GuideProgress),
+		settings:            make(map[string]*Settings),
+		feedbacks:           make(map[string]*Feedback),
+		analytics:           make([]*AnalyticsEvent, 0),
+		shareLinks:          make(map[string]*ShareLink),
+		shareLinksByToken:   make(map[string]string),
+		shareLinkAccesses:   make([]*ShareLinkAccess, 0),
+		passwordResetTokens: make(map[string]*PasswordResetToken),
+		emergencyProtocols:  make(map[string]*EmergencyProtocol),
 	}
 }
 
@@ -94,6 +105,34 @@ func (s *MemoryStore) GetUserByID(id string) (*User, bool) {
 	defer s.mu.RUnlock()
 	user, ok := s.users[id]
 	return user, ok
+}
+
+// UpdateUserPassword atualiza a senha de um usuário
+func (s *MemoryStore) UpdateUserPassword(userID, hashedPassword string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	user, exists := s.users[userID]
+	if !exists {
+		return ErrNotFound
+	}
+
+	user.Password = hashedPassword
+	return nil
+}
+
+// UpdateUserLocale atualiza o idioma preferido do usuário
+func (s *MemoryStore) UpdateUserLocale(userID, locale string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	user, exists := s.users[userID]
+	if !exists {
+		return ErrNotFound
+	}
+
+	user.Locale = locale
+	return nil
 }
 
 // DeleteUser remove um usuário e todos os seus dados (LGPD: Direito ao esquecimento)
@@ -912,5 +951,194 @@ func (s *MemoryStore) CleanupOldLogs(retentionDays int) error {
 	}
 
 	s.analytics = newAnalytics
+	return nil
+}
+
+// ============================================================================
+// SHARE LINKS (Compartilhamento com Guardiões)
+// ============================================================================
+
+func (s *MemoryStore) CreateShareLink(link *ShareLink) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	s.shareLinks[link.ID] = link
+	s.shareLinksByToken[link.Token] = link.ID
+	return nil
+}
+
+func (s *MemoryStore) GetShareLinkByToken(token string) (*ShareLink, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	linkID, ok := s.shareLinksByToken[token]
+	if !ok {
+		return nil, ErrNotFound
+	}
+
+	link, exists := s.shareLinks[linkID]
+	if !exists || !link.IsActive {
+		return nil, ErrNotFound
+	}
+
+	copyLink := *link
+	return &copyLink, nil
+}
+
+func (s *MemoryStore) GetShareLinksByUser(userID string) ([]*ShareLink, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	var links []*ShareLink
+	for _, link := range s.shareLinks {
+		if link.UserID == userID {
+			copyLink := *link
+			links = append(links, &copyLink)
+		}
+	}
+	return links, nil
+}
+
+func (s *MemoryStore) UpdateShareLink(link *ShareLink) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	existing, ok := s.shareLinks[link.ID]
+	if !ok || existing.UserID != link.UserID {
+		return ErrNotFound
+	}
+
+	existing.Name = link.Name
+	existing.Categories = link.Categories
+	existing.ExpiresAt = link.ExpiresAt
+	existing.MaxUses = link.MaxUses
+	existing.IsActive = link.IsActive
+	existing.UpdatedAt = time.Now()
+	return nil
+}
+
+func (s *MemoryStore) DeleteShareLink(userID, linkID string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	link, ok := s.shareLinks[linkID]
+	if !ok || link.UserID != userID {
+		return ErrNotFound
+	}
+
+	delete(s.shareLinksByToken, link.Token)
+	delete(s.shareLinks, linkID)
+	return nil
+}
+
+func (s *MemoryStore) RecordShareLinkAccess(access *ShareLinkAccess) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	s.shareLinkAccesses = append(s.shareLinkAccesses, access)
+	return nil
+}
+
+func (s *MemoryStore) IncrementShareLinkUsage(linkID string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	link, ok := s.shareLinks[linkID]
+	if !ok {
+		return ErrNotFound
+	}
+
+	link.UsageCount++
+	now := time.Now()
+	link.LastUsedAt = &now
+	return nil
+}
+
+// ============================================================================
+// PASSWORD RESET (Recuperação de Senha)
+// ============================================================================
+
+func (s *MemoryStore) CreatePasswordResetToken(token *PasswordResetToken) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	// Invalidar tokens anteriores
+	for hash, t := range s.passwordResetTokens {
+		if t.UserID == token.UserID && t.UsedAt == nil {
+			now := time.Now()
+			t.UsedAt = &now
+			s.passwordResetTokens[hash] = t
+		}
+	}
+
+	s.passwordResetTokens[token.Token] = token
+	return nil
+}
+
+func (s *MemoryStore) GetPasswordResetToken(tokenHash string) (*PasswordResetToken, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	token, ok := s.passwordResetTokens[tokenHash]
+	if !ok {
+		return nil, ErrNotFound
+	}
+
+	if token.UsedAt != nil || token.ExpiresAt.Before(time.Now()) {
+		return nil, ErrNotFound
+	}
+
+	copyToken := *token
+	return &copyToken, nil
+}
+
+func (s *MemoryStore) MarkPasswordResetTokenUsed(tokenID string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	for _, t := range s.passwordResetTokens {
+		if t.ID == tokenID {
+			now := time.Now()
+			t.UsedAt = &now
+			return nil
+		}
+	}
+	return ErrNotFound
+}
+
+func (s *MemoryStore) CleanupExpiredPasswordResetTokens() error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	for hash, t := range s.passwordResetTokens {
+		if t.ExpiresAt.Before(time.Now()) || t.UsedAt != nil {
+			delete(s.passwordResetTokens, hash)
+		}
+	}
+	return nil
+}
+
+// ============================================================================
+// EMERGENCY PROTOCOL (Protocolo de Emergência)
+// ============================================================================
+
+func (s *MemoryStore) GetEmergencyProtocol(userID string) (*EmergencyProtocol, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	protocol, ok := s.emergencyProtocols[userID]
+	if !ok {
+		return &EmergencyProtocol{UserID: userID, IsActive: false, NotifyGuardians: true}, nil
+	}
+
+	copyProtocol := *protocol
+	return &copyProtocol, nil
+}
+
+func (s *MemoryStore) UpdateEmergencyProtocol(protocol *EmergencyProtocol) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	s.emergencyProtocols[protocol.UserID] = protocol
 	return nil
 }

@@ -13,6 +13,8 @@ import AdminPage from './pages/AdminPage.vue'
 import ProfilePage from './pages/ProfilePage.vue'
 import TermsPage from './pages/TermsPage.vue'
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage.vue'
+import SharedPage from './pages/SharedPage.vue'
+import ResetPasswordPage from './pages/ResetPasswordPage.vue'
 
 // Rotas com aliases para suportar múltiplos idiomas
 // URL principal em pt-BR, aliases em en
@@ -60,6 +62,20 @@ const routes = [
     alias: ['/privacy', '/privacy-policy'],
     name: 'privacy', 
     component: PrivacyPolicyPage 
+  },
+  // Página pública de compartilhamento (para guardiões)
+  { 
+    path: '/compartilhado/:token', 
+    alias: ['/shared/:token'],
+    name: 'shared', 
+    component: SharedPage 
+  },
+  // Recuperação de senha
+  { 
+    path: '/redefinir-senha', 
+    alias: ['/reset-password', '/forgot-password'],
+    name: 'reset-password', 
+    component: ResetPasswordPage 
   },
 ]
 

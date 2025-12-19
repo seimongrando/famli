@@ -332,6 +332,15 @@ async function handleSubmit() {
               :show="true"
               @valid="onPasswordValidChange"
             />
+
+            <!-- Link para recuperação de senha (apenas login) -->
+            <router-link 
+              v-if="isLogin" 
+              to="/redefinir-senha" 
+              class="forgot-password-link"
+            >
+              {{ t('auth.forgotPassword') }}
+            </router-link>
           </div>
 
           <!-- Aceite dos termos (apenas registro) -->
@@ -697,5 +706,19 @@ async function handleSubmit() {
 
 .social-btn--google:hover:not(:disabled) {
   background: var(--color-bg-warm);
+}
+
+/* Forgot Password Link */
+.forgot-password-link {
+  display: block;
+  text-align: right;
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.forgot-password-link:hover {
+  text-decoration: underline;
 }
 </style>

@@ -120,6 +120,26 @@ var Translations = map[string]Messages{
 		"oauth.email_not_verified":    "O e-mail precisa estar verificado.",
 
 		// =======================================================================
+		// SHARE - Compartilhamento com Guardiões
+		// =======================================================================
+		"share.invalid_data": "Dados inválidos.",
+		"share.create_error": "Não foi possível criar o link.",
+		"share.list_error":   "Não foi possível listar os links.",
+		"share.not_found":    "Link não encontrado.",
+		"share.deleted":      "Link removido com sucesso.",
+		"share.link_expired": "Este link expirou ou não está mais disponível.",
+		"share.invalid_pin":  "PIN incorreto.",
+		"share.access_error": "Não foi possível acessar o conteúdo.",
+
+		// =======================================================================
+		// PASSWORD RESET - Recuperação de Senha
+		// =======================================================================
+		"password.reset_sent":    "Se o e-mail existir, você receberá instruções para redefinir sua senha.",
+		"password.reset_invalid": "Link de redefinição inválido ou expirado.",
+		"password.reset_success": "Senha alterada com sucesso!",
+		"password.reset_error":   "Não foi possível alterar a senha.",
+
+		// =======================================================================
 		// GUIDE CARDS - Títulos e descrições do Guia Famli
 		// =======================================================================
 		"guide.card.welcome.title":         "Comece por aqui",
@@ -243,6 +263,26 @@ var Translations = map[string]Messages{
 		"oauth.token_required":        "Authentication token is required.",
 		"oauth.invalid_token":         "Invalid authentication token.",
 		"oauth.email_not_verified":    "Email must be verified.",
+
+		// =======================================================================
+		// SHARE - Sharing with Guardians
+		// =======================================================================
+		"share.invalid_data": "Invalid data.",
+		"share.create_error": "Unable to create link.",
+		"share.list_error":   "Unable to list links.",
+		"share.not_found":    "Link not found.",
+		"share.deleted":      "Link removed successfully.",
+		"share.link_expired": "This link has expired or is no longer available.",
+		"share.invalid_pin":  "Incorrect PIN.",
+		"share.access_error": "Unable to access content.",
+
+		// =======================================================================
+		// PASSWORD RESET - Password Recovery
+		// =======================================================================
+		"password.reset_sent":    "If the email exists, you will receive instructions to reset your password.",
+		"password.reset_invalid": "Invalid or expired reset link.",
+		"password.reset_success": "Password changed successfully!",
+		"password.reset_error":   "Unable to change password.",
 
 		// =======================================================================
 		// GUIDE CARDS - Famli Guide titles and descriptions

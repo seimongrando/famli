@@ -14,6 +14,9 @@
 package auth
 
 import (
+	"crypto/rand"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"net/http"
 	"os"
@@ -21,8 +24,10 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 
+	"famli/internal/email"
 	"famli/internal/i18n"
 	"famli/internal/security"
 	"famli/internal/storage"
@@ -48,6 +53,9 @@ type Handler struct {
 
 	// auditLogger registra eventos de segurança
 	auditLogger *security.AuditLogger
+
+	// emailService envia emails
+	emailService *email.Service
 }
 
 // NewHandler cria uma nova instância do handler de autenticação
@@ -65,6 +73,7 @@ func NewHandler(store storage.Store, secret string) *Handler {
 		loginLimiter:    security.NewRateLimiter(security.LoginRateLimit),
 		registerLimiter: security.NewRateLimiter(security.RegisterRateLimit),
 		auditLogger:     security.GetAuditLogger(),
+		emailService:    email.NewService(),
 	}
 }
 
@@ -173,6 +182,12 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 		"password_strength": strength,
 	})
 
+	// Enviar email de boas-vindas (em background, não bloqueia)
+	if h.emailService != nil && h.emailService.IsConfigured() {
+		locale := i18n.GetLocale(r)
+		go h.emailService.SendWelcome(user.Email, user.Name, locale)
+	}
+
 	// Verificar se é admin para retornar na resposta
 	isAdmin := checkIsAdmin(user.Email)
 
@@ -255,6 +270,12 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 
 	// Login bem-sucedido
 	h.loginLimiter.RecordSuccess(clientIP)
+
+	// Atualizar locale do usuário baseado no Accept-Language
+	locale := i18n.GetLocale(r)
+	if locale != "" && locale != user.Locale {
+		_ = h.store.UpdateUserLocale(user.ID, locale) // Ignora erro, não é crítico
+	}
 
 	// Criar sessão (inclui email no token para contexto)
 	if err := h.setSession(w, user.ID, user.Email, r); err != nil {
@@ -643,4 +664,197 @@ func itoa(n int) string {
 		n /= 10
 	}
 	return result
+}
+
+// =============================================================================
+// RECUPERAÇÃO DE SENHA
+// =============================================================================
+
+// forgotPasswordPayload é o payload para solicitar reset
+type forgotPasswordPayload struct {
+	Email string `json:"email"`
+}
+
+// resetPasswordPayload é o payload para redefinir a senha
+type resetPasswordPayload struct {
+	Token       string `json:"token"`
+	NewPassword string `json:"new_password"`
+}
+
+// ForgotPassword inicia o processo de recuperação de senha
+//
+// Endpoint: POST /api/auth/forgot-password
+//
+// Segurança:
+// - Não revela se o email existe (mensagem genérica)
+// - Rate limiting para prevenir abuso
+// - Token expira em 1 hora
+func (h *Handler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
+	clientIP := security.GetClientIP(r)
+
+	// Rate limiting
+	allowed, _ := h.registerLimiter.Allow(clientIP)
+	if !allowed {
+		writeError(w, http.StatusTooManyRequests, i18n.Tr(r, "auth.rate_limit"))
+		return
+	}
+
+	var payload forgotPasswordPayload
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		writeError(w, http.StatusBadRequest, i18n.Tr(r, "auth.invalid_data"))
+		return
+	}
+
+	// Normalizar email
+	emailAddr, _ := security.ValidateEmail(payload.Email)
+	if emailAddr == "" {
+		emailAddr = strings.ToLower(strings.TrimSpace(payload.Email))
+	}
+
+	// Resposta genérica (não revela se email existe)
+	// O processamento real acontece em background
+	go h.processPasswordReset(emailAddr, r)
+
+	// Sempre retorna sucesso para não revelar se email existe
+	writeJSON(w, http.StatusOK, map[string]string{
+		"message": i18n.Tr(r, "password.reset_sent"),
+	})
+}
+
+// processPasswordReset processa a solicitação de reset em background
+func (h *Handler) processPasswordReset(emailAddr string, r *http.Request) {
+	// Buscar usuário
+	user, ok := h.store.GetUserByEmail(emailAddr)
+	if !ok {
+		return // Email não existe, não fazer nada
+	}
+
+	// Gerar token seguro
+	tokenBytes := make([]byte, 32)
+	if _, err := rand.Read(tokenBytes); err != nil {
+		return
+	}
+	rawToken := hex.EncodeToString(tokenBytes)
+
+	// Hash do token para armazenar
+	tokenHash := sha256.Sum256([]byte(rawToken))
+	hashedToken := hex.EncodeToString(tokenHash[:])
+
+	// Criar registro de reset
+	resetToken := &storage.PasswordResetToken{
+		ID:        uuid.New().String(),
+		UserID:    user.ID,
+		Token:     hashedToken,
+		ExpiresAt: time.Now().Add(1 * time.Hour),
+		CreatedAt: time.Now(),
+	}
+
+	if err := h.store.CreatePasswordResetToken(resetToken); err != nil {
+		return
+	}
+
+	// Construir URL de reset (usa rota do idioma do usuário)
+	baseURL := getBaseURLFromRequest(r)
+	locale := user.Locale
+	if locale == "" {
+		locale = i18n.GetLocale(r) // Fallback para o idioma da requisição
+	}
+
+	// Usa rota localizada
+	resetPath := "/redefinir-senha"
+	if strings.HasPrefix(locale, "en") {
+		resetPath = "/reset-password"
+	}
+	resetLink := baseURL + resetPath + "?token=" + rawToken
+
+	// Enviar email no idioma do usuário
+	h.emailService.SendPasswordReset(user.Email, user.Name, resetLink, locale)
+}
+
+// ResetPassword redefine a senha usando o token
+//
+// Endpoint: POST /api/auth/reset-password
+//
+// Segurança:
+// - Token é válido por 1 hora
+// - Token só pode ser usado uma vez
+// - Senha deve atender requisitos de força
+func (h *Handler) ResetPassword(w http.ResponseWriter, r *http.Request) {
+	clientIP := security.GetClientIP(r)
+
+	var payload resetPasswordPayload
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		writeError(w, http.StatusBadRequest, i18n.Tr(r, "auth.invalid_data"))
+		return
+	}
+
+	if payload.Token == "" || payload.NewPassword == "" {
+		writeError(w, http.StatusBadRequest, i18n.Tr(r, "auth.invalid_data"))
+		return
+	}
+
+	// Validar força da senha
+	_, err := security.ValidatePassword(payload.NewPassword)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, i18n.Tr(r, "auth.password_weak"))
+		return
+	}
+
+	// Hash do token recebido
+	tokenHash := sha256.Sum256([]byte(payload.Token))
+	hashedToken := hex.EncodeToString(tokenHash[:])
+
+	// Buscar token no banco
+	resetToken, err := h.store.GetPasswordResetToken(hashedToken)
+	if err != nil {
+		h.auditLogger.LogSecurity(security.EventSuspiciousActivity, clientIP, map[string]interface{}{
+			"event": "invalid_reset_token",
+		})
+		writeError(w, http.StatusBadRequest, i18n.Tr(r, "password.reset_invalid"))
+		return
+	}
+
+	// Buscar usuário
+	user, ok := h.store.GetUserByID(resetToken.UserID)
+	if !ok {
+		writeError(w, http.StatusBadRequest, i18n.Tr(r, "password.reset_invalid"))
+		return
+	}
+
+	// Hash da nova senha
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(payload.NewPassword), bcrypt.DefaultCost)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, i18n.Tr(r, "password.reset_error"))
+		return
+	}
+
+	// Atualizar senha (precisamos adicionar este método ao store)
+	if err := h.updateUserPassword(user.ID, string(hashedPassword)); err != nil {
+		writeError(w, http.StatusInternalServerError, i18n.Tr(r, "password.reset_error"))
+		return
+	}
+
+	// Marcar token como usado
+	h.store.MarkPasswordResetTokenUsed(resetToken.ID)
+
+	// Log
+	h.auditLogger.LogAuth(security.EventPasswordChange, user.ID, clientIP, r.UserAgent(), "success", nil)
+
+	writeJSON(w, http.StatusOK, map[string]string{
+		"message": i18n.Tr(r, "password.reset_success"),
+	})
+}
+
+// updateUserPassword atualiza a senha do usuário
+func (h *Handler) updateUserPassword(userID, hashedPassword string) error {
+	return h.store.UpdateUserPassword(userID, hashedPassword)
+}
+
+// getBaseURLFromRequest extrai a URL base da requisição
+func getBaseURLFromRequest(r *http.Request) string {
+	scheme := "https"
+	if r.TLS == nil && r.Header.Get("X-Forwarded-Proto") != "https" {
+		scheme = "http"
+	}
+	return scheme + "://" + r.Host
 }
