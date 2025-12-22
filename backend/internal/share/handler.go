@@ -24,6 +24,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -356,8 +357,11 @@ func (h *Handler) getSharedContent(link *storage.ShareLink) (*storage.SharedView
 		}
 	}
 
+	maskedUserName := maskName(user.Name)
+	maskedUserEmail := maskEmail(user.Email)
+
 	view := &storage.SharedView{
-		UserName:   user.Name,
+		UserName:   maskedUserName,
 		Items:      items,
 		LinkType:   link.Type,
 		AccessedAt: time.Now(),
@@ -390,13 +394,13 @@ func (h *Handler) getSharedContent(link *storage.ShareLink) (*storage.SharedView
 		if len(link.GuardianIDs) == 0 {
 			view.Guardians = sanitizeGuardiansForShare(allGuardians)
 		}
-		view.UserEmail = user.Email
-		view.Message = "Este é o memorial de " + user.Name + ". As informações aqui foram deixadas para ajudar você."
+		view.UserEmail = maskedUserEmail
+		view.Message = "Este é o memorial de " + maskedUserName + ". As informações aqui foram deixadas para ajudar você."
 	}
 
 	// Mensagem para modo emergência
 	if link.Type == storage.ShareLinkEmergency {
-		view.Message = "Acesso de emergência às informações de " + user.Name + "."
+		view.Message = "Acesso de emergência às informações de " + maskedUserName + "."
 	}
 
 	return view, nil
@@ -511,24 +515,26 @@ func (h *Handler) AccessGuardianView(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// SEGURANÇA: Verificar se o guardião tem PIN configurado
-	// Se tiver, exigir verificação antes de mostrar conteúdo
-	if guardian.AccessPIN != "" {
-		writeJSON(w, http.StatusOK, map[string]interface{}{
-			"requires_pin": true,
-			"guardian": map[string]string{
-				"name":         guardian.Name,
-				"relationship": guardian.Relationship,
-			},
-			"owner": map[string]string{
-				"name": owner.Name,
-			},
-		})
+	// Exigir PIN para acesso do guardião
+	if guardian.AccessPIN == "" {
+		writeError(w, http.StatusForbidden, i18n.Tr(r, "share.pin_required"))
 		return
 	}
 
-	// Retornar conteúdo completo
-	h.returnGuardianContent(w, r, guardian, owner)
+	// SEGURANÇA: Verificar se o guardião tem PIN configurado
+	// Se tiver, exigir verificação antes de mostrar conteúdo
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"requires_pin": true,
+		"guardian": map[string]string{
+			"name":         guardian.Name,
+			"relationship": guardian.Relationship,
+		},
+		"owner": map[string]string{
+			"name": owner.Name,
+		},
+	})
+	return
+
 }
 
 // VerifyGuardianPIN verifica o PIN do guardião e retorna o conteúdo
@@ -553,6 +559,11 @@ func (h *Handler) VerifyGuardianPIN(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if guardian.AccessPIN == "" {
+		writeError(w, http.StatusForbidden, i18n.Tr(r, "share.pin_required"))
+		return
+	}
+
 	// Verificar PIN
 	if err := bcrypt.CompareHashAndPassword([]byte(guardian.AccessPIN), []byte(req.PIN)); err != nil {
 		writeError(w, http.StatusUnauthorized, i18n.Tr(r, "share.invalid_pin"))
@@ -572,6 +583,9 @@ func (h *Handler) VerifyGuardianPIN(w http.ResponseWriter, r *http.Request) {
 
 // returnGuardianContent retorna o conteúdo da caixa para o guardião
 func (h *Handler) returnGuardianContent(w http.ResponseWriter, r *http.Request, guardian *storage.Guardian, owner *storage.User) {
+	maskedOwnerName := maskName(owner.Name)
+	maskedOwnerEmail := maskEmail(owner.Email)
+
 	// IMPORTANTE: Buscar apenas itens COMPARTILHADOS (is_shared = true)
 	// Itens não compartilhados são privados e não devem ser expostos
 	sharedItems := h.store.ListSharedItems(guardian.UserID)
@@ -597,8 +611,8 @@ func (h *Handler) returnGuardianContent(w http.ResponseWriter, r *http.Request, 
 			Relationship: guardian.Relationship,
 		},
 		Owner: &OwnerInfo{
-			Name:  owner.Name,
-			Email: owner.Email,
+			Name:  maskedOwnerName,
+			Email: maskedOwnerEmail,
 		},
 		Items:      items,
 		AccessType: string(guardian.AccessType),
@@ -623,6 +637,45 @@ func (h *Handler) returnGuardianContent(w http.ResponseWriter, r *http.Request, 
 	}
 
 	writeJSON(w, http.StatusOK, response)
+}
+
+func maskName(value string) string {
+	parts := strings.Fields(strings.TrimSpace(value))
+	if len(parts) == 0 {
+		return ""
+	}
+	for i, part := range parts {
+		runes := []rune(part)
+		if len(runes) <= 1 {
+			parts[i] = part
+			continue
+		}
+		parts[i] = string(runes[0]) + strings.Repeat("*", len(runes)-1)
+	}
+	return strings.Join(parts, " ")
+}
+
+func maskEmail(value string) string {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return ""
+	}
+	at := strings.Index(value, "@")
+	if at <= 0 || at == len(value)-1 {
+		return maskName(value)
+	}
+	local := value[:at]
+	domain := value[at+1:]
+	localMasked := string(local[0]) + "***"
+	domainParts := strings.Split(domain, ".")
+	if len(domainParts) == 0 {
+		return localMasked + "@***"
+	}
+	domainMasked := string(domainParts[0][0]) + "***"
+	if len(domainParts) > 1 {
+		domainMasked = domainMasked + "." + strings.Join(domainParts[1:], ".")
+	}
+	return localMasked + "@" + domainMasked
 }
 
 // getBaseURL retorna a URL base da aplicação

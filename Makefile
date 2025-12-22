@@ -177,6 +177,9 @@ dev:
 	@echo "$(BLUE)║                 🔧 Modo Desenvolvimento                           ║$(NC)"
 	@echo "$(BLUE)╚══════════════════════════════════════════════════════════════════╝$(NC)"
 	@echo ""
+	@echo "$(YELLOW)Encerrando processos anteriores nas portas 8080 e 5173...$(NC)"
+	@lsof -ti tcp:8080 | xargs -r kill -9 2>/dev/null || true
+	@lsof -ti tcp:5173 | xargs -r kill -9 2>/dev/null || true
 	@echo "$(YELLOW)Iniciando serviços...$(NC)"
 	@echo ""
 	@echo "  Backend:  $(BLUE)http://localhost:8080$(NC)  (API)"
@@ -193,6 +196,9 @@ dev-db:
 	@echo "$(BLUE)║            🔧 Modo Desenvolvimento (PostgreSQL)                   ║$(NC)"
 	@echo "$(BLUE)╚══════════════════════════════════════════════════════════════════╝$(NC)"
 	@echo ""
+	@echo "$(YELLOW)Encerrando processos anteriores nas portas 8080 e 5173...$(NC)"
+	@lsof -ti tcp:8080 | xargs -r kill -9 2>/dev/null || true
+	@lsof -ti tcp:5173 | xargs -r kill -9 2>/dev/null || true
 	@echo "$(YELLOW)Certifique-se de ter o PostgreSQL em execução:$(NC)"
 	@echo "  $(BLUE)make db-up$(NC)"
 	@echo ""
@@ -214,6 +220,8 @@ run: frontend-build
 	@echo "$(BLUE)║                 🏠 Servidor Famli                                 ║$(NC)"
 	@echo "$(BLUE)╚══════════════════════════════════════════════════════════════════╝$(NC)"
 	@echo ""
+	@echo "$(YELLOW)Encerrando processos anteriores na porta 8080...$(NC)"
+	@lsof -ti tcp:8080 | xargs -r kill -9 2>/dev/null || true
 	@echo "$(GREEN)Acesse:$(NC) $(BLUE)http://localhost:8080$(NC)"
 	@echo ""
 	@echo "$(YELLOW)Pressione Ctrl+C para parar.$(NC)"
@@ -226,6 +234,8 @@ run-memory: frontend-build
 	@echo "$(BLUE)║            🏠 Servidor Famli (Memória)                            ║$(NC)"
 	@echo "$(BLUE)╚══════════════════════════════════════════════════════════════════╝$(NC)"
 	@echo ""
+	@echo "$(YELLOW)Encerrando processos anteriores na porta 8080...$(NC)"
+	@lsof -ti tcp:8080 | xargs -r kill -9 2>/dev/null || true
 	@echo "$(GREEN)Acesse:$(NC) $(BLUE)http://localhost:8080$(NC)"
 	@echo "$(YELLOW)Storage: memória (dados serão perdidos ao reiniciar)$(NC)"
 	@echo ""
@@ -239,6 +249,8 @@ run-db: frontend-build
 	@echo "$(BLUE)║         🏠 Servidor Famli (PostgreSQL)                            ║$(NC)"
 	@echo "$(BLUE)╚══════════════════════════════════════════════════════════════════╝$(NC)"
 	@echo ""
+	@echo "$(YELLOW)Encerrando processos anteriores na porta 8080...$(NC)"
+	@lsof -ti tcp:8080 | xargs -r kill -9 2>/dev/null || true
 	@echo "$(YELLOW)Certifique-se de ter o PostgreSQL em execução:$(NC)"
 	@echo "  $(BLUE)make db-up$(NC)"
 	@echo ""

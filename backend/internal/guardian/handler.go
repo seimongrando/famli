@@ -55,6 +55,10 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, i18n.Tr(r, "guardian.name_required"))
 		return
 	}
+	if payload.AccessPIN == "" {
+		writeError(w, http.StatusBadRequest, i18n.Tr(r, "guardian.pin_required"))
+		return
+	}
 
 	// Limitar tamanho das notas (1KB para economizar banco)
 	payload.Notes = strings.TrimSpace(payload.Notes)

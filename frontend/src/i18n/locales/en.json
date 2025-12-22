@@ -238,8 +238,8 @@
       "phoneLabel": "Phone (optional)",
       "relationshipLabel": "Relationship",
       "pinLabel": "Protection PIN",
-      "pinPlaceholder": "Minimum 4 characters",
-      "pinHint": "The PIN will be required when this person accesses your link. Recommended for extra security.",
+      "pinPlaceholder": "Minimum 4 characters (required)",
+      "pinHint": "The PIN is required to allow access via link.",
       "saveButton": "Add trusted person",
       "saving": "Saving..."
     },
@@ -284,7 +284,8 @@
   },
   "guardian": {
     "copyLink": "Copy access link",
-    "linkCopied": "Link copied! Send it to this person so they can access the shared information."
+    "linkCopied": "Link copied! Send it to this person so they can access the shared information.",
+    "pinRequired": "Set a PIN for this person before sharing the link."
   },
   "guide": {
     "title": "Famli Guide",

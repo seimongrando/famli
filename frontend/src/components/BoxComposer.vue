@@ -5,6 +5,7 @@ import { useBoxStore } from '../stores/box'
 
 const { t } = useI18n()
 const boxStore = useBoxStore()
+const formError = ref('')
 
 // Props para permitir selecionar tipo externamente
 const props = defineProps({
@@ -75,10 +76,17 @@ async function saveInfo() {
 async function saveGuardian() {
   if (!guardianForm.value.name) {
     console.log('[Composer] Guardian form validation failed: name required')
+    formError.value = t('errors.requiredField')
+    return
+  }
+  if (!guardianForm.value.accessPin) {
+    console.log('[Composer] Guardian form validation failed: pin required')
+    formError.value = t('guardian.pinRequired')
     return
   }
   
   saving.value = true
+  formError.value = ''
   console.log('[Composer] Saving guardian:', guardianForm.value.name)
   
   try {
@@ -89,10 +97,7 @@ async function saveGuardian() {
       relationship: guardianForm.value.relationship
     }
     
-    // Adicionar PIN se fornecido
-    if (guardianForm.value.accessPin) {
-      payload.access_pin = guardianForm.value.accessPin
-    }
+    payload.access_pin = guardianForm.value.accessPin
     
     const result = await boxStore.createGuardian(payload)
     
@@ -102,9 +107,11 @@ async function saveGuardian() {
       emit('saved', 'guardian')
     } else {
       console.error('[Composer] Guardian save failed - no result')
+      formError.value = boxStore.error || t('errors.generic')
     }
   } catch (error) {
     console.error('[Composer] Guardian save error:', error)
+    formError.value = boxStore.error || t('errors.generic')
   } finally {
     saving.value = false
   }
@@ -282,7 +289,6 @@ async function saveMemory() {
       <div class="form-group">
         <label class="form-label">
           🔒 {{ t('composer.guardian.pinLabel') }}
-          <span class="label-hint">({{ t('common.optional') }})</span>
         </label>
         <input 
           v-model="guardianForm.accessPin"
@@ -295,6 +301,8 @@ async function saveMemory() {
         <small class="form-hint">{{ t('composer.guardian.pinHint') }}</small>
       </div>
       
+      <p v-if="formError" class="form-error">{{ formError }}</p>
+
       <button type="submit" class="btn btn--primary" :disabled="saving || !guardianForm.name">
         {{ saving ? t('composer.guardian.saving') : t('composer.guardian.saveButton') }}
       </button>

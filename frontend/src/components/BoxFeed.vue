@@ -170,6 +170,10 @@ function onEditSaved() {
 // Copiar link de acesso do guardião
 async function copyGuardianLink(guardian) {
   if (!guardian.access_token) return
+  if (!guardian.has_pin) {
+    alert(t('guardian.pinRequired'))
+    return
+  }
   
   const baseUrl = window.location.origin
   const link = `${baseUrl}/g/${guardian.access_token}`

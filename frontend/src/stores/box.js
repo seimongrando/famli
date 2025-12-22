@@ -239,12 +239,19 @@ export const useBoxStore = defineStore('box', () => {
       if (res.ok) {
         const guardian = await res.json()
         console.log('[Box Store] Guardian created successfully:', guardian.id)
+        error.value = ''
         guardians.value.unshift(guardian)
         return guardian
       } else {
-        const errorText = await res.text()
+        let data = null
+        try {
+          data = await res.json()
+        } catch (_) {
+          // ignore json parse errors
+        }
+        const errorText = data?.error || (await res.text())
         console.error('[Box Store] Failed to create guardian:', res.status, errorText)
-        error.value = 'Erro ao adicionar pessoa'
+        error.value = errorText || 'Erro ao adicionar pessoa'
       }
     } catch (e) {
       console.error('[Box Store] Error creating guardian:', e)

@@ -60,6 +60,7 @@ var Translations = map[string]Messages{
 		"guardian.deleted":        "Pessoa removida.",
 		"guardian.notes_too_long": "As notas são muito longas. Máximo de 1000 caracteres.",
 		"guardian.pin_too_short":  "O PIN deve ter pelo menos 4 caracteres.",
+		"guardian.pin_required":   "PIN obrigatório para criar a pessoa de confiança.",
 
 		// =======================================================================
 		// SETTINGS - Configurações
@@ -130,6 +131,7 @@ var Translations = map[string]Messages{
 		"share.deleted":      "Link removido com sucesso.",
 		"share.link_expired": "Este link expirou ou não está mais disponível.",
 		"share.invalid_pin":  "PIN incorreto.",
+		"share.pin_required": "PIN obrigatório para acessar este link.",
 		"share.access_error": "Não foi possível acessar o conteúdo.",
 
 		// =======================================================================
@@ -206,6 +208,7 @@ var Translations = map[string]Messages{
 		"guardian.deleted":        "Person removed.",
 		"guardian.notes_too_long": "Notes are too long. Maximum 1000 characters.",
 		"guardian.pin_too_short":  "PIN must be at least 4 characters.",
+		"guardian.pin_required":   "A PIN is required to create a trusted person.",
 
 		// =======================================================================
 		// SETTINGS - Settings
@@ -276,6 +279,7 @@ var Translations = map[string]Messages{
 		"share.deleted":      "Link removed successfully.",
 		"share.link_expired": "This link has expired or is no longer available.",
 		"share.invalid_pin":  "Incorrect PIN.",
+		"share.pin_required": "A PIN is required to access this link.",
 		"share.access_error": "Unable to access content.",
 
 		// =======================================================================
