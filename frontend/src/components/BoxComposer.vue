@@ -288,22 +288,27 @@ async function saveMemory() {
 
       <div class="form-group">
         <label class="form-label">
-          🔒 {{ t('composer.guardian.pinLabel') }}
+          🔒 {{ t('composer.guardian.pinLabel') }} <span class="required-indicator">*</span>
         </label>
         <input 
           v-model="guardianForm.accessPin"
           type="password"
           class="form-input"
+          :class="{ 'form-input--error': formError && !guardianForm.accessPin }"
           :placeholder="t('composer.guardian.pinPlaceholder')"
           minlength="4"
           maxlength="20"
+          required
         />
         <small class="form-hint">{{ t('composer.guardian.pinHint') }}</small>
       </div>
       
-      <p v-if="formError" class="form-error">{{ formError }}</p>
+      <div v-if="formError" class="form-error-box">
+        <span class="form-error-icon">⚠️</span>
+        <span>{{ formError }}</span>
+      </div>
 
-      <button type="submit" class="btn btn--primary" :disabled="saving || !guardianForm.name">
+      <button type="submit" class="btn btn--primary" :disabled="saving || !guardianForm.name || !guardianForm.accessPin">
         {{ saving ? t('composer.guardian.saving') : t('composer.guardian.saveButton') }}
       </button>
     </form>
@@ -496,6 +501,41 @@ async function saveMemory() {
   margin-left: 56px;
   color: var(--color-text-muted);
   font-size: var(--font-size-xs);
+}
+
+/* Required field indicator */
+.required-indicator {
+  color: var(--color-danger);
+  font-weight: 600;
+}
+
+/* Error state for inputs */
+.form-input--error {
+  border-color: var(--color-danger);
+  background-color: #fef2f2;
+}
+
+.form-input--error:focus {
+  border-color: var(--color-danger);
+  box-shadow: 0 0 0 3px rgba(192, 74, 74, 0.15);
+}
+
+/* Error box - more visible error display */
+.form-error-box {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  background: #fef2f2;
+  border: 1px solid var(--color-danger);
+  border-radius: var(--radius-md);
+  color: var(--color-danger);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+}
+
+.form-error-icon {
+  font-size: 1.2em;
 }
 
 @media (max-width: 600px) {
