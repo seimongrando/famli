@@ -65,6 +65,7 @@ type itemPayload struct {
 	Category    string           `json:"category,omitempty"`
 	Recipient   string           `json:"recipient,omitempty"`
 	IsImportant bool             `json:"is_important"`
+	IsShared    bool             `json:"is_shared"` // Compartilhado com guardiões
 }
 
 // validate valida e sanitiza o payload
@@ -202,6 +203,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		Category:    payload.Category,
 		Recipient:   payload.Recipient,
 		IsImportant: payload.IsImportant,
+		IsShared:    payload.IsShared,
 	}
 
 	created, err := h.store.CreateBoxItem(userID, item)
@@ -258,6 +260,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 		Category:    payload.Category,
 		Recipient:   payload.Recipient,
 		IsImportant: payload.IsImportant,
+		IsShared:    payload.IsShared,
 	}
 
 	updated, err := h.store.UpdateBoxItem(userID, itemID, updates)

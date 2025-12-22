@@ -27,9 +27,9 @@ watch(() => props.initialType, (newType) => {
 })
 
 // Forms para cada tipo
-const infoForm = ref({ title: '', content: '', category: '' })
-const guardianForm = ref({ name: '', email: '', phone: '', relationship: '' })
-const memoryForm = ref({ title: '', content: '', recipient: '' })
+const infoForm = ref({ title: '', content: '', category: '', isShared: false })
+const guardianForm = ref({ name: '', email: '', phone: '', relationship: '', accessPin: '' })
+const memoryForm = ref({ title: '', content: '', recipient: '', isShared: false })
 
 const types = [
   { id: 'info', labelKey: 'composer.types.info', icon: '📋' },
@@ -54,12 +54,13 @@ async function saveInfo() {
       type: 'info',
       title: infoForm.value.title,
       content: infoForm.value.content,
-      category: infoForm.value.category
+      category: infoForm.value.category,
+      is_shared: infoForm.value.isShared
     })
     
     if (result) {
       console.log('[Composer] Info saved successfully:', result.id)
-      infoForm.value = { title: '', content: '', category: '' }
+      infoForm.value = { title: '', content: '', category: '', isShared: false }
       emit('saved', 'info')
     } else {
       console.error('[Composer] Info save failed - no result')
@@ -81,16 +82,23 @@ async function saveGuardian() {
   console.log('[Composer] Saving guardian:', guardianForm.value.name)
   
   try {
-    const result = await boxStore.createGuardian({
+    const payload = {
       name: guardianForm.value.name,
       email: guardianForm.value.email,
       phone: guardianForm.value.phone,
       relationship: guardianForm.value.relationship
-    })
+    }
+    
+    // Adicionar PIN se fornecido
+    if (guardianForm.value.accessPin) {
+      payload.access_pin = guardianForm.value.accessPin
+    }
+    
+    const result = await boxStore.createGuardian(payload)
     
     if (result) {
       console.log('[Composer] Guardian saved successfully:', result.id)
-      guardianForm.value = { name: '', email: '', phone: '', relationship: '' }
+      guardianForm.value = { name: '', email: '', phone: '', relationship: '', accessPin: '' }
       emit('saved', 'guardian')
     } else {
       console.error('[Composer] Guardian save failed - no result')
@@ -116,12 +124,13 @@ async function saveMemory() {
       type: 'memory',
       title: memoryForm.value.title,
       content: memoryForm.value.content,
-      recipient: memoryForm.value.recipient
+      recipient: memoryForm.value.recipient,
+      is_shared: memoryForm.value.isShared
     })
     
     if (result) {
       console.log('[Composer] Memory saved successfully:', result.id)
-      memoryForm.value = { title: '', content: '', recipient: '' }
+      memoryForm.value = { title: '', content: '', recipient: '', isShared: false }
       emit('saved', 'memory')
     } else {
       console.error('[Composer] Memory save failed - no result')
@@ -197,6 +206,18 @@ async function saveMemory() {
           rows="4"
         ></textarea>
       </div>
+
+      <div class="form-group share-toggle">
+        <label class="toggle-label">
+          <input type="checkbox" v-model="infoForm.isShared" class="toggle-input" />
+          <span class="toggle-switch"></span>
+          <span class="toggle-text">
+            <span class="toggle-icon">👥</span>
+            {{ t('composer.shareWithGuardians') }}
+          </span>
+        </label>
+        <small class="toggle-hint">{{ t('composer.shareHint') }}</small>
+      </div>
       
       <button type="submit" class="btn btn--primary" :disabled="saving || !infoForm.title">
         {{ saving ? t('composer.info.saving') : t('composer.info.saveButton') }}
@@ -257,6 +278,22 @@ async function saveMemory() {
           </button>
         </div>
       </div>
+
+      <div class="form-group">
+        <label class="form-label">
+          🔒 {{ t('composer.guardian.pinLabel') }}
+          <span class="label-hint">({{ t('common.optional') }})</span>
+        </label>
+        <input 
+          v-model="guardianForm.accessPin"
+          type="password"
+          class="form-input"
+          :placeholder="t('composer.guardian.pinPlaceholder')"
+          minlength="4"
+          maxlength="20"
+        />
+        <small class="form-hint">{{ t('composer.guardian.pinHint') }}</small>
+      </div>
       
       <button type="submit" class="btn btn--primary" :disabled="saving || !guardianForm.name">
         {{ saving ? t('composer.guardian.saving') : t('composer.guardian.saveButton') }}
@@ -298,6 +335,18 @@ async function saveMemory() {
           :placeholder="t('composer.memory.messagePlaceholder')"
           rows="6"
         ></textarea>
+      </div>
+
+      <div class="form-group share-toggle">
+        <label class="toggle-label">
+          <input type="checkbox" v-model="memoryForm.isShared" class="toggle-input" />
+          <span class="toggle-switch"></span>
+          <span class="toggle-text">
+            <span class="toggle-icon">👥</span>
+            {{ t('composer.shareWithGuardians') }}
+          </span>
+        </label>
+        <small class="toggle-hint">{{ t('composer.shareHint') }}</small>
       </div>
       
       <button type="submit" class="btn btn--primary" :disabled="saving || !memoryForm.title">
@@ -367,6 +416,78 @@ async function saveMemory() {
 .chip--small {
   padding: var(--space-xs) var(--space-sm);
   font-size: 0.8125rem;
+}
+
+/* Share Toggle */
+.share-toggle {
+  padding: var(--space-md);
+  background: var(--color-primary-soft);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-primary);
+  border-opacity: 0.2;
+}
+
+.toggle-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  cursor: pointer;
+  user-select: none;
+}
+
+.toggle-input {
+  display: none;
+}
+
+.toggle-switch {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  background: var(--color-border);
+  border-radius: 12px;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+
+.toggle-switch::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  background: white;
+  border-radius: 50%;
+  transition: transform 0.2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.toggle-input:checked + .toggle-switch {
+  background: var(--color-primary);
+}
+
+.toggle-input:checked + .toggle-switch::after {
+  transform: translateX(20px);
+}
+
+.toggle-text {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.toggle-icon {
+  font-size: 1.2em;
+}
+
+.toggle-hint {
+  display: block;
+  margin-top: var(--space-xs);
+  margin-left: 56px;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
 }
 
 @media (max-width: 600px) {

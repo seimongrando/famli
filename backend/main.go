@@ -340,6 +340,15 @@ func main() {
 		})
 
 		// ─────────────────────────────────────────────────────────────────────
+		// ROTA DE ACESSO DO GUARDIÃO (nova arquitetura integrada)
+		// ─────────────────────────────────────────────────────────────────────
+		api.Route("/guardian-access", func(sr chi.Router) {
+			sr.Use(apiLimiter.Middleware(security.GetClientIP))
+			sr.Get("/{token}", shareHandler.AccessGuardianView)
+			sr.Post("/{token}/verify", shareHandler.VerifyGuardianPIN)
+		})
+
+		// ─────────────────────────────────────────────────────────────────────
 		// ROTAS ADMINISTRATIVAS (requerem autenticação JWT + permissão admin)
 		// ─────────────────────────────────────────────────────────────────────
 

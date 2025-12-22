@@ -59,6 +59,7 @@ var Translations = map[string]Messages{
 		"guardian.not_found":      "Pessoa não encontrada.",
 		"guardian.deleted":        "Pessoa removida.",
 		"guardian.notes_too_long": "As notas são muito longas. Máximo de 1000 caracteres.",
+		"guardian.pin_too_short":  "O PIN deve ter pelo menos 4 caracteres.",
 
 		// =======================================================================
 		// SETTINGS - Configurações
@@ -204,6 +205,7 @@ var Translations = map[string]Messages{
 		"guardian.not_found":      "Person not found.",
 		"guardian.deleted":        "Person removed.",
 		"guardian.notes_too_long": "Notes are too long. Maximum 1000 characters.",
+		"guardian.pin_too_short":  "PIN must be at least 4 characters.",
 
 		// =======================================================================
 		// SETTINGS - Settings

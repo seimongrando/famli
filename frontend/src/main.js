@@ -77,6 +77,13 @@ const routes = [
     name: 'reset-password', 
     component: ResetPasswordPage 
   },
+  // Acesso do guardião (nova arquitetura integrada)
+  { 
+    path: '/g/:token', 
+    alias: ['/guardian/:token'],
+    name: 'guardian-access', 
+    component: SharedPage 
+  },
 ]
 
 const router = createRouter({

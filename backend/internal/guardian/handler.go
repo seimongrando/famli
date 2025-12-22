@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/go-chi/chi/v5"
+	"golang.org/x/crypto/bcrypt"
 
 	"famli/internal/auth"
 	"famli/internal/i18n"
@@ -27,6 +28,7 @@ type guardianPayload struct {
 	Phone        string `json:"phone,omitempty"`
 	Relationship string `json:"relationship,omitempty"`
 	Notes        string `json:"notes,omitempty"`
+	AccessPIN    string `json:"access_pin,omitempty"` // PIN de proteção para acesso
 }
 
 // List retorna todas as pessoas de confiança
@@ -70,6 +72,18 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		Role:         "viewer",
 	}
 
+	// Hash do PIN se fornecido
+	if payload.AccessPIN != "" {
+		if len(payload.AccessPIN) < 4 {
+			writeError(w, http.StatusBadRequest, i18n.Tr(r, "guardian.pin_too_short"))
+			return
+		}
+		hash, err := bcrypt.GenerateFromPassword([]byte(payload.AccessPIN), bcrypt.DefaultCost)
+		if err == nil {
+			guardian.AccessPIN = string(hash)
+		}
+	}
+
 	created, err := h.store.CreateGuardian(userID, guardian)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, i18n.Tr(r, "guardian.add_error"))
@@ -108,6 +122,18 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 		Phone:        payload.Phone,
 		Relationship: payload.Relationship,
 		Notes:        payload.Notes,
+	}
+
+	// Hash do PIN se fornecido
+	if payload.AccessPIN != "" {
+		if len(payload.AccessPIN) < 4 {
+			writeError(w, http.StatusBadRequest, i18n.Tr(r, "guardian.pin_too_short"))
+			return
+		}
+		hash, err := bcrypt.GenerateFromPassword([]byte(payload.AccessPIN), bcrypt.DefaultCost)
+		if err == nil {
+			updates.AccessPIN = string(hash)
+		}
 	}
 
 	updated, err := h.store.UpdateGuardian(userID, guardianID, updates)

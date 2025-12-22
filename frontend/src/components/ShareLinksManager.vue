@@ -99,6 +99,23 @@
           </div>
 
           <div class="form-group">
+            <label>👤 {{ $t('share.guardians') }}</label>
+            <div v-if="guardians.length > 0" class="guardians-grid">
+              <label v-for="guardian in guardians" :key="guardian.id" class="guardian-checkbox">
+                <input type="checkbox" :value="guardian.id" v-model="newLink.guardianIds" />
+                <span class="guardian-option">
+                  <strong>{{ guardian.name }}</strong>
+                  <small v-if="guardian.relationship">{{ guardian.relationship }}</small>
+                </span>
+              </label>
+            </div>
+            <div v-else class="no-guardians">
+              <span>{{ $t('share.no_guardians') }}</span>
+            </div>
+            <small>{{ $t('share.guardians_hint') }}</small>
+          </div>
+
+          <div class="form-group">
             <label>{{ $t('share.pin_optional') }}</label>
             <input 
               v-model="newLink.pin" 
@@ -153,10 +170,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useBoxStore } from '@/stores/box'
 
 const { t } = useI18n()
+const boxStore = useBoxStore()
 
 const loading = ref(true)
 const links = ref([])
@@ -168,20 +187,29 @@ const newLink = ref({
   name: '',
   type: 'normal',
   categories: [],
+  guardianIds: [],
   pin: '',
   expiresIn: 0,
   maxUses: 0
 })
 
-const categories = [
-  { value: 'saúde', label: 'Saúde', icon: '🏥' },
-  { value: 'finanças', label: 'Finanças', icon: '💰' },
-  { value: 'família', label: 'Família', icon: '👨‍👩‍👧‍👦' },
-  { value: 'documentos', label: 'Documentos', icon: '📄' },
-  { value: 'memórias', label: 'Memórias', icon: '💭' },
-]
+// Guardiões do store
+const guardians = computed(() => boxStore.guardians || [])
+
+// Categorias com i18n
+const categories = computed(() => [
+  { value: 'health', label: t('categories.health'), icon: '🏥' },
+  { value: 'finances', label: t('categories.finances'), icon: '💰' },
+  { value: 'family', label: t('categories.family'), icon: '👨‍👩‍👧‍👦' },
+  { value: 'documents', label: t('categories.documents'), icon: '📄' },
+  { value: 'memories', label: t('categories.memories'), icon: '💭' },
+])
 
 onMounted(async () => {
+  // Carregar guardiões se não estiverem carregados
+  if (boxStore.guardians.length === 0) {
+    await boxStore.fetchAll()
+  }
   await fetchLinks()
 })
 
@@ -212,6 +240,7 @@ async function createLink() {
         name: newLink.value.name,
         type: newLink.value.type,
         categories: newLink.value.categories,
+        guardian_ids: newLink.value.guardianIds,
         pin: newLink.value.pin,
         expires_in: newLink.value.expiresIn,
         max_uses: newLink.value.maxUses
@@ -266,6 +295,7 @@ function resetNewLink() {
     name: '',
     type: 'normal',
     categories: [],
+    guardianIds: [],
     pin: '',
     expiresIn: 0,
     maxUses: 0
@@ -323,16 +353,17 @@ function showToast(type, message) {
 
 .btn-create {
   padding: 0.5rem 1rem;
-  background: #6366f1;
+  background: var(--color-primary);
   color: white;
   border: none;
   border-radius: 0.5rem;
   cursor: pointer;
   font-size: 0.875rem;
+  transition: background 0.2s;
 }
 
 .btn-create:hover {
-  background: #4f46e5;
+  background: var(--color-primary-light);
 }
 
 /* Empty State */
@@ -362,7 +393,7 @@ function showToast(type, message) {
 }
 
 .link-card:hover {
-  border-color: #6366f1;
+  border-color: var(--color-primary);
 }
 
 .link-card.inactive {
@@ -398,8 +429,8 @@ function showToast(type, message) {
 }
 
 .link-type-badge.normal {
-  background: #e0e7ff;
-  color: #4338ca;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
 }
 
 .link-type-badge.emergency {
@@ -528,7 +559,8 @@ function showToast(type, message) {
 .form-group input:focus,
 .form-group select:focus {
   outline: none;
-  border-color: #6366f1;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-soft);
 }
 
 .form-group small {
@@ -556,12 +588,69 @@ function showToast(type, message) {
 }
 
 .category-checkbox:has(input:checked) {
-  background: #eef2ff;
-  border-color: #6366f1;
+  background: var(--color-primary-soft);
+  border-color: var(--color-primary);
 }
 
 .category-checkbox input {
   width: auto;
+}
+
+/* Guardians Grid */
+.guardians-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.guardian-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.guardian-checkbox:hover {
+  border-color: var(--color-primary);
+  background: rgba(45, 90, 71, 0.02);
+}
+
+.guardian-checkbox:has(input:checked) {
+  background: var(--color-primary-soft);
+  border-color: var(--color-primary);
+}
+
+.guardian-checkbox input {
+  width: auto;
+  accent-color: var(--color-primary);
+}
+
+.guardian-option {
+  display: flex;
+  flex-direction: column;
+}
+
+.guardian-option strong {
+  color: #1e293b;
+  font-size: 0.9rem;
+}
+
+.guardian-option small {
+  color: #64748b;
+  font-size: 0.8rem;
+}
+
+.no-guardians {
+  padding: 1rem;
+  text-align: center;
+  color: #64748b;
+  font-size: 0.9rem;
+  background: #f8fafc;
+  border-radius: 0.5rem;
 }
 
 .form-row {
@@ -588,15 +677,16 @@ function showToast(type, message) {
 .btn-submit {
   flex: 1;
   padding: 0.75rem;
-  background: #6366f1;
+  background: var(--color-primary);
   color: white;
   border: none;
   border-radius: 0.5rem;
   cursor: pointer;
+  transition: background 0.2s;
 }
 
 .btn-submit:hover:not(:disabled) {
-  background: #4f46e5;
+  background: var(--color-primary-light);
 }
 
 .btn-submit:disabled {
@@ -617,7 +707,7 @@ function showToast(type, message) {
 }
 
 .toast.success {
-  background: #22c55e;
+  background: var(--color-primary);
 }
 
 .toast.error {

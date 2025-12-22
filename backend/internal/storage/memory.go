@@ -372,6 +372,7 @@ func (s *MemoryStore) UpdateBoxItem(userID, itemID string, updates *BoxItem) (*B
 	item.Category = updates.Category
 	item.Recipient = updates.Recipient
 	item.IsImportant = updates.IsImportant
+	item.IsShared = updates.IsShared
 	item.UpdatedAt = time.Now()
 
 	copyItem := *item
@@ -509,6 +510,12 @@ func (s *MemoryStore) CreateGuardian(userID string, guardian *Guardian) (*Guardi
 		guardian.Role = "viewer"
 	}
 
+	// Gerar access_token único
+	guardian.AccessToken = fmt.Sprintf("gat_%d_%d", s.guardianSeq, now.UnixNano())
+	if guardian.AccessType == "" {
+		guardian.AccessType = GuardianAccessNormal
+	}
+
 	if _, ok := s.guardians[userID]; !ok {
 		s.guardians[userID] = make(map[string]*Guardian)
 	}
@@ -621,6 +628,37 @@ func (s *MemoryStore) CountGuardians(userID string) (int, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return len(s.guardians[userID]), nil
+}
+
+// GetGuardianByAccessToken busca um guardião pelo seu token de acesso
+func (s *MemoryStore) GetGuardianByAccessToken(token string) (*Guardian, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	for _, userGuardians := range s.guardians {
+		for _, g := range userGuardians {
+			if g.AccessToken == token {
+				copyGuardian := *g
+				return &copyGuardian, nil
+			}
+		}
+	}
+	return nil, ErrNotFound
+}
+
+// ListSharedItems lista itens compartilhados de um usuário
+func (s *MemoryStore) ListSharedItems(userID string) []*BoxItem {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	var result []*BoxItem
+	for _, item := range s.items[userID] {
+		if item.IsShared {
+			copyItem := *item
+			result = append(result, &copyItem)
+		}
+	}
+	return result
 }
 
 // ============ GUIDE PROGRESS ============

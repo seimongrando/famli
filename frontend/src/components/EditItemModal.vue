@@ -42,7 +42,8 @@ const form = ref({
   email: '',
   phone: '',
   relationship: '',
-  recipient: ''
+  recipient: '',
+  isShared: false
 })
 
 const categories = ['saude', 'financas', 'documentos', 'casa', 'familia', 'outro']
@@ -67,7 +68,8 @@ watch(() => props.item, (newItem) => {
       email: newItem.email || '',
       phone: newItem.phone || '',
       relationship: newItem.relationship || '',
-      recipient: newItem.recipient || ''
+      recipient: newItem.recipient || '',
+      isShared: newItem.is_shared || false
     }
   }
 }, { immediate: true })
@@ -96,7 +98,8 @@ async function handleSave() {
         title: form.value.title,
         content: form.value.content,
         category: form.value.category,
-        recipient: form.value.recipient
+        recipient: form.value.recipient,
+        is_shared: form.value.isShared
       })
       
       if (result) {
@@ -165,6 +168,17 @@ function handleBackdropClick(e) {
                 rows="5"
               ></textarea>
             </div>
+
+            <div class="form-group share-toggle">
+              <label class="toggle-label">
+                <input type="checkbox" v-model="form.isShared" class="toggle-input" />
+                <span class="toggle-switch"></span>
+                <span class="toggle-text">
+                  <span class="toggle-icon">👥</span>
+                  {{ t('composer.shareLabel') }}
+                </span>
+              </label>
+            </div>
             
             <div class="modal__actions">
               <button type="button" class="btn btn--ghost" @click="handleClose">
@@ -204,6 +218,17 @@ function handleBackdropClick(e) {
                 class="form-textarea"
                 rows="6"
               ></textarea>
+            </div>
+
+            <div class="form-group share-toggle">
+              <label class="toggle-label">
+                <input type="checkbox" v-model="form.isShared" class="toggle-input" />
+                <span class="toggle-switch"></span>
+                <span class="toggle-text">
+                  <span class="toggle-icon">👥</span>
+                  {{ t('composer.shareLabel') }}
+                </span>
+              </label>
             </div>
             
             <div class="modal__actions">
@@ -367,6 +392,63 @@ function handleBackdropClick(e) {
 .modal-enter-from .modal,
 .modal-leave-to .modal {
   transform: scale(0.95) translateY(20px);
+}
+
+/* Share Toggle */
+.share-toggle {
+  margin-top: var(--space-md);
+}
+
+.toggle-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  cursor: pointer;
+}
+
+.toggle-input {
+  display: none;
+}
+
+.toggle-switch {
+  width: 44px;
+  height: 24px;
+  background: var(--color-border);
+  border-radius: 12px;
+  position: relative;
+  transition: background-color var(--transition-fast);
+}
+
+.toggle-switch::after {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  background: white;
+  border-radius: 50%;
+  top: 2px;
+  left: 2px;
+  transition: transform var(--transition-fast);
+}
+
+.toggle-input:checked + .toggle-switch {
+  background: var(--color-primary);
+}
+
+.toggle-input:checked + .toggle-switch::after {
+  transform: translateX(20px);
+}
+
+.toggle-text {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.toggle-icon {
+  font-size: 1rem;
 }
 </style>
 

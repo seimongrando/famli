@@ -90,6 +90,7 @@ type BoxItem struct {
 	Category    string    `json:"category,omitempty"`  // saúde, finanças, família, etc.
 	Recipient   string    `json:"recipient,omitempty"` // Criptografado no banco
 	IsImportant bool      `json:"is_important"`
+	IsShared    bool      `json:"is_shared"` // Se o item é visível para guardiões
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
 }
@@ -105,18 +106,31 @@ type BoxItemSummary struct {
 	UpdatedAt   time.Time `json:"updated_at"`
 }
 
+// GuardianAccessType define os tipos de acesso do guardião
+type GuardianAccessType string
+
+const (
+	GuardianAccessNormal    GuardianAccessType = "normal"    // Acesso normal (sempre disponível)
+	GuardianAccessEmergency GuardianAccessType = "emergency" // Apenas em emergência
+	GuardianAccessMemorial  GuardianAccessType = "memorial"  // Apenas após falecimento
+)
+
 // Guardian representa uma pessoa de confiança
 type Guardian struct {
-	ID           string    `json:"id"`
-	UserID       string    `json:"user_id"`
-	Name         string    `json:"name"`
-	Email        string    `json:"email"`
-	Phone        string    `json:"phone,omitempty"`
-	Relationship string    `json:"relationship,omitempty"` // filho, neto, amigo, etc.
-	Role         string    `json:"role"`                   // viewer, coauthor (futuro)
-	Notes        string    `json:"notes,omitempty"`        // explicação do papel
-	CreatedAt    time.Time `json:"created_at"`
-	UpdatedAt    time.Time `json:"updated_at"`
+	ID           string             `json:"id"`
+	UserID       string             `json:"user_id"`
+	Name         string             `json:"name"`
+	Email        string             `json:"email"`
+	Phone        string             `json:"phone,omitempty"`
+	Relationship string             `json:"relationship,omitempty"` // filho, neto, amigo, etc.
+	Role         string             `json:"role"`                   // viewer, coauthor (futuro)
+	Notes        string             `json:"notes,omitempty"`        // explicação do papel
+	AccessToken  string             `json:"access_token"`           // Token único para acesso (sempre retornado)
+	AccessPIN    string             `json:"-"`                      // PIN de proteção (hash) - não expor no JSON
+	HasPIN       bool               `json:"has_pin"`                // Indica se tem PIN configurado
+	AccessType   GuardianAccessType `json:"access_type,omitempty"`  // Tipo de acesso
+	CreatedAt    time.Time          `json:"created_at"`
+	UpdatedAt    time.Time          `json:"updated_at"`
 }
 
 // GuideCard representa um card do Guia Famli
@@ -252,21 +266,22 @@ const (
 
 // ShareLink representa um link de compartilhamento para guardiões
 type ShareLink struct {
-	ID         string        `json:"id"`
-	UserID     string        `json:"user_id"`
-	GuardianID string        `json:"guardian_id,omitempty"` // Se vinculado a um guardião específico
-	Token      string        `json:"-"`                     // Token secreto (não expor na API)
-	Type       ShareLinkType `json:"type"`
-	Name       string        `json:"name"`       // Nome para identificar o link
-	PIN        string        `json:"-"`          // PIN opcional para acesso (hash)
-	Categories []string      `json:"categories"` // Categorias permitidas (vazio = todas)
-	ExpiresAt  *time.Time    `json:"expires_at"` // Nulo = nunca expira
-	MaxUses    int           `json:"max_uses"`   // 0 = ilimitado
-	UsageCount int           `json:"usage_count"`
-	LastUsedAt *time.Time    `json:"last_used_at"`
-	IsActive   bool          `json:"is_active"`
-	CreatedAt  time.Time     `json:"created_at"`
-	UpdatedAt  time.Time     `json:"updated_at"`
+	ID          string        `json:"id"`
+	UserID      string        `json:"user_id"`
+	GuardianID  string        `json:"guardian_id,omitempty"`  // Se vinculado a um guardião específico (deprecated)
+	GuardianIDs []string      `json:"guardian_ids,omitempty"` // Guardiões específicos que podem acessar
+	Token       string        `json:"-"`                      // Token secreto (não expor na API)
+	Type        ShareLinkType `json:"type"`
+	Name        string        `json:"name"`       // Nome para identificar o link
+	PIN         string        `json:"-"`          // PIN opcional para acesso (hash)
+	Categories  []string      `json:"categories"` // Categorias permitidas (vazio = todas)
+	ExpiresAt   *time.Time    `json:"expires_at"` // Nulo = nunca expira
+	MaxUses     int           `json:"max_uses"`   // 0 = ilimitado
+	UsageCount  int           `json:"usage_count"`
+	LastUsedAt  *time.Time    `json:"last_used_at"`
+	IsActive    bool          `json:"is_active"`
+	CreatedAt   time.Time     `json:"created_at"`
+	UpdatedAt   time.Time     `json:"updated_at"`
 }
 
 // ShareLinkAccess registra cada acesso a um link de compartilhamento
@@ -301,11 +316,12 @@ type EmergencyProtocol struct {
 
 // SharedView representa a visualização compartilhada para um guardião
 type SharedView struct {
-	UserName   string        `json:"user_name"`
-	UserEmail  string        `json:"user_email,omitempty"` // Apenas se autorizado
-	Items      []*BoxItem    `json:"items"`
-	Guardians  []*Guardian   `json:"guardians,omitempty"` // Apenas em modo memorial
-	Message    string        `json:"message,omitempty"`   // Mensagem personalizada
-	LinkType   ShareLinkType `json:"link_type"`
-	AccessedAt time.Time     `json:"accessed_at"`
+	UserName     string        `json:"user_name"`
+	UserEmail    string        `json:"user_email,omitempty"`    // Apenas se autorizado
+	GuardianName string        `json:"guardian_name,omitempty"` // Nome do guardião que está acessando
+	Items        []*BoxItem    `json:"items"`
+	Guardians    []*Guardian   `json:"guardians,omitempty"` // Apenas em modo memorial
+	Message      string        `json:"message,omitempty"`   // Mensagem personalizada
+	LinkType     ShareLinkType `json:"link_type"`
+	AccessedAt   time.Time     `json:"accessed_at"`
 }

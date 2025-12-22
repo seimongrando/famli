@@ -46,6 +46,10 @@ type Store interface {
 	ListGuardiansPaginated(userID string, params *PaginationParams) (*PaginatedResult[*Guardian], error)
 	CountGuardians(userID string) (int, error)
 
+	// Guardian Access (acesso via token do guardião)
+	GetGuardianByAccessToken(token string) (*Guardian, error)
+	ListSharedItems(userID string) []*BoxItem // Lista itens com is_shared = true
+
 	// Guide Progress
 	GetGuideProgress(userID string) map[string]*GuideProgress
 	UpdateGuideProgress(userID, cardID, status string) (*GuideProgress, error)

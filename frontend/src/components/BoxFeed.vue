@@ -166,6 +166,22 @@ function onEditSaved() {
   showEditModal.value = false
   selectedItem.value = null
 }
+
+// Copiar link de acesso do guardião
+async function copyGuardianLink(guardian) {
+  if (!guardian.access_token) return
+  
+  const baseUrl = window.location.origin
+  const link = `${baseUrl}/g/${guardian.access_token}`
+  
+  try {
+    await navigator.clipboard.writeText(link)
+    // Feedback visual simples
+    alert(t('guardian.linkCopied'))
+  } catch (err) {
+    console.error('Erro ao copiar link:', err)
+  }
+}
 </script>
 
 <template>
@@ -228,6 +244,15 @@ function onEditSaved() {
         </div>
         
         <div class="feed-item__actions">
+          <!-- Botão de link apenas para guardiões -->
+          <button 
+            v-if="entry.kind === 'guardian' && entry.access_token"
+            class="btn btn--ghost btn--small btn--icon btn--primary-text" 
+            @click="copyGuardianLink(entry)"
+            :title="t('guardian.copyLink')"
+          >
+            🔗
+          </button>
           <button 
             class="btn btn--ghost btn--small btn--icon" 
             @click="openEditModal(entry)"

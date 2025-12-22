@@ -56,13 +56,14 @@ func NewHandler(store storage.Store) *Handler {
 
 // CreateLinkRequest representa o payload para criar um link
 type CreateLinkRequest struct {
-	Name       string   `json:"name"`                  // Nome identificador
-	GuardianID string   `json:"guardian_id,omitempty"` // Guardião específico
-	Type       string   `json:"type"`                  // normal, emergency, memorial
-	Categories []string `json:"categories,omitempty"`  // Categorias permitidas
-	PIN        string   `json:"pin,omitempty"`         // PIN opcional
-	ExpiresIn  int      `json:"expires_in,omitempty"`  // Dias até expirar (0 = nunca)
-	MaxUses    int      `json:"max_uses,omitempty"`    // Máximo de usos (0 = ilimitado)
+	Name        string   `json:"name"`                   // Nome identificador
+	GuardianID  string   `json:"guardian_id,omitempty"`  // Guardião específico (deprecated)
+	GuardianIDs []string `json:"guardian_ids,omitempty"` // Guardiões específicos
+	Type        string   `json:"type"`                   // normal, emergency, memorial
+	Categories  []string `json:"categories,omitempty"`   // Categorias permitidas
+	PIN         string   `json:"pin,omitempty"`          // PIN opcional
+	ExpiresIn   int      `json:"expires_in,omitempty"`   // Dias até expirar (0 = nunca)
+	MaxUses     int      `json:"max_uses,omitempty"`     // Máximo de usos (0 = ilimitado)
 }
 
 // ShareLinkResponse representa a resposta com o link criado
@@ -136,21 +137,28 @@ func (h *Handler) CreateLink(w http.ResponseWriter, r *http.Request) {
 		expiresAt = &exp
 	}
 
+	// Consolidar GuardianID e GuardianIDs
+	guardianIDs := req.GuardianIDs
+	if req.GuardianID != "" && len(guardianIDs) == 0 {
+		guardianIDs = []string{req.GuardianID}
+	}
+
 	now := time.Now()
 	link := &storage.ShareLink{
-		ID:         uuid.New().String(),
-		UserID:     userID,
-		GuardianID: req.GuardianID,
-		Token:      token,
-		Type:       linkType,
-		Name:       req.Name,
-		PIN:        pinHash,
-		Categories: req.Categories,
-		ExpiresAt:  expiresAt,
-		MaxUses:    req.MaxUses,
-		IsActive:   true,
-		CreatedAt:  now,
-		UpdatedAt:  now,
+		ID:          uuid.New().String(),
+		UserID:      userID,
+		GuardianID:  req.GuardianID,
+		GuardianIDs: guardianIDs,
+		Token:       token,
+		Type:        linkType,
+		Name:        req.Name,
+		PIN:         pinHash,
+		Categories:  req.Categories,
+		ExpiresAt:   expiresAt,
+		MaxUses:     req.MaxUses,
+		IsActive:    true,
+		CreatedAt:   now,
+		UpdatedAt:   now,
 	}
 
 	if err := h.store.CreateShareLink(link); err != nil {
@@ -358,10 +366,33 @@ func (h *Handler) getSharedContent(link *storage.ShareLink) (*storage.SharedView
 		AccessedAt: time.Now(),
 	}
 
-	// Adicionar guardiões apenas em modo memorial
+	// Adicionar guardiões baseado no tipo de link e filtro
+	allGuardians := h.store.ListGuardians(link.UserID)
+
+	// Se há guardiões específicos selecionados, filtrar
+	if len(link.GuardianIDs) > 0 {
+		var filteredGuardians []*storage.Guardian
+		for _, g := range allGuardians {
+			for _, id := range link.GuardianIDs {
+				if g.ID == id {
+					filteredGuardians = append(filteredGuardians, g)
+					break
+				}
+			}
+		}
+		view.Guardians = filteredGuardians
+
+		// Nome do guardião para mensagem personalizada
+		if len(filteredGuardians) == 1 {
+			view.GuardianName = filteredGuardians[0].Name
+		}
+	}
+
+	// Adicionar todos guardiões em modo memorial
 	if link.Type == storage.ShareLinkMemorial {
-		guardians := h.store.ListGuardians(link.UserID)
-		view.Guardians = guardians
+		if len(link.GuardianIDs) == 0 {
+			view.Guardians = allGuardians
+		}
 		view.UserEmail = user.Email
 		view.Message = "Este é o memorial de " + user.Name + ". As informações aqui foram deixadas para ajudar você."
 	}
@@ -399,6 +430,180 @@ func generateSecureToken() string {
 	rand.Read(bytes)
 	hash := sha256.Sum256(bytes)
 	return hex.EncodeToString(hash[:16]) // 32 caracteres hex
+}
+
+// =============================================================================
+// ENDPOINT DE ACESSO DO GUARDIÃO (Nova Arquitetura)
+// =============================================================================
+
+// GuardianAccessResponse representa a resposta para acesso do guardião
+type GuardianAccessResponse struct {
+	Guardian   *GuardianInfo     `json:"guardian"`
+	Owner      *OwnerInfo        `json:"owner"`
+	Items      []*SharedItemInfo `json:"items"`
+	AccessType string            `json:"access_type"`
+	AccessedAt time.Time         `json:"accessed_at"`
+}
+
+// GuardianInfo representa info do guardião
+type GuardianInfo struct {
+	Name         string `json:"name"`
+	Relationship string `json:"relationship"`
+}
+
+// OwnerInfo representa info do dono da caixa
+type OwnerInfo struct {
+	Name  string `json:"name"`
+	Email string `json:"email"`
+}
+
+// SharedItemInfo representa um item compartilhado
+type SharedItemInfo struct {
+	ID          string    `json:"id"`
+	Type        string    `json:"type"`
+	Title       string    `json:"title"`
+	Content     string    `json:"content"`
+	Category    string    `json:"category,omitempty"`
+	Recipient   string    `json:"recipient,omitempty"`
+	IsImportant bool      `json:"is_important,omitempty"`
+	CreatedAt   time.Time `json:"created_at"`
+}
+
+// AccessGuardianView permite acessar itens compartilhados via token do guardião
+// GET /api/guardian-access/:token
+func (h *Handler) AccessGuardianView(w http.ResponseWriter, r *http.Request) {
+	token := chi.URLParam(r, "token")
+	if token == "" {
+		writeError(w, http.StatusBadRequest, i18n.Tr(r, "share.invalid_token"))
+		return
+	}
+
+	// Buscar guardião pelo token
+	guardian, err := h.store.GetGuardianByAccessToken(token)
+	if err != nil {
+		writeError(w, http.StatusNotFound, i18n.Tr(r, "share.link_not_found"))
+		return
+	}
+
+	// Buscar dono da caixa
+	owner, found := h.store.GetUserByID(guardian.UserID)
+	if !found {
+		writeError(w, http.StatusNotFound, i18n.Tr(r, "share.link_not_found"))
+		return
+	}
+
+	// SEGURANÇA: Verificar se o guardião tem PIN configurado
+	// Se tiver, exigir verificação antes de mostrar conteúdo
+	if guardian.AccessPIN != "" {
+		writeJSON(w, http.StatusOK, map[string]interface{}{
+			"requires_pin": true,
+			"guardian": map[string]string{
+				"name":         guardian.Name,
+				"relationship": guardian.Relationship,
+			},
+			"owner": map[string]string{
+				"name": owner.Name,
+			},
+		})
+		return
+	}
+
+	// Retornar conteúdo completo
+	h.returnGuardianContent(w, r, guardian, owner)
+}
+
+// VerifyGuardianPIN verifica o PIN do guardião e retorna o conteúdo
+// POST /api/guardian-access/:token/verify
+func (h *Handler) VerifyGuardianPIN(w http.ResponseWriter, r *http.Request) {
+	token := chi.URLParam(r, "token")
+	if token == "" {
+		writeError(w, http.StatusBadRequest, i18n.Tr(r, "share.invalid_token"))
+		return
+	}
+
+	var req VerifyPINRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, i18n.Tr(r, "share.invalid_data"))
+		return
+	}
+
+	// Buscar guardião pelo token
+	guardian, err := h.store.GetGuardianByAccessToken(token)
+	if err != nil {
+		writeError(w, http.StatusNotFound, i18n.Tr(r, "share.link_not_found"))
+		return
+	}
+
+	// Verificar PIN
+	if err := bcrypt.CompareHashAndPassword([]byte(guardian.AccessPIN), []byte(req.PIN)); err != nil {
+		writeError(w, http.StatusUnauthorized, i18n.Tr(r, "share.invalid_pin"))
+		return
+	}
+
+	// Buscar dono da caixa
+	owner, found := h.store.GetUserByID(guardian.UserID)
+	if !found {
+		writeError(w, http.StatusNotFound, i18n.Tr(r, "share.link_not_found"))
+		return
+	}
+
+	// Retornar conteúdo completo
+	h.returnGuardianContent(w, r, guardian, owner)
+}
+
+// returnGuardianContent retorna o conteúdo da caixa para o guardião
+func (h *Handler) returnGuardianContent(w http.ResponseWriter, r *http.Request, guardian *storage.Guardian, owner *storage.User) {
+	// IMPORTANTE: Buscar apenas itens COMPARTILHADOS (is_shared = true)
+	// Itens não compartilhados são privados e não devem ser expostos
+	sharedItems := h.store.ListSharedItems(guardian.UserID)
+
+	// Converter para resposta
+	items := make([]*SharedItemInfo, 0, len(sharedItems))
+	for _, item := range sharedItems {
+		items = append(items, &SharedItemInfo{
+			ID:          item.ID,
+			Type:        string(item.Type),
+			Title:       item.Title,
+			Content:     item.Content,
+			Category:    item.Category,
+			Recipient:   item.Recipient,
+			IsImportant: item.IsImportant,
+			CreatedAt:   item.CreatedAt,
+		})
+	}
+
+	response := &GuardianAccessResponse{
+		Guardian: &GuardianInfo{
+			Name:         guardian.Name,
+			Relationship: guardian.Relationship,
+		},
+		Owner: &OwnerInfo{
+			Name:  owner.Name,
+			Email: owner.Email,
+		},
+		Items:      items,
+		AccessType: string(guardian.AccessType),
+		AccessedAt: time.Now(),
+	}
+
+	// Log de acesso
+	if h.auditLogger != nil {
+		h.auditLogger.Log(security.AuditEvent{
+			Type:     security.EventDataAccess,
+			UserID:   guardian.UserID,
+			ClientIP: security.GetClientIP(r),
+			Resource: "guardian_access",
+			Action:   "view_shared_items",
+			Result:   "success",
+			Details: map[string]interface{}{
+				"guardian_id":   guardian.ID,
+				"guardian_name": guardian.Name,
+				"items_count":   len(items),
+			},
+		})
+	}
+
+	writeJSON(w, http.StatusOK, response)
 }
 
 // getBaseURL retorna a URL base da aplicação

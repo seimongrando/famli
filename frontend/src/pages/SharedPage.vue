@@ -2,18 +2,24 @@
   <div class="shared-page">
     <!-- Loading -->
     <div v-if="loading" class="loading-container">
-      <div class="loading-spinner"></div>
-      <p>{{ $t('common.loading') }}</p>
+      <div class="loading-card">
+        <img src="/logo.svg" alt="Famli" class="loading-logo" />
+        <div class="loading-spinner"></div>
+        <p class="loading-text">{{ $t('common.loading') }}</p>
+      </div>
     </div>
 
     <!-- PIN Required -->
     <div v-else-if="requiresPin" class="pin-container">
       <div class="pin-card">
-        <div class="logo-icon">
-          <img src="/logo.svg" alt="Famli" width="60" />
-        </div>
-        <h2>{{ $t('shared.protected_access') }}</h2>
-        <p>{{ $t('shared.protected_message') }}</p>
+        <img src="/logo.svg" alt="Famli" class="pin-logo" />
+        <h1 class="pin-title">Famli</h1>
+        <p class="pin-tagline">{{ $t('brand.tagline') }}</p>
+        
+        <div class="pin-divider"></div>
+        
+        <h2>🔒 {{ $t('shared.protected_access') }}</h2>
+        <p class="pin-description">{{ $t('shared.protected_message') }}</p>
         
         <form @submit.prevent="verifyPin" class="pin-form">
           <input 
@@ -36,85 +42,108 @@
     <!-- Error -->
     <div v-else-if="error" class="error-container">
       <div class="error-card">
+        <img src="/logo.svg" alt="Famli" class="error-logo" />
+        <h1 class="error-brand">Famli</h1>
+        <div class="error-divider"></div>
         <div class="error-icon">😔</div>
         <h2>{{ $t('shared.invalid_link') }}</h2>
-        <p>{{ error }}</p>
+        <p class="error-text">{{ error }}</p>
         <a href="/" class="btn-home">{{ $t('shared.go_to_famli') }}</a>
       </div>
     </div>
 
     <!-- Content -->
-    <div v-else-if="sharedView" class="content-container">
-      <!-- Header -->
-      <header class="shared-header" :class="linkTypeClass">
-        <div class="header-content">
-          <div class="header-icon">
-            {{ linkTypeIcon }}
+    <div v-else-if="sharedView" class="content-wrapper">
+      <!-- Header com Logo -->
+      <header class="famli-header">
+        <div class="header-container">
+          <div class="header-brand">
+            <img src="/logo.svg" alt="Famli" class="header-logo" />
+            <div class="header-title">
+              <h1>Famli</h1>
+              <p class="header-tagline">{{ $t('brand.tagline') }}</p>
+            </div>
           </div>
-          <div class="header-text">
-            <h1>{{ headerTitle }}</h1>
-            <p v-if="sharedView.message">{{ sharedView.message }}</p>
+          <div class="header-badge" :class="linkType">
+            {{ linkTypeIcon }} {{ headerTitle }}
           </div>
         </div>
       </header>
 
-      <!-- User Info -->
-      <section class="user-info" v-if="sharedView.user_name">
-        <h2>{{ $t('shared.info_of', { name: sharedView.user_name }) }}</h2>
-        <p class="access-time">{{ $t('shared.accessed_at', { date: formatDate(sharedView.accessed_at) }) }}</p>
-      </section>
-
-      <!-- Items by Category -->
-      <section class="items-section">
-        <div v-for="category in groupedItems" :key="category.name" class="category-group">
-          <h3 class="category-title">
-            <span class="category-icon">{{ getCategoryIcon(category.name) }}</span>
-            {{ formatCategory(category.name) }}
-          </h3>
-          
-          <div class="items-grid">
-            <div v-for="item in category.items" :key="item.id" class="item-card" :class="{ important: item.is_important }">
-              <div class="item-header">
-                <span class="item-type">{{ getTypeIcon(item.type) }}</span>
-                <h4>{{ item.title }}</h4>
-                <span v-if="item.is_important" class="important-badge">⭐</span>
-              </div>
-              <div class="item-content" v-if="item.content">
-                <p>{{ item.content }}</p>
-              </div>
-              <div class="item-footer" v-if="item.recipient">
-                <small>Para: {{ item.recipient }}</small>
-              </div>
-            </div>
+      <!-- User Info Card -->
+      <section class="user-section" v-if="sharedView.user_name || sharedView.guardian_name">
+        <div class="user-card">
+          <div class="user-avatar">👤</div>
+          <div class="user-info">
+            <h2 v-if="sharedView.user_name">{{ $t('shared.info_of', { name: sharedView.user_name }) }}</h2>
+            <p v-if="sharedView.guardian_name" class="guardian-label">
+              {{ $t('shared.viewing_as', { name: sharedView.guardian_name }) }}
+            </p>
+            <p class="access-time">{{ $t('shared.accessed_at', { date: formatDate(sharedView.accessed_at) }) }}</p>
           </div>
         </div>
+      </section>
 
-        <div v-if="!sharedView.items?.length" class="empty-state">
+      <!-- Main Content -->
+      <main class="content-main">
+        <!-- Items by Category -->
+        <section class="items-section" v-if="groupedItems.length > 0">
+          <div v-for="category in groupedItems" :key="category.name" class="category-group">
+            <h3 class="category-title">
+              <span class="category-icon">{{ getCategoryIcon(category.name) }}</span>
+              {{ formatCategory(category.name) }}
+            </h3>
+            
+            <div class="items-grid">
+              <article v-for="item in category.items" :key="item.id" class="item-card" :class="{ important: item.is_important }">
+                <div class="item-header">
+                  <span class="item-type-icon">{{ getTypeIcon(item.type) }}</span>
+                  <h4 class="item-title">{{ item.title }}</h4>
+                  <span v-if="item.is_important" class="important-badge" title="Importante">⭐</span>
+                </div>
+                <div class="item-content" v-if="item.content">
+                  <p>{{ item.content }}</p>
+                </div>
+                <div class="item-footer" v-if="item.recipient">
+                  <span class="recipient-label">💌 {{ $t('shared.for') }}: {{ item.recipient }}</span>
+                </div>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <!-- Empty State -->
+        <div v-else class="empty-state">
+          <div class="empty-icon">📭</div>
           <p>{{ $t('shared.no_items') }}</p>
         </div>
-      </section>
 
-      <!-- Guardians (Memorial only) -->
-      <section v-if="sharedView.guardians?.length" class="guardians-section">
-        <h3>{{ $t('shared.trusted_people') }}</h3>
-        <div class="guardians-grid">
-          <div v-for="guardian in sharedView.guardians" :key="guardian.id" class="guardian-card">
-            <div class="guardian-icon">👤</div>
-            <div class="guardian-info">
-              <h4>{{ guardian.name }}</h4>
-              <p v-if="guardian.relationship">{{ guardian.relationship }}</p>
-              <p v-if="guardian.email">{{ guardian.email }}</p>
-              <p v-if="guardian.phone">{{ guardian.phone }}</p>
+        <!-- Guardians (Memorial only) -->
+        <section v-if="sharedView.guardians?.length" class="guardians-section">
+          <h3 class="section-title">👥 {{ $t('shared.trusted_people') }}</h3>
+          <div class="guardians-grid">
+            <div v-for="guardian in sharedView.guardians" :key="guardian.id" class="guardian-card">
+              <div class="guardian-avatar">👤</div>
+              <div class="guardian-info">
+                <h4>{{ guardian.name }}</h4>
+                <p v-if="guardian.relationship" class="guardian-relationship">{{ guardian.relationship }}</p>
+                <p v-if="guardian.email" class="guardian-contact">📧 {{ guardian.email }}</p>
+                <p v-if="guardian.phone" class="guardian-contact">📱 {{ guardian.phone }}</p>
+              </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      </main>
 
       <!-- Footer -->
-      <footer class="shared-footer">
-        <p>
-          <a href="/">Famli</a> - {{ $t('shared.tagline') }}
-        </p>
+      <footer class="famli-footer">
+        <div class="footer-content">
+          <img src="/logo.svg" alt="Famli" class="footer-logo" />
+          <p class="footer-text">
+            <a href="/" class="footer-link">Famli</a> — {{ $t('shared.tagline') }}
+          </p>
+          <p class="footer-privacy">🔒 {{ $t('shared.privacy_note') }}</p>
+        </div>
       </footer>
     </div>
   </div>
@@ -138,6 +167,7 @@ const pinError = ref(null)
 const verifying = ref(false)
 
 const token = computed(() => route.params.token)
+const isGuardianAccess = computed(() => route.path.startsWith('/g/') || route.path.startsWith('/guardian/'))
 
 const linkTypeClass = computed(() => {
   return {
@@ -168,17 +198,19 @@ const groupedItems = computed(() => {
   
   const groups = {}
   for (const item of sharedView.value.items) {
-    const cat = item.category || 'outros'
+    const cat = item.category || 'other'
     if (!groups[cat]) {
       groups[cat] = { name: cat, items: [] }
     }
     groups[cat].items.push(item)
   }
   
-  // Ordenar por prioridade
-  const order = ['saúde', 'finanças', 'família', 'documentos', 'memórias', 'outros']
+  // Ordenar por prioridade (usar chaves em inglês como padrão)
+  const order = ['health', 'saúde', 'finances', 'finanças', 'family', 'família', 'documents', 'documentos', 'memories', 'memórias', 'other', 'outros']
   return Object.values(groups).sort((a, b) => {
-    return order.indexOf(a.name) - order.indexOf(b.name)
+    const aIndex = order.indexOf(a.name) >= 0 ? order.indexOf(a.name) : 999
+    const bIndex = order.indexOf(b.name) >= 0 ? order.indexOf(b.name) : 999
+    return aIndex - bIndex
   })
 })
 
@@ -191,24 +223,52 @@ async function fetchSharedContent() {
     loading.value = true
     error.value = null
     
-    const response = await fetch(`/api/shared/${token.value}`)
+    // Determinar endpoint baseado no tipo de acesso
+    const endpoint = isGuardianAccess.value 
+      ? `/api/guardian-access/${token.value}`
+      : `/api/shared/${token.value}`
+    
+    const response = await fetch(endpoint)
     const data = await response.json()
     
     if (!response.ok) {
-      error.value = data.error || 'Link inválido ou expirado'
+      error.value = data.error || t('shared.invalid_link')
       return
     }
     
+    // Verificar se precisa de PIN (tanto para guardião quanto para link)
     if (data.requires_pin) {
       requiresPin.value = true
-      linkType.value = data.link_type
+      linkType.value = data.link_type || 'normal'
+      // Guardar info do owner/guardian para mostrar na tela de PIN
+      if (data.owner) {
+        sharedView.value = {
+          user_name: data.owner.name,
+          guardian_name: data.guardian?.name
+        }
+      }
+      return
+    }
+    
+    // Processar resposta do guardião
+    if (isGuardianAccess.value) {
+      sharedView.value = {
+        items: data.items,
+        guardians: [],
+        user_name: data.owner?.name,
+        link_type: data.access_type || 'normal',
+        accessed_at: data.accessed_at,
+        guardian_name: data.guardian?.name,
+        guardian_relationship: data.guardian?.relationship
+      }
+      linkType.value = data.access_type || 'normal'
       return
     }
     
     sharedView.value = data
     linkType.value = data.link_type
   } catch (err) {
-    error.value = 'Erro ao carregar conteúdo'
+    error.value = t('shared.error_loading')
   } finally {
     loading.value = false
   }
@@ -221,7 +281,12 @@ async function verifyPin() {
     verifying.value = true
     pinError.value = null
     
-    const response = await fetch(`/api/shared/${token.value}/verify`, {
+    // Usar endpoint correto baseado no tipo de acesso
+    const endpoint = isGuardianAccess.value 
+      ? `/api/guardian-access/${token.value}/verify`
+      : `/api/shared/${token.value}/verify`
+    
+    const response = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ pin: pin.value })
@@ -230,15 +295,29 @@ async function verifyPin() {
     const data = await response.json()
     
     if (!response.ok) {
-      pinError.value = data.error || 'PIN incorreto'
+      pinError.value = data.error || t('shared.invalid_pin')
       return
     }
     
-    sharedView.value = data
-    linkType.value = data.link_type
+    // Processar resposta do guardião
+    if (isGuardianAccess.value) {
+      sharedView.value = {
+        items: data.items,
+        guardians: [],
+        user_name: data.owner?.name,
+        link_type: data.access_type || 'normal',
+        accessed_at: data.accessed_at,
+        guardian_name: data.guardian?.name,
+        guardian_relationship: data.guardian?.relationship
+      }
+      linkType.value = data.access_type || 'normal'
+    } else {
+      sharedView.value = data
+      linkType.value = data.link_type
+    }
     requiresPin.value = false
   } catch (err) {
-    pinError.value = 'Erro ao verificar PIN'
+    pinError.value = t('shared.error_verifying_pin')
   } finally {
     verifying.value = false
   }
@@ -262,6 +341,14 @@ function formatCategory(cat) {
 
 function getCategoryIcon(cat) {
   const icons = {
+    // Chaves em inglês (padrão)
+    'health': '🏥',
+    'finances': '💰',
+    'family': '👨‍👩‍👧‍👦',
+    'documents': '📄',
+    'memories': '💭',
+    'other': '📦',
+    // Chaves em português (legado)
     'saúde': '🏥',
     'finanças': '💰',
     'família': '👨‍👩‍👧‍👦',
@@ -286,56 +373,114 @@ function getTypeIcon(type) {
 </script>
 
 <style scoped>
+/* =============================================================================
+   FAMLI SHARED PAGE - Visual Identity
+   ============================================================================= */
+
 .shared-page {
   min-height: 100vh;
-  background: var(--color-bg, #faf8f5);
+  background: linear-gradient(135deg, #faf8f5 0%, #f5f0e8 100%);
+  font-family: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
-/* Loading */
+/* =============================================================================
+   LOADING STATE
+   ============================================================================= */
 .loading-container {
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  gap: 1rem;
+  background: linear-gradient(135deg, #2d5a47 0%, #1e3d30 100%);
+}
+
+.loading-card {
+  text-align: center;
+  padding: 3rem;
+}
+
+.loading-logo {
+  width: 80px;
+  height: 80px;
+  margin-bottom: 1.5rem;
+  animation: pulse 2s ease-in-out infinite;
 }
 
 .loading-spinner {
-  width: 50px;
-  height: 50px;
-  border: 4px solid var(--color-border, #e5ddd0);
-  border-top-color: var(--color-primary, #2d5a47);
+  width: 40px;
+  height: 40px;
+  margin: 0 auto 1rem;
+  border: 3px solid rgba(255, 255, 255, 0.2);
+  border-top-color: #e07b39;
   border-radius: 50%;
   animation: spin 1s linear infinite;
+}
+
+.loading-text {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 1rem;
 }
 
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
 
-/* PIN Container */
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(0.95); }
+}
+
+/* =============================================================================
+   PIN VERIFICATION
+   ============================================================================= */
 .pin-container {
   display: flex;
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  padding: 1rem;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #2d5a47 0%, #1e3d30 100%);
 }
 
 .pin-card {
   background: white;
-  border-radius: 1rem;
-  padding: 2rem;
+  border-radius: 1.5rem;
+  padding: 2.5rem 2rem;
   text-align: center;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-  max-width: 400px;
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.3);
+  max-width: 420px;
   width: 100%;
 }
 
-.pin-icon {
-  font-size: 3rem;
-  margin-bottom: 1rem;
+.pin-logo {
+  width: 70px;
+  height: 70px;
+  margin-bottom: 0.75rem;
+}
+
+.pin-title {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #2d5a47;
+  margin: 0 0 0.25rem;
+}
+
+.pin-tagline {
+  color: #6b665c;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.pin-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #e5ddd0, transparent);
+  margin: 1.5rem 0;
+}
+
+.pin-description {
+  color: #6b665c;
+  font-size: 0.95rem;
+  margin: 0.5rem 0 0;
 }
 
 .pin-form {
@@ -349,30 +494,35 @@ function getTypeIcon(type) {
   padding: 1rem;
   font-size: 1.5rem;
   text-align: center;
-  border: 2px solid #e2e8f0;
-  border-radius: 0.5rem;
+  border: 2px solid #e5ddd0;
+  border-radius: 12px;
   letter-spacing: 0.5rem;
+  font-family: inherit;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .pin-input:focus {
   outline: none;
-  border-color: var(--color-primary, #2d5a47);
+  border-color: #2d5a47;
+  box-shadow: 0 0 0 3px rgba(45, 90, 71, 0.1);
 }
 
 .btn-verify {
   padding: 1rem;
-  background: var(--color-accent, #e07b39);
+  background: #e07b39;
   color: white;
   border: none;
-  border-radius: var(--radius-md, 12px);
+  border-radius: 12px;
   font-size: 1rem;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: all 0.2s;
+  font-family: inherit;
 }
 
 .btn-verify:hover:not(:disabled) {
-  background: var(--color-accent-light, #f4a876);
+  background: #c66a2e;
+  transform: translateY(-1px);
 }
 
 .btn-verify:disabled {
@@ -381,162 +531,287 @@ function getTypeIcon(type) {
 }
 
 .error-message {
-  color: #ef4444;
+  color: #dc2626;
   margin-top: 1rem;
+  font-weight: 600;
+  font-size: 0.9rem;
 }
 
-/* Error Container */
+/* =============================================================================
+   ERROR STATE
+   ============================================================================= */
 .error-container {
   display: flex;
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  padding: 1rem;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #2d5a47 0%, #1e3d30 100%);
 }
 
 .error-card {
   background: white;
-  border-radius: 1rem;
-  padding: 2rem;
+  border-radius: 1.5rem;
+  padding: 2.5rem 2rem;
   text-align: center;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-  max-width: 400px;
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.3);
+  max-width: 420px;
+  width: 100%;
+}
+
+.error-logo {
+  width: 60px;
+  height: 60px;
+  margin-bottom: 0.5rem;
+}
+
+.error-brand {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #2d5a47;
+  margin: 0;
+}
+
+.error-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #e5ddd0, transparent);
+  margin: 1.5rem 0;
 }
 
 .error-icon {
   font-size: 4rem;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.error-text {
+  color: #6b665c;
+  margin: 0.5rem 0 0;
 }
 
 .btn-home {
   display: inline-block;
   margin-top: 1.5rem;
-  padding: 0.75rem 1.5rem;
-  background: var(--color-accent, #e07b39);
+  padding: 0.875rem 2rem;
+  background: #e07b39;
   color: white;
   text-decoration: none;
-  border-radius: var(--radius-md, 12px);
-  font-weight: 600;
+  border-radius: 12px;
+  font-weight: 700;
+  transition: all 0.2s;
 }
 
-/* Content */
-.content-container {
-  max-width: 900px;
-  margin: 0 auto;
-  padding-bottom: 2rem;
+.btn-home:hover {
+  background: #c66a2e;
+  transform: translateY(-1px);
 }
 
-/* Header */
-.shared-header {
-  padding: 3rem 2rem;
-  color: white;
-  text-align: center;
-}
-
-.shared-header.type-normal {
-  background: var(--color-primary, #2d5a47);
-}
-
-.shared-header.type-emergency {
-  background: linear-gradient(135deg, #c04a4a 0%, #e07b39 100%);
-}
-
-.shared-header.type-memorial {
-  background: linear-gradient(135deg, #2c2a26 0%, #5c584f 100%);
-}
-
-.header-content {
+/* =============================================================================
+   MAIN CONTENT WRAPPER
+   ============================================================================= */
+.content-wrapper {
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
+}
+
+/* =============================================================================
+   FAMLI HEADER
+   ============================================================================= */
+.famli-header {
+  background: linear-gradient(135deg, #2d5a47 0%, #1e3d30 100%);
+  padding: 1.5rem 2rem;
+  color: white;
+}
+
+.header-container {
+  max-width: 1000px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.header-brand {
+  display: flex;
   align-items: center;
   gap: 1rem;
 }
 
-.header-icon {
-  font-size: 4rem;
+.header-logo {
+  width: 50px;
+  height: 50px;
 }
 
-.header-text h1 {
+.header-title h1 {
   margin: 0;
-  font-size: 2rem;
+  font-size: 1.75rem;
+  font-weight: 800;
 }
 
-.header-text p {
-  margin: 0.5rem 0 0;
+.header-tagline {
+  margin: 0;
+  font-size: 0.85rem;
   opacity: 0.9;
 }
 
-/* User Info */
-.user-info {
+.header-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 50px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+}
+
+.header-badge.normal {
+  background: rgba(224, 123, 57, 0.3);
+}
+
+.header-badge.emergency {
+  background: rgba(220, 38, 38, 0.3);
+}
+
+.header-badge.memorial {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+/* =============================================================================
+   USER SECTION
+   ============================================================================= */
+.user-section {
+  padding: 0 2rem;
+  margin-top: -1.5rem;
+}
+
+.user-card {
+  max-width: 1000px;
+  margin: 0 auto;
   background: white;
+  border-radius: 1rem;
   padding: 1.5rem 2rem;
-  text-align: center;
-  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+}
+
+.user-avatar {
+  font-size: 2.5rem;
+  background: linear-gradient(135deg, #e5ddd0 0%, #d5cec3 100%);
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .user-info h2 {
-  margin: 0;
-  color: #1e293b;
+  margin: 0 0 0.25rem;
+  font-size: 1.25rem;
+  color: #2c2a26;
+}
+
+.guardian-label {
+  color: #2d5a47;
+  font-weight: 600;
+  margin: 0 0 0.25rem;
+  font-size: 0.9rem;
 }
 
 .access-time {
-  margin: 0.5rem 0 0;
-  color: #64748b;
-  font-size: 0.875rem;
+  margin: 0;
+  color: #8a857a;
+  font-size: 0.85rem;
 }
 
-/* Items Section */
-.items-section {
+/* =============================================================================
+   MAIN CONTENT
+   ============================================================================= */
+.content-main {
+  flex: 1;
+  max-width: 1000px;
+  margin: 0 auto;
   padding: 2rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* =============================================================================
+   ITEMS SECTION
+   ============================================================================= */
+.items-section {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
 }
 
 .category-group {
-  margin-bottom: 2rem;
+  /* grouped categories */
 }
 
 .category-title {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-  color: #1e293b;
+  gap: 0.75rem;
   font-size: 1.25rem;
+  color: #2c2a26;
+  margin: 0 0 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid #e5ddd0;
+}
+
+.category-icon {
+  font-size: 1.5rem;
 }
 
 .items-grid {
   display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 1rem;
 }
 
 .item-card {
   background: white;
-  border-radius: 0.75rem;
-  padding: 1.25rem;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-  border-left: 4px solid #e2e8f0;
-  transition: transform 0.2s, box-shadow 0.2s;
+  border-radius: 1rem;
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  border: 1px solid #f0ebe3;
+  transition: all 0.2s;
 }
 
 .item-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
 }
 
 .item-card.important {
-  border-left-color: #eab308;
-  background: linear-gradient(135deg, #fffbeb 0%, white 100%);
+  border-left: 4px solid #e07b39;
+  background: linear-gradient(90deg, #fef7f1 0%, white 30%);
 }
 
 .item-header {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
 }
 
-.item-header h4 {
-  margin: 0;
+.item-type-icon {
+  font-size: 1.25rem;
+}
+
+.item-title {
   flex: 1;
-  color: #1e293b;
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #2c2a26;
 }
 
 .important-badge {
@@ -544,8 +819,8 @@ function getTypeIcon(type) {
 }
 
 .item-content {
-  margin-top: 0.75rem;
-  color: #475569;
+  color: #5c584f;
+  font-size: 0.95rem;
   line-height: 1.6;
 }
 
@@ -555,89 +830,195 @@ function getTypeIcon(type) {
 }
 
 .item-footer {
-  margin-top: 0.75rem;
+  margin-top: 1rem;
   padding-top: 0.75rem;
-  border-top: 1px solid #e2e8f0;
-  color: #64748b;
+  border-top: 1px solid #f0ebe3;
 }
 
-/* Guardians */
-.guardians-section {
-  padding: 0 2rem 2rem;
+.recipient-label {
+  color: #8a857a;
+  font-size: 0.85rem;
 }
 
-.guardians-section h3 {
+/* =============================================================================
+   EMPTY STATE
+   ============================================================================= */
+.empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+}
+
+.empty-icon {
+  font-size: 4rem;
   margin-bottom: 1rem;
-  color: #1e293b;
+}
+
+.empty-state p {
+  color: #8a857a;
+  font-size: 1.1rem;
+}
+
+/* =============================================================================
+   GUARDIANS SECTION
+   ============================================================================= */
+.guardians-section {
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 2px solid #e5ddd0;
+}
+
+.section-title {
+  font-size: 1.25rem;
+  color: #2c2a26;
+  margin: 0 0 1.5rem;
 }
 
 .guardians-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 1rem;
 }
 
 .guardian-card {
   background: white;
-  border-radius: 0.75rem;
-  padding: 1.25rem;
+  border-radius: 1rem;
+  padding: 1.5rem;
   display: flex;
   gap: 1rem;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  border: 1px solid #f0ebe3;
 }
 
-.guardian-icon {
+.guardian-avatar {
   font-size: 2rem;
+  background: linear-gradient(135deg, #e5ddd0 0%, #d5cec3 100%);
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
 .guardian-info h4 {
   margin: 0 0 0.25rem;
-  color: #1e293b;
+  color: #2c2a26;
+  font-size: 1rem;
 }
 
-.guardian-info p {
-  margin: 0;
-  color: #64748b;
-  font-size: 0.875rem;
-}
-
-/* Empty State */
-.empty-state {
-  text-align: center;
-  padding: 3rem;
-  color: #64748b;
-}
-
-/* Footer */
-.shared-footer {
-  text-align: center;
-  padding: 2rem;
-  color: #64748b;
-}
-
-.shared-footer a {
-  color: var(--color-primary, #2d5a47);
-  text-decoration: none;
+.guardian-relationship {
+  margin: 0 0 0.5rem;
+  color: #2d5a47;
   font-weight: 600;
+  font-size: 0.85rem;
 }
 
-/* Responsive */
-@media (max-width: 640px) {
-  .shared-header {
-    padding: 2rem 1rem;
+.guardian-contact {
+  margin: 0.25rem 0 0;
+  color: #8a857a;
+  font-size: 0.85rem;
+}
+
+/* =============================================================================
+   FOOTER
+   ============================================================================= */
+.famli-footer {
+  background: #2c2a26;
+  padding: 2rem;
+  margin-top: auto;
+}
+
+.footer-content {
+  max-width: 1000px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.footer-logo {
+  width: 40px;
+  height: 40px;
+  margin-bottom: 0.75rem;
+  opacity: 0.9;
+}
+
+.footer-text {
+  color: rgba(255, 255, 255, 0.9);
+  margin: 0 0 0.5rem;
+}
+
+.footer-link {
+  color: #e07b39;
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.footer-link:hover {
+  text-decoration: underline;
+}
+
+.footer-privacy {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.8rem;
+  margin: 0;
+}
+
+/* =============================================================================
+   RESPONSIVE
+   ============================================================================= */
+@media (max-width: 768px) {
+  .famli-header {
+    padding: 1.25rem 1rem;
   }
   
-  .header-icon {
-    font-size: 3rem;
+  .header-container {
+    flex-direction: column;
+    text-align: center;
   }
   
-  .header-text h1 {
+  .header-brand {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .user-section {
+    padding: 0 1rem;
+    margin-top: -1rem;
+  }
+  
+  .user-card {
+    flex-direction: column;
+    text-align: center;
+    padding: 1.25rem;
+  }
+  
+  .content-main {
+    padding: 1.5rem 1rem;
+  }
+  
+  .items-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .guardians-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .pin-card,
+  .error-card {
+    padding: 1.75rem 1.25rem;
+    border-radius: 1rem;
+  }
+  
+  .pin-title,
+  .error-brand {
     font-size: 1.5rem;
   }
   
-  .items-section,
-  .guardians-section {
-    padding: 1rem;
+  .header-title h1 {
+    font-size: 1.25rem;
   }
 }
 </style>

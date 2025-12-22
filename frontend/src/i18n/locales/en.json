@@ -9,6 +9,7 @@
     "back": "Back",
     "next": "Next",
     "confirm": "Confirm",
+    "optional": "optional",
     "yes": "Yes",
     "no": "No",
     "or": "or",
@@ -191,7 +192,8 @@
     },
     "tabs": {
       "box": "My Famli Box",
-      "guide": "Famli Guide"
+      "guide": "Famli Guide",
+      "share": "Share"
     }
   },
   "box": {
@@ -235,6 +237,9 @@
       "phonePlaceholder": "+1 (555) 123-4567",
       "phoneLabel": "Phone (optional)",
       "relationshipLabel": "Relationship",
+      "pinLabel": "Protection PIN",
+      "pinPlaceholder": "Minimum 4 characters",
+      "pinHint": "The PIN will be required when this person accesses your link. Recommended for extra security.",
       "saveButton": "Add trusted person",
       "saving": "Saving..."
     },
@@ -264,7 +269,9 @@
       "irmao": "Brother/Sister",
       "amigo": "Friend",
       "outro": "Other"
-    }
+    },
+    "shareWithGuardians": "Share with guardians",
+    "shareHint": "Trusted people you've added will be able to see this information"
   },
   "itemTypes": {
     "info": "Important information",
@@ -274,6 +281,10 @@
     "routine": "Routine",
     "location": "Location",
     "guardian": "Trusted person"
+  },
+  "guardian": {
+    "copyLink": "Copy access link",
+    "linkCopied": "Link copied! Send it to this person so they can access the shared information."
   },
   "guide": {
     "title": "Famli Guide",
@@ -420,7 +431,24 @@
       "number": "One number",
       "uppercase": "One uppercase letter",
       "special": "One special character (!@#$%)"
-    }
+    },
+    "forgot_title": "Forgot password?",
+    "forgot_subtitle": "Enter your email and we'll send you a link to reset your password.",
+    "send_link": "Send link",
+    "back_to_login": "Back to login",
+    "reset_title": "Create new password",
+    "reset_subtitle": "Enter your new password below.",
+    "new_password": "New password",
+    "new_password_placeholder": "Minimum 8 characters",
+    "confirm_password": "Confirm password",
+    "confirm_password_placeholder": "Enter again",
+    "passwords_not_match": "Passwords don't match",
+    "reset_button": "Reset password",
+    "reset_success": "Password changed successfully!",
+    "login_now": "Login now",
+    "link_expired_title": "Link expired",
+    "link_expired_subtitle": "This reset link has expired or has already been used.",
+    "request_new_link": "Request new link"
   },
   "admin": {
     "title": "Admin Dashboard",
@@ -682,6 +710,9 @@
     "type_memorial": "Memorial",
     "categories": "Allowed categories",
     "categories_hint": "Leave empty to allow all categories",
+    "guardians": "Share with",
+    "guardians_hint": "Leave empty to create a generic link",
+    "no_guardians": "You haven't added any trusted people yet",
     "pin_optional": "Protection PIN (optional)",
     "pin_placeholder": "Enter a PIN",
     "pin_hint": "Add a PIN for extra security",
@@ -701,40 +732,27 @@
     "delete_error": "Error removing link.",
     "create_error": "Error creating link."
   },
-  "password": {
-    "forgot_title": "Forgot password?",
-    "forgot_subtitle": "Enter your email and we'll send you a link to reset your password.",
-    "send_link": "Send link",
-    "back_to_login": "Back to login",
-    "reset_title": "Create new password",
-    "reset_subtitle": "Enter your new password below.",
-    "new_password": "New password",
-    "new_password_placeholder": "Minimum 8 characters",
-    "confirm_password": "Confirm password",
-    "confirm_password_placeholder": "Enter again",
-    "passwords_not_match": "Passwords don't match",
-    "reset_button": "Reset password",
-    "reset_success": "Password changed successfully!",
-    "login_now": "Login now",
-    "link_expired_title": "Link expired",
-    "link_expired_subtitle": "This reset link has expired or has already been used.",
-    "request_new_link": "Request new link"
-  },
   "shared": {
     "protected_access": "Protected Access",
     "protected_message": "This content is protected by PIN.",
     "enter_pin": "Enter PIN",
     "access": "Access",
     "invalid_link": "Invalid Link",
+    "invalid_pin": "Incorrect PIN",
+    "error_loading": "Error loading content",
+    "error_verifying_pin": "Error verifying PIN",
     "go_to_famli": "Go to Famli",
     "info_of": "Information from {name}",
+    "viewing_as": "Viewing as {name}",
     "accessed_at": "Accessed on {date}",
     "no_items": "No shared items.",
     "trusted_people": "Trusted People",
     "tagline": "Organizing what matters, with care.",
     "emergency_access": "Emergency Access",
     "memorial": "Memorial",
-    "famli_box": "Famli Box"
+    "famli_box": "Famli Box",
+    "for": "For",
+    "privacy_note": "Private content shared securely"
   },
   "categories": {
     "saúde": "Health",

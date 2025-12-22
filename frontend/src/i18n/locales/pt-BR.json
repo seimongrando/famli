@@ -9,6 +9,7 @@
     "back": "Voltar",
     "next": "Próximo",
     "confirm": "Confirmar",
+    "optional": "opcional",
     "yes": "Sim",
     "no": "Não",
     "or": "ou",
@@ -191,7 +192,8 @@
     },
     "tabs": {
       "box": "Minha Caixa Famli",
-      "guide": "Guia Famli"
+      "guide": "Guia Famli",
+      "share": "Compartilhar"
     }
   },
   "box": {
@@ -235,6 +237,9 @@
       "phonePlaceholder": "(11) 99999-9999",
       "phoneLabel": "Telefone (opcional)",
       "relationshipLabel": "Relação",
+      "pinLabel": "PIN de proteção",
+      "pinPlaceholder": "Mínimo 4 caracteres",
+      "pinHint": "O PIN será solicitado quando esta pessoa acessar seu link de acesso. Recomendado para maior segurança.",
       "saveButton": "Adicionar pessoa de confiança",
       "saving": "Salvando..."
     },
@@ -264,7 +269,9 @@
       "irmao": "Irmão(ã)",
       "amigo": "Amigo(a)",
       "outro": "Outro"
-    }
+    },
+    "shareWithGuardians": "Compartilhar com guardiões",
+    "shareHint": "Pessoas de confiança que você cadastrou poderão ver esta informação"
   },
   "itemTypes": {
     "info": "Informação importante",
@@ -274,6 +281,10 @@
     "routine": "Rotina",
     "location": "Localização",
     "guardian": "Pessoa de confiança"
+  },
+  "guardian": {
+    "copyLink": "Copiar link de acesso",
+    "linkCopied": "Link copiado! Envie para esta pessoa para que ela possa acessar as informações compartilhadas."
   },
   "guide": {
     "title": "Guia Famli",
@@ -420,7 +431,24 @@
       "number": "Um número",
       "uppercase": "Uma letra maiúscula",
       "special": "Um caractere especial (!@#$%)"
-    }
+    },
+    "forgot_title": "Esqueceu a senha?",
+    "forgot_subtitle": "Digite seu email e enviaremos um link para redefinir sua senha.",
+    "send_link": "Enviar link",
+    "back_to_login": "Voltar ao login",
+    "reset_title": "Criar nova senha",
+    "reset_subtitle": "Digite sua nova senha abaixo.",
+    "new_password": "Nova senha",
+    "new_password_placeholder": "Mínimo 8 caracteres",
+    "confirm_password": "Confirmar senha",
+    "confirm_password_placeholder": "Digite novamente",
+    "passwords_not_match": "As senhas não coincidem",
+    "reset_button": "Redefinir senha",
+    "reset_success": "Senha alterada com sucesso!",
+    "login_now": "Fazer login agora",
+    "link_expired_title": "Link expirado",
+    "link_expired_subtitle": "Este link de redefinição expirou ou já foi usado.",
+    "request_new_link": "Solicitar novo link"
   },
   "admin": {
     "title": "Painel Administrativo",
@@ -682,6 +710,9 @@
     "type_memorial": "Memorial",
     "categories": "Categorias permitidas",
     "categories_hint": "Deixe vazio para permitir todas as categorias",
+    "guardians": "Compartilhar com",
+    "guardians_hint": "Deixe vazio para criar um link genérico",
+    "no_guardians": "Você ainda não adicionou pessoas de confiança",
     "pin_optional": "PIN de proteção (opcional)",
     "pin_placeholder": "Digite um PIN",
     "pin_hint": "Adicione um PIN para maior segurança",
@@ -701,40 +732,27 @@
     "delete_error": "Erro ao remover link.",
     "create_error": "Erro ao criar link."
   },
-  "password": {
-    "forgot_title": "Esqueceu a senha?",
-    "forgot_subtitle": "Digite seu email e enviaremos um link para redefinir sua senha.",
-    "send_link": "Enviar link",
-    "back_to_login": "Voltar ao login",
-    "reset_title": "Criar nova senha",
-    "reset_subtitle": "Digite sua nova senha abaixo.",
-    "new_password": "Nova senha",
-    "new_password_placeholder": "Mínimo 8 caracteres",
-    "confirm_password": "Confirmar senha",
-    "confirm_password_placeholder": "Digite novamente",
-    "passwords_not_match": "As senhas não coincidem",
-    "reset_button": "Redefinir senha",
-    "reset_success": "Senha alterada com sucesso!",
-    "login_now": "Fazer login agora",
-    "link_expired_title": "Link expirado",
-    "link_expired_subtitle": "Este link de redefinição expirou ou já foi usado.",
-    "request_new_link": "Solicitar novo link"
-  },
   "shared": {
     "protected_access": "Acesso Protegido",
     "protected_message": "Este conteúdo está protegido por PIN.",
     "enter_pin": "Digite o PIN",
     "access": "Acessar",
     "invalid_link": "Link Inválido",
+    "invalid_pin": "PIN incorreto",
+    "error_loading": "Erro ao carregar conteúdo",
+    "error_verifying_pin": "Erro ao verificar PIN",
     "go_to_famli": "Ir para o Famli",
     "info_of": "Informações de {name}",
+    "viewing_as": "Visualizando como {name}",
     "accessed_at": "Acessado em {date}",
     "no_items": "Nenhum item compartilhado.",
     "trusted_people": "Pessoas de Confiança",
     "tagline": "Organizando o que importa, com carinho.",
     "emergency_access": "Acesso de Emergência",
     "memorial": "Memorial",
-    "famli_box": "Caixa Famli"
+    "famli_box": "Caixa Famli",
+    "for": "Para",
+    "privacy_note": "Conteúdo privado compartilhado com segurança"
   },
   "categories": {
     "saúde": "Saúde",
