@@ -66,7 +66,7 @@ O Famli é uma aplicação monolítica moderna com separação clara entre front
 │  ┌─────────────────────────────────────────────────────────┐   │
 │  │                     STORAGE                              │   │
 │  │  ┌─────────────────────────────────────────────────────┐│   │
-│  │  │              MemoryStore (MVP)                       ││   │
+│  │  │              Storage (Postgres / Fallback)           ││   │
 │  │  │  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌───────────┐ ││   │
 │  │  │  │  Users  │ │  Items  │ │Guardians│ │  Settings │ ││   │
 │  │  │  └─────────┘ └─────────┘ └─────────┘ └───────────┘ ││   │
@@ -136,7 +136,7 @@ backend/
     │   └── handler.go         # Configurações do usuário
     ├── storage/
     │   ├── models.go          # Modelos de dados
-    │   └── memory.go          # Storage em memória (MVP)
+    │   └── memory.go          # Storage em memória (fallback)
     └── whatsapp/
         ├── handler.go         # Webhook endpoints
         ├── models.go          # Modelos de mensagem
@@ -177,7 +177,7 @@ backend/
 #### `security/`
 - **audit.go**: Logging de eventos de segurança
   - Detecção de anomalias
-  - Alertas automáticos
+  - Limiar para alertas internos
 
 - **crypto.go**: Criptografia
   - AES-256-GCM para dados sensíveis
@@ -427,7 +427,7 @@ frontend/src/
 │  AUDITORIA                                                      │
 │  - Logs estruturados (JSON)                                     │
 │  - Eventos de segurança                                         │
-│  - Alertas automáticos                                          │
+│  - Limiar para alertas internos                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -442,15 +442,15 @@ frontend/src/
 │          Servidor Único               │
 │  ┌─────────────────────────────────┐  │
 │  │  Go Backend + Vue Frontend      │  │
-│  │  + MemoryStore                  │  │
+│  │  + PostgreSQL (ou MemoryStore)  │  │
 │  └─────────────────────────────────┘  │
 └───────────────────────────────────────┘
 ```
 
 **Limitações:**
-- Dados perdidos ao reiniciar
-- Limitado a um servidor
-- Sem backup automático
+- Sem alta disponibilidade
+- Backup depende da configuração do provedor
+- MemoryStore perde dados ao reiniciar
 
 ### Futuro (Produção)
 
@@ -494,7 +494,7 @@ frontend/src/
 
 | Componente | Atual | Futuro |
 |------------|-------|--------|
-| Storage | MemoryStore | PostgreSQL |
+| Storage | PostgreSQL (ou MemoryStore) | PostgreSQL gerenciado |
 | Sessions | In-memory | Redis |
 | Arquivos | - | S3/GCS |
 | Deploy | Single server | Kubernetes/ECS |
@@ -503,5 +503,3 @@ frontend/src/
 ---
 
 *Última atualização: Dezembro 2024*
-
-

@@ -12,7 +12,7 @@
 # Para ver todos os comandos: make help
 # ==============================================================================
 
-.PHONY: help setup dev run build clean \
+.PHONY: help setup macos-bootstrap dev dev-db run run-memory run-db build clean \
         frontend-install frontend-dev frontend-build frontend-icons frontend-lint \
         backend-run backend-build backend-test backend-lint \
         mobile-setup mobile-android mobile-ios mobile-sync \
@@ -36,6 +36,9 @@ FRONTEND_DIR := frontend
 BACKEND_DIR := backend
 DOCS_DIR := docs
 
+# Banco local (PostgreSQL via docker-compose)
+LOCAL_DATABASE_URL := postgres://famli:famli_dev_password@localhost:5432/famli?sslmode=disable
+
 # Versão (para builds)
 VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
 BUILD_TIME := $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
@@ -52,8 +55,12 @@ help:
 	@echo ""
 	@echo "$(GREEN)🚀 Quick Start:$(NC)"
 	@echo "  make setup          - Configuração inicial completa"
+	@echo "  make macos-bootstrap - Instala dependências no macOS (Homebrew)"
 	@echo "  make dev            - Inicia ambiente de desenvolvimento"
-	@echo "  make run            - Build + servidor de produção local"
+	@echo "  make dev-db         - Desenvolvimento com PostgreSQL local"
+	@echo "  make run            - Build + servidor local (memória por padrão)"
+	@echo "  make run-memory     - Build + servidor local (força memória)"
+	@echo "  make run-db         - Build + servidor local (PostgreSQL)"
 	@echo ""
 	@echo "$(GREEN)🔨 Build:$(NC)"
 	@echo "  make build          - Build completo (frontend + backend)"
@@ -101,10 +108,34 @@ check-deps:
 	@echo ""
 
 # ==============================================================================
+# BOOTSTRAP (macOS)
+# ==============================================================================
+
+macos-bootstrap:
+	@bash -c 'set -e; \
+	if [ "$$(uname)" != "Darwin" ]; then \
+		echo "macos-bootstrap é apenas para macOS."; exit 0; \
+	fi; \
+	if ! command -v brew >/dev/null 2>&1; then \
+		echo "🍎 Instalando Homebrew..."; \
+		/bin/bash -c "$$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"; \
+		if [ -x /opt/homebrew/bin/brew ]; then eval "$$(/opt/homebrew/bin/brew shellenv)"; fi; \
+		if [ -x /usr/local/bin/brew ]; then eval "$$(/usr/local/bin/brew shellenv)"; fi; \
+	fi; \
+	echo "🍺 Atualizando Homebrew..."; \
+	brew update --quiet; \
+	for pkg in node go git; do \
+		if ! brew list --formula $$pkg >/dev/null 2>&1; then \
+			echo "📦 Instalando $$pkg..."; \
+			brew install $$pkg; \
+		fi; \
+	done'
+
+# ==============================================================================
 # SETUP INICIAL
 # ==============================================================================
 
-setup: check-deps
+setup: macos-bootstrap check-deps
 	@echo ""
 	@echo "$(BLUE)╔══════════════════════════════════════════════════════════════════╗$(NC)"
 	@echo "$(BLUE)║                 🚀 Configurando Projeto Famli                     ║$(NC)"
@@ -156,6 +187,23 @@ dev:
 	@cd $(BACKEND_DIR) && go run main.go &
 	@cd $(FRONTEND_DIR) && npm run dev
 
+dev-db:
+	@echo ""
+	@echo "$(BLUE)╔══════════════════════════════════════════════════════════════════╗$(NC)"
+	@echo "$(BLUE)║            🔧 Modo Desenvolvimento (PostgreSQL)                   ║$(NC)"
+	@echo "$(BLUE)╚══════════════════════════════════════════════════════════════════╝$(NC)"
+	@echo ""
+	@echo "$(YELLOW)Certifique-se de ter o PostgreSQL em execução:$(NC)"
+	@echo "  $(BLUE)make db-up$(NC)"
+	@echo ""
+	@echo "  Backend:  $(BLUE)http://localhost:8080$(NC)  (API)"
+	@echo "  Frontend: $(BLUE)http://localhost:5173$(NC)  (Hot Reload)"
+	@echo ""
+	@echo "$(YELLOW)Pressione Ctrl+C para parar.$(NC)"
+	@echo ""
+	@cd $(BACKEND_DIR) && DATABASE_URL=$(LOCAL_DATABASE_URL) go run main.go &
+	@cd $(FRONTEND_DIR) && npm run dev
+
 # ==============================================================================
 # PRODUÇÃO
 # ==============================================================================
@@ -171,6 +219,34 @@ run: frontend-build
 	@echo "$(YELLOW)Pressione Ctrl+C para parar.$(NC)"
 	@echo ""
 	@cd $(BACKEND_DIR) && go run main.go
+
+run-memory: frontend-build
+	@echo ""
+	@echo "$(BLUE)╔══════════════════════════════════════════════════════════════════╗$(NC)"
+	@echo "$(BLUE)║            🏠 Servidor Famli (Memória)                            ║$(NC)"
+	@echo "$(BLUE)╚══════════════════════════════════════════════════════════════════╝$(NC)"
+	@echo ""
+	@echo "$(GREEN)Acesse:$(NC) $(BLUE)http://localhost:8080$(NC)"
+	@echo "$(YELLOW)Storage: memória (dados serão perdidos ao reiniciar)$(NC)"
+	@echo ""
+	@echo "$(YELLOW)Pressione Ctrl+C para parar.$(NC)"
+	@echo ""
+	@cd $(BACKEND_DIR) && DATABASE_URL= go run main.go
+
+run-db: frontend-build
+	@echo ""
+	@echo "$(BLUE)╔══════════════════════════════════════════════════════════════════╗$(NC)"
+	@echo "$(BLUE)║         🏠 Servidor Famli (PostgreSQL)                            ║$(NC)"
+	@echo "$(BLUE)╚══════════════════════════════════════════════════════════════════╝$(NC)"
+	@echo ""
+	@echo "$(YELLOW)Certifique-se de ter o PostgreSQL em execução:$(NC)"
+	@echo "  $(BLUE)make db-up$(NC)"
+	@echo ""
+	@echo "$(GREEN)Acesse:$(NC) $(BLUE)http://localhost:8080$(NC)"
+	@echo ""
+	@echo "$(YELLOW)Pressione Ctrl+C para parar.$(NC)"
+	@echo ""
+	@cd $(BACKEND_DIR) && DATABASE_URL=$(LOCAL_DATABASE_URL) go run main.go
 
 build: frontend-build backend-build
 	@echo ""

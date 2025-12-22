@@ -345,11 +345,8 @@ func (h *Handler) getSharedContent(link *storage.ShareLink) (*storage.SharedView
 		return nil, storage.ErrNotFound
 	}
 
-	// Buscar itens
-	allItems, err := h.store.GetBoxItems(link.UserID)
-	if err != nil {
-		return nil, err
-	}
+	// Buscar apenas itens compartilhados
+	allItems := h.store.ListSharedItems(link.UserID)
 
 	// Filtrar por categoria se necessário
 	var items []*storage.BoxItem
@@ -375,7 +372,7 @@ func (h *Handler) getSharedContent(link *storage.ShareLink) (*storage.SharedView
 		for _, g := range allGuardians {
 			for _, id := range link.GuardianIDs {
 				if g.ID == id {
-					filteredGuardians = append(filteredGuardians, g)
+					filteredGuardians = append(filteredGuardians, sanitizeGuardianForShare(g))
 					break
 				}
 			}
@@ -391,7 +388,7 @@ func (h *Handler) getSharedContent(link *storage.ShareLink) (*storage.SharedView
 	// Adicionar todos guardiões em modo memorial
 	if link.Type == storage.ShareLinkMemorial {
 		if len(link.GuardianIDs) == 0 {
-			view.Guardians = allGuardians
+			view.Guardians = sanitizeGuardiansForShare(allGuardians)
 		}
 		view.UserEmail = user.Email
 		view.Message = "Este é o memorial de " + user.Name + ". As informações aqui foram deixadas para ajudar você."
@@ -403,6 +400,28 @@ func (h *Handler) getSharedContent(link *storage.ShareLink) (*storage.SharedView
 	}
 
 	return view, nil
+}
+
+func sanitizeGuardiansForShare(guardians []*storage.Guardian) []*storage.Guardian {
+	if len(guardians) == 0 {
+		return nil
+	}
+	sanitized := make([]*storage.Guardian, 0, len(guardians))
+	for _, g := range guardians {
+		sanitized = append(sanitized, sanitizeGuardianForShare(g))
+	}
+	return sanitized
+}
+
+func sanitizeGuardianForShare(g *storage.Guardian) *storage.Guardian {
+	if g == nil {
+		return nil
+	}
+	return &storage.Guardian{
+		ID:           g.ID,
+		Name:         g.Name,
+		Relationship: g.Relationship,
+	}
 }
 
 // recordAccess registra um acesso ao link

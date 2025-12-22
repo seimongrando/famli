@@ -42,11 +42,6 @@ function goBack() {
       <section>
         <h2>2. {{ t('legal.terms.service.title') }}</h2>
         <p>{{ t('legal.terms.service.text') }}</p>
-        <ul>
-          <li>{{ t('legal.terms.service.item1') }}</li>
-          <li>{{ t('legal.terms.service.item2') }}</li>
-          <li>{{ t('legal.terms.service.item3') }}</li>
-        </ul>
       </section>
 
       <section>
@@ -87,7 +82,7 @@ function goBack() {
       <section>
         <h2>9. {{ t('legal.terms.contact.title') }}</h2>
         <p>{{ t('legal.terms.contact.text') }}</p>
-        <p><strong>Email:</strong> contato@famli.net</p>
+        <p><strong>Email:</strong> famli@famli.me</p>
       </section>
     </main>
   </div>

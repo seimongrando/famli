@@ -41,7 +41,7 @@
       "subtitle": "Transmita o que importa para as pessoas certas, quando for a hora. Sem pressa, sem complicação, com total controle sobre quem vê o quê.",
       "cta": "Começar agora — é grátis",
       "ctaSecondary": "Já tenho conta",
-      "trustBadge": "🔒 Seus dados ficam seguros e privados"
+      "trustBadge": "🔒 Seus dados são tratados com cuidado e segurança"
     },
     "differentiator": {
       "title": "Diferente de tudo que existe",
@@ -107,27 +107,27 @@
       "subtitle": "Sabemos que guardar informações importantes exige confiança. Veja como protegemos você:",
       "encryption": {
         "title": "Criptografia de ponta",
-        "description": "Seus dados são criptografados com AES-256, o mesmo padrão usado por bancos e governos."
+        "description": "Seus dados são criptografados com AES-256, um padrão amplamente usado."
       },
       "control": {
         "title": "Você no controle total",
         "description": "Você decide quem vê o quê. Nada é compartilhado sem sua permissão explícita."
       },
       "privacy": {
-        "title": "Privacidade garantida",
-        "description": "Não vendemos, não compartilhamos, não usamos seus dados para nada além do serviço."
+        "title": "Privacidade em primeiro lugar",
+        "description": "Não vendemos seus dados e não os usamos para marketing. O compartilhamento só acontece quando você decide."
       },
       "delete": {
         "title": "Apague quando quiser",
         "description": "Seus dados são seus. Você pode exportar ou apagar tudo a qualquer momento."
       },
       "lgpd": {
-        "title": "Conformidade com LGPD",
-        "description": "Seguimos a Lei Geral de Proteção de Dados do Brasil e as melhores práticas internacionais."
+        "title": "Privacidade alinhada à LGPD",
+        "description": "Buscamos seguir os princípios da LGPD e boas práticas de proteção de dados."
       },
       "opensource": {
         "title": "Transparência",
-        "description": "Código aberto para auditoria. Você pode verificar como tratamos seus dados."
+        "description": "Código aberto para transparência. Isso facilita revisão independente, mas não é uma garantia de segurança."
       }
     },
     "cta": {
@@ -158,7 +158,7 @@
     "noAccount": "Não tem conta?",
     "hasAccount": "Já tem conta?",
     "createNow": "Criar agora",
-    "securityNote": "Seus dados são protegidos e só você decide quem pode ver.",
+    "securityNote": "Tratamos seus dados com cuidado e você decide quem pode ver.",
     "orContinueWith": "ou continue com",
     "continueWithGoogle": "Continuar com Google",
     "continueWithApple": "Continuar com Apple",
@@ -229,7 +229,7 @@
       "saving": "Salvando..."
     },
     "guardian": {
-      "hint": "Pessoas de confiança são familiares ou amigos que você autoriza a serem avisados se precisar de ajuda. {bold} ao que você guarda aqui.",
+      "hint": "Pessoas de confiança são familiares ou amigos que você quer ter por perto e com quem pode compartilhar informações quando quiser.",
       "hintBold": "Elas não têm acesso automático",
       "nameLabel": "Nome",
       "namePlaceholder": "Ex: Ana, Carlos, João...",
@@ -271,7 +271,7 @@
       "outro": "Outro"
     },
     "shareWithGuardians": "Compartilhar com guardiões",
-    "shareHint": "Pessoas de confiança que você cadastrou poderão ver esta informação"
+    "shareHint": "Pessoas de confiança que você cadastrou poderão ver esta informação se você compartilhar o link"
   },
   "itemTypes": {
     "info": "Informação importante",
@@ -309,7 +309,7 @@
       },
       "people": {
         "title": "Pessoas importantes",
-        "description": "Quem são as pessoas que devem ser avisadas se você precisar de ajuda? Registre aqui seus contatos de confiança."
+        "description": "Quem você quer ter por perto quando precisar? Registre aqui seus contatos de confiança."
       },
       "locations": {
         "title": "Onde estão as coisas importantes",
@@ -356,9 +356,9 @@
     "subtitle": "Seus dados são seus. Aqui explicamos como cuidamos deles.",
     "whatWeDo": {
       "title": "O que fazemos com seus dados",
-      "item1": "Usamos suas informações apenas para organizar sua Caixa Famli",
-      "item2": "Seus dados ficam armazenados de forma segura",
-      "item3": "Só você vê o que está na sua Caixa Famli"
+      "item1": "Usamos suas informações para operar o serviço e melhorar sua experiência no Famli",
+      "item2": "Seus dados ficam armazenados com medidas de segurança",
+      "item3": "Por padrão, só você vê o que está na sua Caixa Famli. Você pode compartilhar quando quiser"
     },
     "whatWeDont": {
       "title": "O que NÃO fazemos",
@@ -368,16 +368,16 @@
     },
     "guardians": {
       "title": "Sobre pessoas de confiança",
-      "text1": "Adicionar alguém como pessoa de confiança {bold} dá acesso automático às suas informações. No MVP, elas servem para você registrar quem são as pessoas que poderão ser avisadas se um dia precisar de ajuda.",
+      "text1": "Adicionar alguém como pessoa de confiança {bold} dá acesso automático às suas informações. No MVP, elas servem para você registrar quem são as pessoas com quem pode compartilhar informações via links quando quiser.",
       "text1Bold": "não",
       "text2": "Em versões futuras, você poderá escolher com mais detalhe: quais informações compartilhar, com quem e em quais situações."
     },
     "rights": {
       "title": "Seus direitos",
       "item1": "Você pode ver tudo o que guardou a qualquer momento",
-      "item2": "Você pode editar ou excluir qualquer informação",
+      "item2": "Você pode gerenciar suas informações e excluir o que quiser",
       "item3": "Você pode apagar sua conta e todos os dados quando quiser",
-      "item4": "Respeitamos a LGPD (Lei Geral de Proteção de Dados)"
+      "item4": "Nos orientamos pela LGPD (Lei Geral de Proteção de Dados)"
     },
     "understood": "Entendi"
   },
@@ -400,7 +400,7 @@
     "emailExists": "Este e-mail já está cadastrado.",
     "requiredField": "Este campo é obrigatório.",
     "invalidEmail": "E-mail inválido.",
-    "passwordTooShort": "A senha deve ter pelo menos 6 caracteres."
+    "passwordTooShort": "A senha deve ter pelo menos 8 caracteres."
   },
   "confirmations": {
     "deleteItem": "Tem certeza que deseja excluir este item?",
@@ -549,12 +549,12 @@
     "goToAdmin": "Ir para Administração",
     "goToBox": "Ir para Minha Caixa",
     "logout": "Sair da Conta",
-    "securityNote": "Seus dados estão seguros. Você pode acessar esta página a qualquer momento para verificar suas informações de conta.",
+    "securityNote": "Cuidamos dos seus dados. Você pode acessar esta página a qualquer momento para verificar suas informações de conta.",
     "exportError": "Erro ao exportar dados. Tente novamente.",
     "deleteError": "Erro ao excluir conta. Verifique sua senha e tente novamente.",
     "lgpd": {
-      "title": "Seus Direitos (LGPD)",
-      "description": "Conforme a Lei Geral de Proteção de Dados, você tem direito à portabilidade e exclusão dos seus dados. Use as opções abaixo para exercer esses direitos.",
+      "title": "Seus Direitos (Proteção de Dados)",
+      "description": "De acordo com leis de proteção de dados, você tem direito à portabilidade e exclusão dos seus dados. Use as opções abaixo para exercer esses direitos.",
       "exportTitle": "Exportar Meus Dados",
       "exportDescription": "Baixe uma cópia de todos os seus dados armazenados no Famli em formato JSON.",
       "exportButton": "Baixar Dados",
@@ -580,25 +580,22 @@
     "terms": {
       "title": "Termos de Uso",
       "link": "Termos de Uso",
-      "updatedDate": "17 de dezembro de 2024",
+      "updatedDate": "22 de dezembro de 2025",
       "acceptance": {
         "title": "Aceitação dos Termos",
-        "text": "Ao acessar e usar o Famli, você concorda com estes Termos de Uso. Se você não concordar com qualquer parte destes termos, não use nosso serviço."
+        "text": "Ao acessar e usar o Famli, você concorda com estes Termos de Uso. Se você não concordar com qualquer parte destes termos, não utilize o serviço."
       },
       "service": {
         "title": "Descrição do Serviço",
-        "text": "O Famli é uma plataforma para organizar informações importantes, orientações e memórias pessoais. Nossos serviços incluem:",
-        "item1": "Armazenamento seguro de informações pessoais importantes",
-        "item2": "Gerenciamento de pessoas de confiança",
-        "item3": "Espaço para memórias e mensagens pessoais"
+        "text": "O Famli é uma plataforma digital para organizar informações importantes, orientações pessoais e memórias, permitindo que você escolha quem pode acessá-las. O Famli não é um serviço jurídico, médico, financeiro ou de aconselhamento profissional, nem substitui profissionais dessas áreas."
       },
       "account": {
         "title": "Sua Conta",
-        "text": "Você é responsável por manter a segurança da sua conta e senha. Notifique-nos imediatamente se suspeitar de qualquer uso não autorizado. Não compartilhe suas credenciais com terceiros."
+        "text": "Você é responsável por manter a confidencialidade da sua conta e senha. Notifique-nos imediatamente se suspeitar de qualquer uso não autorizado. Não compartilhe suas credenciais com terceiros."
       },
       "content": {
         "title": "Seu Conteúdo",
-        "text": "Você mantém todos os direitos sobre o conteúdo que adiciona ao Famli. Ao usar nosso serviço, você nos concede uma licença limitada para armazenar e processar seu conteúdo apenas para fornecer o serviço."
+        "text": "Você mantém todos os direitos sobre o conteúdo que adiciona ao Famli. Ao utilizar o serviço, você nos concede uma licença limitada, não exclusiva e gratuita, apenas para armazenar, processar e exibir seu conteúdo exclusivamente com a finalidade de fornecer o serviço. O Famli não utiliza, vende ou compartilha seu conteúdo para fins comerciais."
       },
       "prohibited": {
         "title": "Uso Proibido",
@@ -609,25 +606,25 @@
       },
       "termination": {
         "title": "Encerramento",
-        "text": "Podemos encerrar ou suspender sua conta se você violar estes termos. Você pode encerrar sua conta a qualquer momento através das configurações."
+        "text": "Podemos encerrar ou suspender sua conta se você violar estes termos. Você pode encerrar sua conta a qualquer momento através das configurações do serviço."
       },
       "liability": {
         "title": "Limitação de Responsabilidade",
-        "text": "O Famli é fornecido 'como está'. Não garantimos disponibilidade ininterrupta. Em nenhuma circunstância seremos responsáveis por danos indiretos ou consequenciais."
+        "text": "O Famli é fornecido “como está”. Não garantimos disponibilidade ininterrupta ou ausência de erros. O usuário é o único responsável pelo conteúdo armazenado e pelas decisões tomadas com base nas informações registradas na plataforma. Em nenhuma circunstância o Famli será responsável por danos indiretos, incidentais ou consequenciais decorrentes do uso do serviço."
       },
       "changes": {
         "title": "Alterações nos Termos",
-        "text": "Podemos atualizar estes termos periodicamente. Notificaremos você sobre mudanças significativas por e-mail ou através do serviço."
+        "text": "Podemos atualizar estes Termos de Uso periodicamente. Mudanças significativas serão comunicadas por e-mail ou através do próprio serviço."
       },
       "contact": {
         "title": "Contato",
-        "text": "Para dúvidas sobre estes Termos de Uso, entre em contato conosco:"
+        "text": "Em caso de dúvidas sobre estes Termos de Uso, entre em contato:"
       }
     },
     "privacy": {
       "title": "Política de Privacidade",
       "link": "Política de Privacidade",
-      "updatedDate": "17 de dezembro de 2024",
+      "updatedDate": "22 de dezembro de 2025",
       "intro": {
         "title": "Introdução",
         "text": "Sua privacidade é fundamental para nós. Esta política explica como coletamos, usamos e protegemos suas informações pessoais no Famli."
@@ -636,23 +633,23 @@
         "title": "Dados que Coletamos",
         "text": "Coletamos as seguintes informações:",
         "account": "Dados de conta",
-        "accountDesc": "E-mail, nome e senha criptografada para autenticação.",
+        "accountDesc": "E-mail, nome e hash da senha para autenticação.",
         "content": "Conteúdo do usuário",
         "contentDesc": "Informações, memórias e pessoas de confiança que você adiciona.",
         "usage": "Dados de uso",
-        "usageDesc": "Informações básicas sobre como você usa o serviço."
+        "usageDesc": "Eventos de uso e páginas acessadas para entender como o serviço é utilizado."
       },
       "dataUse": {
         "title": "Como Usamos seus Dados",
         "text": "Usamos suas informações para:",
         "item1": "Fornecer e manter o serviço Famli",
         "item2": "Proteger sua conta e dados",
-        "item3": "Melhorar o serviço com base em feedback anônimo"
+        "item3": "Melhorar o serviço com base em métricas de uso e feedback enviado"
       },
       "security": {
         "title": "Segurança dos Dados",
         "text": "Implementamos medidas de segurança robustas para proteger seus dados:",
-        "item1": "Criptografia de ponta a ponta para dados sensíveis",
+        "item1": "Criptografia AES-256-GCM para dados sensíveis armazenados",
         "item2": "Senhas armazenadas com hash bcrypt",
         "item3": "Comunicação protegida por HTTPS"
       },
@@ -664,7 +661,7 @@
         "title": "Seus Direitos",
         "text": "Você tem os seguintes direitos sobre seus dados:",
         "item1": "Acessar todas as informações que guardamos sobre você",
-        "item2": "Corrigir ou atualizar seus dados a qualquer momento",
+        "item2": "Solicitar correção ou atualização dos seus dados",
         "item3": "Solicitar a exclusão completa da sua conta e dados",
         "item4": "Exportar seus dados em formato portátil"
       },
@@ -698,7 +695,7 @@
   },
   "share": {
     "title": "Links de Compartilhamento",
-    "description": "Crie links para que pessoas de confiança possam acessar suas informações quando necessário.",
+    "description": "Crie links para compartilhar suas informações com pessoas de confiança quando quiser.",
     "create": "Criar Link",
     "create_link": "Criar Link de Compartilhamento",
     "empty": "Você ainda não criou nenhum link de compartilhamento.",
@@ -752,7 +749,7 @@
     "memorial": "Memorial",
     "famli_box": "Caixa Famli",
     "for": "Para",
-    "privacy_note": "Conteúdo privado compartilhado com segurança"
+    "privacy_note": "Conteúdo privado compartilhado por você"
   },
   "categories": {
     "saúde": "Saúde",
@@ -769,4 +766,3 @@
     "other": "Outros"
   }
 }
-

@@ -84,9 +84,9 @@ var Translations = map[string]Messages{
 		// ASSISTANT - Assistente
 		// =======================================================================
 		"assistant.empty_input": "Envie uma mensagem.",
-		"assistant.start":       "Que bom que você está aqui! Sugiro começar pelo mais simples: registre o contato de uma pessoa de confiança. Pode ser um filho, neto ou amigo próximo. Assim, se precisar, alguém saberá que você está cuidando de tudo.",
+		"assistant.start":       "Que bom que você está aqui! Sugiro começar pelo mais simples: registre o contato de uma pessoa de confiança. Pode ser um filho, neto ou amigo próximo. Assim, se precisar, alguém saberá que você está cuidando do que importa.",
 		"assistant.passwords":   "Aqui no Famli você não guarda as senhas em si, mas explica onde elas estão. Por exemplo: 'Minhas senhas ficam no aplicativo 1Password, no celular. O e-mail de recuperação é fulano@email.com'. Assim fica seguro e alguém de confiança consegue ajudar se precisar.",
-		"assistant.guardians":   "Pessoas de confiança são familiares ou amigos que você autoriza a serem avisados se um dia precisar de ajuda. No momento, elas não têm acesso automático às suas informações — só você decide o que compartilhar.",
+		"assistant.guardians":   "Pessoas de confiança são familiares ou amigos com quem você pode compartilhar informações quando quiser. No momento, elas não têm acesso automático às suas informações — só você decide o que compartilhar.",
 		"assistant.documents":   "Você pode registrar informações sobre documentos, planos de saúde e seguros. Basta criar uma nova informação e explicar onde estão os documentos físicos ou digitais, e quem contatar em caso de necessidade.",
 		"assistant.memories":    "As memórias são um espaço especial para deixar mensagens, histórias e recados para quem você ama. Pode escrever para uma pessoa específica ou deixar algo geral. É o coração do Famli.",
 		"assistant.security":    "Seus dados são seus. Nada é compartilhado automaticamente e você pode apagar tudo quando quiser. Não vendemos nem usamos suas informações para marketing. Adicionar alguém como pessoa de confiança não dá acesso automático às suas informações.",
@@ -230,9 +230,9 @@ var Translations = map[string]Messages{
 		// ASSISTANT - Assistant
 		// =======================================================================
 		"assistant.empty_input": "Send a message.",
-		"assistant.start":       "Great that you're here! I suggest starting with something simple: register a trusted person's contact. It could be a son, grandchild, or close friend. That way, if needed, someone will know you're taking care of everything.",
+		"assistant.start":       "Great that you're here! I suggest starting with something simple: register a trusted person's contact. It could be a son, grandchild, or close friend. That way, if needed, someone will know you're taking care of what matters.",
 		"assistant.passwords":   "Here at Famli you don't store the passwords themselves, but explain where they are. For example: 'My passwords are in the 1Password app, on my phone. The recovery email is someone@email.com'. This way it's secure and a trusted person can help if needed.",
-		"assistant.guardians":   "Trusted people are family members or friends you authorize to be notified if you ever need help. At the moment, they don't have automatic access to your information — only you decide what to share.",
+		"assistant.guardians":   "Trusted people are family members or friends you can share information with when you want. At the moment, they don't have automatic access to your information — only you decide what to share.",
 		"assistant.documents":   "You can register information about documents, health plans, and insurance. Just create a new information and explain where the physical or digital documents are, and who to contact if needed.",
 		"assistant.memories":    "Memories are a special space to leave messages, stories, and notes for those you love. You can write to a specific person or leave something general. It's the heart of Famli.",
 		"assistant.security":    "Your data is yours. Nothing is shared automatically and you can delete everything whenever you want. We don't sell or use your information for marketing. Adding someone as a trusted person doesn't give automatic access to your information.",

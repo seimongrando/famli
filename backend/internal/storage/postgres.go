@@ -87,8 +87,15 @@ func NewPostgresStore(databaseURL string) (*PostgresStore, error) {
 // migrate executa as migrações do banco
 func (s *PostgresStore) migrate() error {
 	migrations := []string{
-		// Extensão UUID
-		`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`,
+		// Extensão UUID (ignora erro se não houver privilégio)
+		`DO $$
+		BEGIN
+			CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+		EXCEPTION
+			WHEN insufficient_privilege THEN
+				RAISE NOTICE 'uuid-ossp extension not available';
+		END
+		$$;`,
 
 		// Tabela users
 		`CREATE TABLE IF NOT EXISTS users (
@@ -189,9 +196,8 @@ func (s *PostgresStore) migrate() error {
 		`ALTER TABLE guardians ADD COLUMN IF NOT EXISTS access_pin VARCHAR(255)`,
 		`ALTER TABLE guardians ADD COLUMN IF NOT EXISTS access_type VARCHAR(20) DEFAULT 'normal'`,
 		`CREATE INDEX IF NOT EXISTS idx_guardians_token ON guardians(access_token) WHERE access_token IS NOT NULL`,
-		// Gerar tokens para guardiões existentes que não têm
-		`UPDATE guardians SET access_token = CONCAT('gat_', id, '_', EXTRACT(EPOCH FROM NOW())::BIGINT) WHERE access_token IS NULL OR access_token = ''`,
 		`CREATE INDEX IF NOT EXISTS idx_box_items_shared ON box_items(user_id, is_shared) WHERE is_shared = TRUE`,
+		`CREATE INDEX IF NOT EXISTS idx_box_items_user_updated ON box_items(user_id, updated_at DESC)`,
 
 		// Índices de guide_progress (para verificar progresso rapidamente)
 		`CREATE INDEX IF NOT EXISTS idx_guide_progress_user ON guide_progress(user_id)`,
@@ -951,14 +957,7 @@ func (s *PostgresStore) ListGuardians(userID string) []*Guardian {
 		g.HasPIN = accessPIN.String != ""
 		g.AccessType = GuardianAccessType(accessType.String)
 
-		// Gerar token para guardiões antigos que não têm
-		if g.AccessToken == "" {
-			g.AccessToken = generateAccessToken()
-			// Atualizar no banco em background
-			go func(id, token string) {
-				s.db.Exec(`UPDATE guardians SET access_token = $1 WHERE id = $2`, token, id)
-			}(g.ID, g.AccessToken)
-		}
+		s.ensureGuardianAccessToken(&g)
 
 		guardians = append(guardians, &g)
 	}
@@ -1015,6 +1014,7 @@ func (s *PostgresStore) ListGuardiansPaginated(userID string, params *Pagination
 		g.Notes = s.decryptSensitive(notes.String)
 		g.AccessToken = accessToken.String
 		g.AccessType = GuardianAccessType(accessType.String)
+		s.ensureGuardianAccessToken(&g)
 		guardians = append(guardians, &g)
 	}
 
@@ -1033,6 +1033,24 @@ func (s *PostgresStore) ListGuardiansPaginated(userID string, params *Pagination
 		NextCursor: nextCursor,
 		HasMore:    hasMore,
 	}, nil
+}
+
+func (s *PostgresStore) ensureGuardianAccessToken(g *Guardian) {
+	if g == nil {
+		return
+	}
+	if g.AccessToken == "" || isLegacyAccessToken(g.AccessToken) {
+		newToken := generateAccessToken()
+		g.AccessToken = newToken
+		// Atualizar no banco em background
+		go func(id, token string) {
+			s.db.Exec(`UPDATE guardians SET access_token = $1 WHERE id = $2`, token, id)
+		}(g.ID, newToken)
+	}
+}
+
+func isLegacyAccessToken(token string) bool {
+	return strings.HasPrefix(token, "gat_")
 }
 
 // CountGuardians conta o total de guardiões de um usuário

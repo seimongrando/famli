@@ -4,6 +4,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import App from './App.vue'
 import i18n from './i18n'
 import './styles/main.css'
+import { registerSW } from 'virtual:pwa-register'
 
 // Pages
 import LandingPage from './pages/LandingPage.vue'
@@ -97,6 +98,15 @@ const app = createApp(App)
 app.use(pinia)
 app.use(router)
 app.use(i18n)
+
+if (import.meta.env.PROD) {
+  const updateSW = registerSW({
+    immediate: true,
+    onNeedRefresh() {
+      updateSW(true)
+    }
+  })
+}
 
 // Importar store após configurar o Pinia
 import { useAuthStore } from './stores/auth'

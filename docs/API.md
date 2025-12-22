@@ -502,7 +502,8 @@ Verificar status da integração WhatsApp.
 ```json
 {
   "enabled": true,
-  "phone_number": "whatsapp:+14155238886"
+  "phone_number": "whatsapp:+1415****886",
+  "webhook_url": "https://famli.net/api/whatsapp/webhook"
 }
 ```
 
@@ -595,5 +596,4 @@ X-RateLimit-Reset: 1642255200
 ---
 
 *Última atualização: Dezembro 2024*
-
 

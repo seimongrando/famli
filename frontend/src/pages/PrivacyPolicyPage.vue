@@ -98,7 +98,7 @@ function goBack() {
       <section>
         <h2>9. {{ t('legal.privacy.contact.title') }}</h2>
         <p>{{ t('legal.privacy.contact.text') }}</p>
-        <p><strong>Email:</strong> privacidade@famli.net</p>
+        <p><strong>Email:</strong> famli@famli.me</p>
       </section>
     </main>
   </div>

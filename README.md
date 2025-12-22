@@ -118,7 +118,7 @@ Um feed unificado com tudo que você quer guardar:
 Cards guiados para organizar aos poucos, sem pressa.
 
 ### 📱 WhatsApp
-Adicione à sua Caixa enviando mensagens pelo WhatsApp.
+Integração opcional para adicionar itens via WhatsApp (quando habilitada).
 
 ### 👥 Pessoas de Confiança
 Registre quem pode ajudar quando precisar.
@@ -175,7 +175,7 @@ make frontend-icons # Gera ícones
 
 ## 🔐 Segurança
 
-O Famli segue as melhores práticas do **OWASP Top 10**:
+O Famli adota práticas de segurança inspiradas no **OWASP Top 10**:
 
 | Proteção | Status |
 |----------|--------|
@@ -196,7 +196,7 @@ Veja [SECURITY.md](SECURITY.md) para detalhes completos.
 - [x] Internacionalização (PT-BR, EN)
 - [x] PWA e suporte mobile
 - [x] Integração WhatsApp
-- [x] Segurança OWASP
+- [x] Práticas de segurança baseadas em OWASP
 - [ ] Validação com usuários reais
 - [ ] Modo guardião (visualização)
 - [ ] Co-autor de confiança
