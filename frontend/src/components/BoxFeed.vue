@@ -27,6 +27,7 @@ const filter = ref('all')
 const showDeleteModal = ref(false)
 const showEditModal = ref(false)
 const selectedItem = ref(null)
+const shareNotice = ref(null)
 
 // Referência para o container do feed
 const feedContainer = ref(null)
@@ -170,11 +171,24 @@ function onEditSaved() {
   selectedItem.value = null
 }
 
+function showShareNotice(type, title, message, tips = []) {
+  shareNotice.value = { type, title, message, tips }
+}
+
+function closeShareNotice() {
+  shareNotice.value = null
+}
+
 // Copiar link de acesso do guardião
 async function copyGuardianLink(guardian) {
   if (!guardian.access_token) return
   if (!guardian.has_pin) {
-    alert(t('guardian.pinRequired'))
+    showShareNotice(
+      'warning',
+      t('guardian.share.pinRequiredTitle'),
+      t('guardian.share.pinRequiredBody'),
+      [t('guardian.share.pinRequiredTip')]
+    )
     return
   }
   
@@ -183,10 +197,19 @@ async function copyGuardianLink(guardian) {
   
   try {
     await navigator.clipboard.writeText(link)
-    // Feedback visual simples
-    alert(t('guardian.linkCopied'))
+    showShareNotice(
+      'info',
+      t('guardian.share.linkCopiedTitle'),
+      t('guardian.share.linkCopiedBody'),
+      [
+        t('guardian.share.tipSeparatePin'),
+        t('guardian.share.tipVerifyRecipient'),
+        t('guardian.share.tipRevoke')
+      ]
+    )
   } catch (err) {
     console.error('Erro ao copiar link:', err)
+    showShareNotice('warning', t('guardian.share.copyErrorTitle'), t('guardian.share.copyErrorBody'))
   }
 }
 </script>
@@ -319,6 +342,18 @@ async function copyGuardianLink(guardian) {
       :item="selectedItem"
       @save="onEditSaved"
       @close="closeEditModal"
+    />
+    
+    <ConfirmModal
+      :show="!!shareNotice"
+      :title="shareNotice?.title || ''"
+      :message="shareNotice?.message || ''"
+      :details="shareNotice?.tips || []"
+      :confirm-text="t('common.close')"
+      :show-cancel="false"
+      :type="shareNotice?.type || 'info'"
+      @confirm="closeShareNotice"
+      @cancel="closeShareNotice"
     />
   </div>
 </template>
@@ -564,4 +599,5 @@ async function copyGuardianLink(guardian) {
   font-size: var(--font-size-sm);
   font-style: italic;
 }
+
 </style>

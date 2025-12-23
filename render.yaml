@@ -61,6 +61,8 @@ projects:
             generateValue: true
           - key: ENCRYPTION_KEY
             generateValue: true
+          - key: ENCRYPTION_SALT
+            sync: false
           # Emails de administradores (configurar no dashboard)
           - key: ADMIN_EMAILS
             sync: false

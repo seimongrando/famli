@@ -90,7 +90,7 @@ func (s *Service) ProcessMessage(msg *IncomingMessage) (string, error) {
 	// Extrair número limpo (sem prefixo whatsapp:)
 	phone := cleanPhoneNumber(msg.From)
 
-	log.Printf("[WhatsApp] Mensagem recebida de %s: %s", phone, truncate(msg.Body, 50))
+	log.Printf("[WhatsApp] Mensagem recebida: tipo=%s, mídia=%d", msg.GetMessageType(), msg.NumMedia)
 
 	// Obter ou criar sessão do usuário
 	session := s.getOrCreateSession(phone)
@@ -640,7 +640,7 @@ func (s *Service) LinkPhoneToUser(phone, userID string) {
 		session.UserID = userID
 	}
 
-	log.Printf("[WhatsApp] Número %s vinculado ao usuário %s", phone, userID)
+	log.Printf("[WhatsApp] Número %s vinculado ao usuário %s", maskPhone(phone), userID)
 }
 
 // =============================================================================
@@ -650,7 +650,7 @@ func (s *Service) LinkPhoneToUser(phone, userID string) {
 // SendMessage envia uma mensagem para um número
 func (s *Service) SendMessage(to, body string) error {
 	if s.client == nil {
-		log.Printf("[WhatsApp] Cliente não configurado, mensagem não enviada: %s", truncate(body, 50))
+		log.Printf("[WhatsApp] Cliente não configurado, mensagem não enviada")
 		return nil
 	}
 
@@ -668,7 +668,7 @@ func (s *Service) NotifyGuardians(userID, message string) error {
 	for _, guardian := range guardians {
 		if guardian.Phone != "" {
 			if err := s.SendMessage(guardian.Phone, message); err != nil {
-				log.Printf("[WhatsApp] Erro ao notificar guardião %s: %v", guardian.Name, err)
+				log.Printf("[WhatsApp] Erro ao notificar guardião %s: %v", guardian.ID, err)
 			}
 		}
 	}

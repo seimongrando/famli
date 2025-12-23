@@ -287,7 +287,19 @@
   },
   "guardian": {
     "copyLink": "Copiar link de acesso",
-    "linkCopied": "Link copiado! Envie para esta pessoa para que ela possa acessar as informações compartilhadas."
+    "linkCopied": "Link copiado! Envie para esta pessoa para que ela possa acessar as informações compartilhadas.",
+    "share": {
+      "pinRequiredTitle": "PIN obrigatório para compartilhar",
+      "pinRequiredBody": "Para gerar um link seguro, você precisa definir um PIN para essa pessoa.",
+      "pinRequiredTip": "Edite a pessoa de confiança e defina um PIN antes de compartilhar.",
+      "linkCopiedTitle": "Link copiado com segurança",
+      "linkCopiedBody": "Compartilhe o link e envie o PIN por um canal separado.",
+      "tipSeparatePin": "Envie o PIN separadamente (ex.: SMS ou ligação).",
+      "tipVerifyRecipient": "Confirme se está enviando para a pessoa correta.",
+      "tipRevoke": "Se o link vazar, remova o guardião para invalidá-lo.",
+      "copyErrorTitle": "Não foi possível copiar o link",
+      "copyErrorBody": "Tente novamente ou copie manualmente."
+    }
   },
   "guide": {
     "title": "Guia Famli",

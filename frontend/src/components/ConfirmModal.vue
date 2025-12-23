@@ -35,6 +35,10 @@ const props = defineProps({
     type: String,
     default: ''
   },
+  details: {
+    type: Array,
+    default: () => []
+  },
   confirmText: {
     type: String,
     default: ''
@@ -42,6 +46,10 @@ const props = defineProps({
   cancelText: {
     type: String,
     default: ''
+  },
+  showCancel: {
+    type: Boolean,
+    default: true
   },
   type: {
     type: String,
@@ -90,9 +98,13 @@ function handleBackdropClick(e) {
           <h2 class="modal__title">{{ title || t('modal.confirm') }}</h2>
           
           <p class="modal__message">{{ message }}</p>
+          <ul v-if="details && details.length" class="modal__details">
+            <li v-for="detail in details" :key="detail">{{ detail }}</li>
+          </ul>
           
           <div class="modal__actions">
             <button 
+              v-if="showCancel"
               class="btn btn--ghost" 
               @click="handleCancel"
             >
@@ -168,6 +180,18 @@ function handleBackdropClick(e) {
   line-height: 1.6;
 }
 
+.modal__details {
+  margin: -12px 0 var(--space-xl);
+  padding-left: 1.2rem;
+  text-align: left;
+  color: var(--color-text-soft);
+  line-height: 1.6;
+}
+
+.modal__details li {
+  margin-bottom: var(--space-xs);
+}
+
 .modal__actions {
   display: flex;
   gap: var(--space-md);
@@ -209,5 +233,4 @@ function handleBackdropClick(e) {
   transform: scale(0.95);
 }
 </style>
-
 

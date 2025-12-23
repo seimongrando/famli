@@ -27,16 +27,25 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(LOWER(email));
 
 -- =============================================================================
+-- TABELA: system_config
+-- =============================================================================
+CREATE TABLE IF NOT EXISTS system_config (
+    key VARCHAR(100) PRIMARY KEY,
+    value TEXT NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- =============================================================================
 -- TABELA: box_items
 -- =============================================================================
 CREATE TABLE IF NOT EXISTS box_items (
     id VARCHAR(50) PRIMARY KEY DEFAULT CONCAT('itm_', uuid_generate_v4()::text),
     user_id VARCHAR(50) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     type VARCHAR(50) NOT NULL DEFAULT 'info',
-    title VARCHAR(255) NOT NULL,
+    title VARCHAR(512) NOT NULL,
     content VARCHAR(10000),
     category VARCHAR(50),
-    recipient VARCHAR(255),
+    recipient VARCHAR(512),
     is_important BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -51,12 +60,12 @@ CREATE INDEX IF NOT EXISTS idx_box_items_type ON box_items(type);
 CREATE TABLE IF NOT EXISTS guardians (
     id VARCHAR(50) PRIMARY KEY DEFAULT CONCAT('grd_', uuid_generate_v4()::text),
     user_id VARCHAR(50) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    name VARCHAR(255) NOT NULL,
-    email VARCHAR(255),
-    phone VARCHAR(30),
+    name VARCHAR(512) NOT NULL,
+    email VARCHAR(512),
+    phone VARCHAR(128),
     relationship VARCHAR(255),
     role VARCHAR(50) DEFAULT 'viewer',
-    notes VARCHAR(255),
+    notes VARCHAR(512),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

@@ -18,7 +18,7 @@
         mobile-setup mobile-android mobile-ios mobile-sync \
         docker-build docker-run docker-stop docker-up docker-down \
         db-up db-down db-reset \
-        check-deps
+        check-deps check-env
 
 # ==============================================================================
 # VARIÁVEIS
@@ -77,6 +77,7 @@ help:
 	@echo "  make test           - Roda todos os testes"
 	@echo "  make lint           - Verifica código (lint)"
 	@echo "  make check-deps     - Verifica dependências instaladas"
+	@echo "  make check-env      - Verifica variáveis de ambiente essenciais"
 	@echo ""
 	@echo "$(GREEN)🐳 Docker:$(NC)"
 	@echo "  make docker-up      - Inicia Famli + PostgreSQL (recomendado)"
@@ -98,6 +99,17 @@ help:
 # ==============================================================================
 
 check-deps:
+	@echo ""
+
+check-env:
+	@echo ""
+	@echo "$(BLUE)🔐 Verificando variáveis de ambiente...$(NC)"
+	@echo ""
+	@printf "ENV="; [ -n "$$ENV" ] && echo "$$ENV" || echo "$(RED)NÃO DEFINIDA$(NC)"
+	@printf "JWT_SECRET="; [ -n "$$JWT_SECRET" ] && echo "OK" || echo "$(RED)NÃO DEFINIDA$(NC)"
+	@printf "ENCRYPTION_KEY="; [ -n "$$ENCRYPTION_KEY" ] && echo "OK" || echo "$(RED)NÃO DEFINIDA$(NC)"
+	@printf "ENCRYPTION_SALT="; [ -n "$$ENCRYPTION_SALT" ] && echo "OK" || echo "$(RED)NÃO DEFINIDA$(NC)"
+	@printf "DATABASE_URL="; [ -n "$$DATABASE_URL" ] && echo "OK" || echo "$(YELLOW)NÃO DEFINIDA (memória)$(NC)"
 	@echo ""
 	@echo "$(BLUE)🔍 Verificando dependências...$(NC)"
 	@echo ""

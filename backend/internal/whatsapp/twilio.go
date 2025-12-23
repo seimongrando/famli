@@ -116,12 +116,12 @@ func (c *TwilioClient) SendMessage(to, body string) error {
 
 	// Verificar resposta
 	if resp.StatusCode >= 400 {
-		bodyBytes, _ := io.ReadAll(resp.Body)
-		log.Printf("[Twilio] Erro na API: %s", string(bodyBytes))
+		_, _ = io.ReadAll(resp.Body)
+		log.Printf("[Twilio] Erro na API: status=%d", resp.StatusCode)
 		return fmt.Errorf("erro da API Twilio: status %d", resp.StatusCode)
 	}
 
-	log.Printf("[Twilio] Mensagem enviada para %s", to)
+	log.Printf("[Twilio] Mensagem enviada para %s", maskPhone(to))
 	return nil
 }
 
@@ -165,12 +165,12 @@ func (c *TwilioClient) SendMessageWithMedia(to, body, mediaURL string) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode >= 400 {
-		bodyBytes, _ := io.ReadAll(resp.Body)
-		log.Printf("[Twilio] Erro na API: %s", string(bodyBytes))
+		_, _ = io.ReadAll(resp.Body)
+		log.Printf("[Twilio] Erro na API: status=%d", resp.StatusCode)
 		return fmt.Errorf("erro da API Twilio: status %d", resp.StatusCode)
 	}
 
-	log.Printf("[Twilio] Mensagem com mídia enviada para %s", to)
+	log.Printf("[Twilio] Mensagem com mídia enviada para %s", maskPhone(to))
 	return nil
 }
 

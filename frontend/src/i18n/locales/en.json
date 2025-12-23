@@ -288,7 +288,19 @@
   "guardian": {
     "copyLink": "Copy access link",
     "linkCopied": "Link copied! Send it to this person so they can access the shared information.",
-    "pinRequired": "Set a PIN for this person before sharing the link."
+    "pinRequired": "Set a PIN for this person before sharing the link.",
+    "share": {
+      "pinRequiredTitle": "PIN required to share",
+      "pinRequiredBody": "To generate a secure link, you need to set a PIN for this person.",
+      "pinRequiredTip": "Edit the trusted person and set a PIN before sharing.",
+      "linkCopiedTitle": "Link copied securely",
+      "linkCopiedBody": "Share the link and send the PIN through a separate channel.",
+      "tipSeparatePin": "Send the PIN separately (e.g., SMS or a phone call).",
+      "tipVerifyRecipient": "Confirm you're sending it to the right person.",
+      "tipRevoke": "If the link leaks, remove the guardian to invalidate it.",
+      "copyErrorTitle": "Couldn’t copy the link",
+      "copyErrorBody": "Try again or copy it manually."
+    }
   },
   "guide": {
     "title": "Famli Guide",

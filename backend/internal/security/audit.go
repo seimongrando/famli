@@ -22,6 +22,7 @@ package security
 import (
 	"encoding/json"
 	"log"
+	"strings"
 	"sync"
 	"time"
 )
@@ -292,7 +293,7 @@ func (al *AuditLogger) generateAlert(event AuditEvent, count, threshold int) {
 
 	// Log do alerta
 	log.Printf("[SECURITY ALERT] %s de %s: %d eventos (limiar: %d)",
-		event.Type, event.ClientIP, count, threshold)
+		event.Type, maskIP(event.ClientIP), count, threshold)
 
 	// Em produção, aqui enviaria para:
 	// - Sistema de monitoramento (Datadog, Prometheus, etc.)
@@ -399,8 +400,9 @@ func (al *AuditLogger) GetSecurityEvents(limit int) []AuditEvent {
 
 // logToOutput envia evento para saída de log
 func (al *AuditLogger) logToOutput(event AuditEvent) {
+	sanitized := sanitizeAuditEvent(event)
 	// Formato JSON estruturado para parsing fácil
-	jsonBytes, err := json.Marshal(event)
+	jsonBytes, err := json.Marshal(sanitized)
 	if err != nil {
 		log.Printf("[AUDIT] Erro ao serializar evento: %v", err)
 		return
@@ -423,6 +425,93 @@ func (al *AuditLogger) logToOutput(event AuditEvent) {
 // =============================================================================
 // FUNÇÕES AUXILIARES
 // =============================================================================
+
+func sanitizeAuditEvent(event AuditEvent) AuditEvent {
+	sanitized := event
+	sanitized.ClientIP = maskIP(event.ClientIP)
+	sanitized.UserAgent = ""
+	sanitized.Details = sanitizeDetails(event.Details)
+	return sanitized
+}
+
+func sanitizeDetails(details map[string]interface{}) map[string]interface{} {
+	if len(details) == 0 {
+		return nil
+	}
+
+	sanitized := make(map[string]interface{}, len(details))
+	for key, value := range details {
+		lowerKey := strings.ToLower(key)
+		if isSensitiveKey(lowerKey) {
+			sanitized[key] = "[redacted]"
+			continue
+		}
+		switch v := value.(type) {
+		case string:
+			if isSensitiveValue(v) {
+				sanitized[key] = "[redacted]"
+			} else if len(v) > 120 {
+				sanitized[key] = v[:120] + "…"
+			} else {
+				sanitized[key] = v
+			}
+		default:
+			sanitized[key] = v
+		}
+	}
+
+	return sanitized
+}
+
+func isSensitiveKey(key string) bool {
+	sensitiveKeys := []string{
+		"email",
+		"phone",
+		"token",
+		"pin",
+		"password",
+		"name",
+		"message",
+		"content",
+		"body",
+		"recipient",
+	}
+	for _, candidate := range sensitiveKeys {
+		if strings.Contains(key, candidate) {
+			return true
+		}
+	}
+	return false
+}
+
+func isSensitiveValue(value string) bool {
+	if strings.Contains(value, "@") {
+		return true
+	}
+	if strings.HasPrefix(value, "+") && len(value) > 8 {
+		return true
+	}
+	return false
+}
+
+func maskIP(value string) string {
+	if value == "" {
+		return ""
+	}
+	if strings.Contains(value, ".") {
+		parts := strings.Split(value, ".")
+		if len(parts) == 4 {
+			return parts[0] + "." + parts[1] + ".x.x"
+		}
+	}
+	if strings.Contains(value, ":") {
+		parts := strings.Split(value, ":")
+		if len(parts) >= 2 {
+			return parts[0] + ":" + parts[1] + "::"
+		}
+	}
+	return "x.x.x.x"
+}
 
 // generateEventID gera um ID único para o evento
 func generateEventID() string {

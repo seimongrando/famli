@@ -56,6 +56,15 @@ func NewPostgresStore(databaseURL string) (*PostgresStore, error) {
 		return nil, fmt.Errorf("erro ao pingar PostgreSQL: %w", err)
 	}
 
+	store := &PostgresStore{
+		db: db,
+	}
+
+	// Executar migrações
+	if err := store.migrate(); err != nil {
+		return nil, fmt.Errorf("erro nas migrações: %w", err)
+	}
+
 	// Inicializar encryptor para dados sensíveis
 	encryptionKey := os.Getenv("ENCRYPTION_KEY")
 	if encryptionKey == "" {
@@ -66,20 +75,16 @@ func NewPostgresStore(databaseURL string) (*PostgresStore, error) {
 		// Aviso será logado pelo main.go
 	}
 
-	encryptor, err := security.NewEncryptor(encryptionKey)
+	salt, err := store.getOrCreateEncryptionSalt()
+	if err != nil {
+		return nil, fmt.Errorf("erro ao obter salt de criptografia: %w", err)
+	}
+
+	encryptor, err := security.NewEncryptorWithSalt(encryptionKey, salt)
 	if err != nil {
 		return nil, fmt.Errorf("erro ao criar encryptor: %w", err)
 	}
-
-	store := &PostgresStore{
-		db:        db,
-		encryptor: encryptor,
-	}
-
-	// Executar migrações
-	if err := store.migrate(); err != nil {
-		return nil, fmt.Errorf("erro nas migrações: %w", err)
-	}
+	store.encryptor = encryptor
 
 	return store, nil
 }
@@ -119,15 +124,22 @@ func (s *PostgresStore) migrate() error {
 			END IF;
 		END $$`,
 
+		// Configuração do sistema (ex: salt de criptografia)
+		`CREATE TABLE IF NOT EXISTS system_config (
+			key VARCHAR(100) PRIMARY KEY,
+			value TEXT NOT NULL,
+			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		)`,
+
 		// Tabela box_items (com limite de 10KB para content)
 		`CREATE TABLE IF NOT EXISTS box_items (
 			id VARCHAR(50) PRIMARY KEY,
 			user_id VARCHAR(50) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
 			type VARCHAR(50) NOT NULL DEFAULT 'info',
-			title VARCHAR(255) NOT NULL,
+			title VARCHAR(512) NOT NULL,
 			content VARCHAR(10000),
 			category VARCHAR(50),
-			recipient VARCHAR(255),
+			recipient VARCHAR(512),
 			is_important BOOLEAN DEFAULT FALSE,
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -137,12 +149,12 @@ func (s *PostgresStore) migrate() error {
 		`CREATE TABLE IF NOT EXISTS guardians (
 			id VARCHAR(50) PRIMARY KEY,
 			user_id VARCHAR(50) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-			name VARCHAR(100) NOT NULL,
-			email VARCHAR(255),
-			phone VARCHAR(30),
-			relationship VARCHAR(50),
+			name VARCHAR(512) NOT NULL,
+			email VARCHAR(512),
+			phone VARCHAR(128),
+			relationship VARCHAR(255),
 			role VARCHAR(20) DEFAULT 'viewer',
-			notes VARCHAR(255),
+			notes VARCHAR(512),
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		)`,
@@ -304,12 +316,14 @@ func (s *PostgresStore) migrate() error {
 		)`,
 		`CREATE INDEX IF NOT EXISTS idx_share_accesses_link ON share_link_accesses(share_link_id)`,
 
-		// Ajustes de tamanho para campos curtos (255 chars)
-		`ALTER TABLE box_items ALTER COLUMN title TYPE VARCHAR(255)`,
-		`ALTER TABLE box_items ALTER COLUMN recipient TYPE VARCHAR(255)`,
-		`ALTER TABLE guardians ALTER COLUMN name TYPE VARCHAR(255)`,
+		// Ajustes de tamanho para campos curtos (com espaço para criptografia)
+		`ALTER TABLE box_items ALTER COLUMN title TYPE VARCHAR(512)`,
+		`ALTER TABLE box_items ALTER COLUMN recipient TYPE VARCHAR(512)`,
+		`ALTER TABLE guardians ALTER COLUMN name TYPE VARCHAR(512)`,
+		`ALTER TABLE guardians ALTER COLUMN email TYPE VARCHAR(512)`,
+		`ALTER TABLE guardians ALTER COLUMN phone TYPE VARCHAR(128)`,
 		`ALTER TABLE guardians ALTER COLUMN relationship TYPE VARCHAR(255)`,
-		`ALTER TABLE guardians ALTER COLUMN notes TYPE VARCHAR(255) USING LEFT(notes, 255)`,
+		`ALTER TABLE guardians ALTER COLUMN notes TYPE VARCHAR(512)`,
 		`ALTER TABLE share_links ALTER COLUMN name TYPE VARCHAR(255)`,
 		`ALTER TABLE feedbacks ALTER COLUMN page TYPE VARCHAR(255)`,
 
@@ -683,7 +697,7 @@ func (s *PostgresStore) encryptSensitive(value string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return encrypted, nil
+	return "enc:" + encrypted, nil
 }
 
 // decryptSensitive descriptografa um valor se estiver criptografado
@@ -691,13 +705,79 @@ func (s *PostgresStore) decryptSensitive(value string) string {
 	if value == "" || s.encryptor == nil {
 		return value
 	}
-	// Tenta descriptografar - se falhar, assume que é texto plano (migração)
-	decrypted, err := s.encryptor.Decrypt(value)
-	if err != nil {
-		// Pode ser dado antigo não criptografado
+
+	encryptedValue := value
+	if strings.HasPrefix(value, "enc:") {
+		encryptedValue = strings.TrimPrefix(value, "enc:")
+		decrypted, err := s.encryptor.Decrypt(encryptedValue)
+		if err != nil {
+			return ""
+		}
+		return decrypted
+	}
+
+	if !isLikelyCiphertext(encryptedValue) {
 		return value
 	}
+
+	decrypted, err := s.encryptor.Decrypt(encryptedValue)
+	if err != nil {
+		return ""
+	}
 	return decrypted
+}
+
+func (s *PostgresStore) getOrCreateEncryptionSalt() ([]byte, error) {
+	envSalt := strings.TrimSpace(os.Getenv("ENCRYPTION_SALT"))
+	if envSalt != "" {
+		return decodeSalt(envSalt)
+	}
+
+	var stored string
+	err := s.db.QueryRow(`SELECT value FROM system_config WHERE key = $1`, "encryption_salt").Scan(&stored)
+	if err != nil && err != sql.ErrNoRows {
+		return nil, err
+	}
+	if stored == "" {
+		raw := make([]byte, 16)
+		if _, err := rand.Read(raw); err != nil {
+			return nil, err
+		}
+		stored = base64.StdEncoding.EncodeToString(raw)
+		_, err := s.db.Exec(`
+			INSERT INTO system_config (key, value, updated_at)
+			VALUES ($1, $2, $3)
+			ON CONFLICT (key) DO UPDATE SET value = $2, updated_at = $3
+		`, "encryption_salt", stored, time.Now())
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return decodeSalt(stored)
+}
+
+func decodeSalt(value string) ([]byte, error) {
+	decoded, err := base64.StdEncoding.DecodeString(strings.TrimSpace(value))
+	if err != nil {
+		return nil, fmt.Errorf("invalid ENCRYPTION_SALT")
+	}
+	if len(decoded) < 16 {
+		return nil, fmt.Errorf("invalid ENCRYPTION_SALT length")
+	}
+	return decoded, nil
+}
+
+func isLikelyCiphertext(value string) bool {
+	if len(value) < 24 {
+		return false
+	}
+	decoded, err := base64.StdEncoding.DecodeString(value)
+	if err != nil {
+		return false
+	}
+	// nonce (12) + tag (16) + payload (>=0)
+	return len(decoded) >= 28
 }
 
 // ============================================================================

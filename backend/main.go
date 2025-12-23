@@ -224,8 +224,8 @@ func main() {
 	// IP real do cliente (quando atrás de proxy)
 	r.Use(chimiddleware.RealIP)
 
-	// Logger de requisições
-	r.Use(chimiddleware.Logger)
+	// Logger de requisições (com redação de tokens)
+	r.Use(security.RedactingLogger())
 
 	// Recuperar de panics
 	r.Use(chimiddleware.Recoverer)
