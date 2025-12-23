@@ -740,6 +740,8 @@ function getTypeIcon(type) {
   padding: 2rem;
   width: 100%;
   box-sizing: border-box;
+  /* Evitar overflow horizontal */
+  overflow-x: hidden;
 }
 
 /* =============================================================================
@@ -783,6 +785,9 @@ function getTypeIcon(type) {
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
   border: 1px solid #f0ebe3;
   transition: all 0.2s;
+  /* Evitar que conteúdo longo quebre o layout */
+  overflow: hidden;
+  min-width: 0;
 }
 
 .item-card:hover {
@@ -812,6 +817,10 @@ function getTypeIcon(type) {
   font-size: 1rem;
   font-weight: 700;
   color: #2c2a26;
+  /* Evitar quebra de layout com títulos longos */
+  word-break: break-word;
+  overflow-wrap: break-word;
+  min-width: 0;
 }
 
 .important-badge {
@@ -822,11 +831,16 @@ function getTypeIcon(type) {
   color: #5c584f;
   font-size: 0.95rem;
   line-height: 1.6;
+  /* Evitar quebra de layout com conteúdos longos */
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .item-content p {
   margin: 0;
   white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .item-footer {
