@@ -20,7 +20,9 @@
     "creating": "Criando...",
     "verifying": "Verificando...",
     "saving": "Salvando...",
-    "maxChars": "Máx. {count} caracteres"
+    "maxChars": "Máx. {count} caracteres",
+    "seeMore": "Ver mais",
+    "seeLess": "Ver menos"
   },
   "brand": {
     "name": "famli",

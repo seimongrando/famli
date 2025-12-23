@@ -102,7 +102,16 @@
                   <span v-if="item.is_important" class="important-badge" title="Importante">⭐</span>
                 </div>
                 <div class="item-content" v-if="item.content">
-                  <p>{{ item.content }}</p>
+                  <p :class="{ 'content-collapsed': !isExpanded(item.id) && needsExpansion(item.content) }">
+                    {{ isExpanded(item.id) ? item.content : getPreviewContent(item.content) }}
+                  </p>
+                  <button 
+                    v-if="needsExpansion(item.content)" 
+                    class="expand-btn"
+                    @click="toggleExpand(item.id)"
+                  >
+                    {{ isExpanded(item.id) ? $t('common.seeLess') : $t('common.seeMore') }}
+                  </button>
                 </div>
                 <div class="item-footer" v-if="item.recipient">
                   <span class="recipient-label">💌 {{ $t('shared.for') }}: {{ item.recipient }}</span>
@@ -165,6 +174,34 @@ const sharedView = ref(null)
 const pin = ref('')
 const pinError = ref(null)
 const verifying = ref(false)
+
+// Controle de itens expandidos
+const expandedItems = ref(new Set())
+const CONTENT_PREVIEW_LENGTH = 200
+
+function isExpanded(itemId) {
+  return expandedItems.value.has(itemId)
+}
+
+function toggleExpand(itemId) {
+  if (expandedItems.value.has(itemId)) {
+    expandedItems.value.delete(itemId)
+  } else {
+    expandedItems.value.add(itemId)
+  }
+  // Forçar reatividade
+  expandedItems.value = new Set(expandedItems.value)
+}
+
+function needsExpansion(content) {
+  return content && content.length > CONTENT_PREVIEW_LENGTH
+}
+
+function getPreviewContent(content) {
+  if (!content) return ''
+  if (content.length <= CONTENT_PREVIEW_LENGTH) return content
+  return content.slice(0, CONTENT_PREVIEW_LENGTH) + '...'
+}
 
 const token = computed(() => route.params.token)
 const isGuardianAccess = computed(() => route.path.startsWith('/g/') || route.path.startsWith('/guardian/'))
@@ -841,6 +878,40 @@ function getTypeIcon(type) {
   white-space: pre-wrap;
   word-break: break-word;
   overflow-wrap: break-word;
+}
+
+.item-content p.content-collapsed {
+  /* Estilo sutil para indicar que há mais conteúdo */
+  position: relative;
+}
+
+.expand-btn {
+  background: none;
+  border: none;
+  color: #2d5a47;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.5rem 0;
+  cursor: pointer;
+  transition: color 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.expand-btn:hover {
+  color: #1e3d30;
+  text-decoration: underline;
+}
+
+.expand-btn::before {
+  content: '▼';
+  font-size: 0.6rem;
+  transition: transform 0.2s;
+}
+
+.expand-btn:hover::before {
+  transform: translateY(2px);
 }
 
 .item-footer {
