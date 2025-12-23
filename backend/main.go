@@ -27,14 +27,17 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -487,9 +490,34 @@ func main() {
 	log.Printf("🌐 Servidor: http://localhost:%s", port)
 	log.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 
-	if err := http.ListenAndServe(":"+port, r); err != nil {
+	server := &http.Server{
+		Addr:              ":" + port,
+		Handler:           r,
+		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       15 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		IdleTimeout:       60 * time.Second,
+	}
+
+	shutdownDone := make(chan struct{})
+	go func() {
+		sigCh := make(chan os.Signal, 1)
+		signal.Notify(sigCh, syscall.SIGTERM, syscall.SIGINT)
+		sig := <-sigCh
+		log.Printf("🛑 Sinal recebido (%s). Encerrando servidor...", sig.String())
+
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		if err := server.Shutdown(ctx); err != nil {
+			log.Printf("⚠️  Erro ao encerrar servidor: %v", err)
+		}
+		close(shutdownDone)
+	}()
+
+	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatal(err)
 	}
+	<-shutdownDone
 }
 
 // =============================================================================
