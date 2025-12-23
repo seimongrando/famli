@@ -290,8 +290,10 @@ async function handleSubmit() {
               type="text"
               class="form-input"
               :placeholder="t('auth.namePlaceholder')"
+              maxlength="255"
               autocomplete="name"
             />
+            <p class="form-hint">{{ t('common.maxChars', { count: 255 }) }}</p>
           </div>
 
           <!-- Email -->
@@ -304,6 +306,7 @@ async function handleSubmit() {
               class="form-input"
               :placeholder="t('auth.emailPlaceholder')"
               required
+              maxlength="254"
               autocomplete="email"
             />
             <p v-if="!isLogin" class="form-hint">
@@ -322,6 +325,7 @@ async function handleSubmit() {
               :placeholder="t('auth.passwordPlaceholder')"
               required
               :minlength="isLogin ? 1 : 8"
+              maxlength="128"
               :autocomplete="isLogin ? 'current-password' : 'new-password'"
             />
             

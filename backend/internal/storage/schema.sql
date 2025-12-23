@@ -33,9 +33,9 @@ CREATE TABLE IF NOT EXISTS box_items (
     id VARCHAR(50) PRIMARY KEY DEFAULT CONCAT('itm_', uuid_generate_v4()::text),
     user_id VARCHAR(50) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     type VARCHAR(50) NOT NULL DEFAULT 'info',
-    title VARCHAR(500) NOT NULL,
-    content TEXT,
-    category VARCHAR(100),
+    title VARCHAR(255) NOT NULL,
+    content VARCHAR(10000),
+    category VARCHAR(50),
     recipient VARCHAR(255),
     is_important BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -53,15 +53,36 @@ CREATE TABLE IF NOT EXISTS guardians (
     user_id VARCHAR(50) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     name VARCHAR(255) NOT NULL,
     email VARCHAR(255),
-    phone VARCHAR(50),
-    relationship VARCHAR(100),
+    phone VARCHAR(30),
+    relationship VARCHAR(255),
     role VARCHAR(50) DEFAULT 'viewer',
-    notes TEXT,
+    notes VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX IF NOT EXISTS idx_guardians_user ON guardians(user_id);
+
+-- =============================================================================
+-- TABELA: feedbacks
+-- =============================================================================
+CREATE TABLE IF NOT EXISTS feedbacks (
+    id VARCHAR(50) PRIMARY KEY,
+    user_id VARCHAR(50) REFERENCES users(id) ON DELETE SET NULL,
+    user_email VARCHAR(255),
+    type VARCHAR(50) NOT NULL DEFAULT 'suggestion',
+    message VARCHAR(2000) NOT NULL,
+    page VARCHAR(255),
+    user_agent VARCHAR(255),
+    status VARCHAR(50) NOT NULL DEFAULT 'pending',
+    admin_note VARCHAR(500),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_feedbacks_user ON feedbacks(user_id);
+CREATE INDEX IF NOT EXISTS idx_feedbacks_status ON feedbacks(status);
+CREATE INDEX IF NOT EXISTS idx_feedbacks_created ON feedbacks(created_at DESC);
 
 -- =============================================================================
 -- TABELA: guide_progress
@@ -124,5 +145,3 @@ DROP TRIGGER IF EXISTS update_settings_updated_at ON settings;
 CREATE TRIGGER update_settings_updated_at
     BEFORE UPDATE ON settings
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-

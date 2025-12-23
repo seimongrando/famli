@@ -124,10 +124,10 @@ func (s *PostgresStore) migrate() error {
 			id VARCHAR(50) PRIMARY KEY,
 			user_id VARCHAR(50) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
 			type VARCHAR(50) NOT NULL DEFAULT 'info',
-			title VARCHAR(200) NOT NULL,
+			title VARCHAR(255) NOT NULL,
 			content VARCHAR(10000),
 			category VARCHAR(50),
-			recipient VARCHAR(100),
+			recipient VARCHAR(255),
 			is_important BOOLEAN DEFAULT FALSE,
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -142,7 +142,7 @@ func (s *PostgresStore) migrate() error {
 			phone VARCHAR(30),
 			relationship VARCHAR(50),
 			role VARCHAR(20) DEFAULT 'viewer',
-			notes VARCHAR(1000),
+			notes VARCHAR(255),
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		)`,
@@ -250,6 +250,7 @@ func (s *PostgresStore) migrate() error {
 		`CREATE INDEX IF NOT EXISTS idx_feedbacks_user ON feedbacks(user_id)`,
 		`CREATE INDEX IF NOT EXISTS idx_feedbacks_status ON feedbacks(status)`,
 		`CREATE INDEX IF NOT EXISTS idx_feedbacks_created ON feedbacks(created_at DESC)`,
+		`ALTER TABLE feedbacks ADD COLUMN IF NOT EXISTS user_agent VARCHAR(255)`,
 
 		// =======================================================================
 		// ANALYTICS (com limpeza automática de eventos antigos)
@@ -277,7 +278,7 @@ func (s *PostgresStore) migrate() error {
 			guardian_id VARCHAR(50) REFERENCES guardians(id) ON DELETE SET NULL,
 			token VARCHAR(100) NOT NULL UNIQUE,
 			type VARCHAR(20) NOT NULL DEFAULT 'normal',
-			name VARCHAR(100) NOT NULL,
+			name VARCHAR(255) NOT NULL,
 			pin_hash VARCHAR(255),
 			categories TEXT[],
 			expires_at TIMESTAMP,
@@ -302,6 +303,15 @@ func (s *PostgresStore) migrate() error {
 			accessed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		)`,
 		`CREATE INDEX IF NOT EXISTS idx_share_accesses_link ON share_link_accesses(share_link_id)`,
+
+		// Ajustes de tamanho para campos curtos (255 chars)
+		`ALTER TABLE box_items ALTER COLUMN title TYPE VARCHAR(255)`,
+		`ALTER TABLE box_items ALTER COLUMN recipient TYPE VARCHAR(255)`,
+		`ALTER TABLE guardians ALTER COLUMN name TYPE VARCHAR(255)`,
+		`ALTER TABLE guardians ALTER COLUMN relationship TYPE VARCHAR(255)`,
+		`ALTER TABLE guardians ALTER COLUMN notes TYPE VARCHAR(255) USING LEFT(notes, 255)`,
+		`ALTER TABLE share_links ALTER COLUMN name TYPE VARCHAR(255)`,
+		`ALTER TABLE feedbacks ALTER COLUMN page TYPE VARCHAR(255)`,
 
 		// =======================================================================
 		// RECUPERAÇÃO DE SENHA
@@ -361,8 +371,14 @@ func (s *PostgresStore) CleanupOldLogs(retentionDays int) error {
 		// Limpar analytics_events antigos
 		fmt.Sprintf(`DELETE FROM analytics_events WHERE created_at < NOW() - INTERVAL '%d days'`, retentionDays),
 
+		// Limpar acessos de links compartilhados antigos
+		fmt.Sprintf(`DELETE FROM share_link_accesses WHERE accessed_at < NOW() - INTERVAL '%d days'`, retentionDays),
+
 		// Limpar deletion_tokens expirados
 		`DELETE FROM deletion_tokens WHERE expires_at < NOW()`,
+
+		// Limpar tokens de reset de senha expirados ou usados
+		`DELETE FROM password_reset_tokens WHERE expires_at < NOW() OR used_at IS NOT NULL`,
 	}
 
 	for _, query := range queries {
@@ -655,17 +671,19 @@ func (s *PostgresStore) ExportUserData(userID string) (*UserDataExport, error) {
 // ============================================================================
 
 // encryptSensitive criptografa um valor se não estiver vazio
-// Em caso de erro, retorna o valor original (fallback seguro)
-func (s *PostgresStore) encryptSensitive(value string) string {
-	if value == "" || s.encryptor == nil {
-		return value
+// Em caso de erro, falha fechado para evitar persistir PII em texto puro.
+func (s *PostgresStore) encryptSensitive(value string) (string, error) {
+	if value == "" {
+		return "", nil
+	}
+	if s.encryptor == nil {
+		return "", fmt.Errorf("encryptor not configured")
 	}
 	encrypted, err := s.encryptor.Encrypt(value)
 	if err != nil {
-		// Fallback: retorna valor original se a criptografia falhar
-		return value
+		return "", err
 	}
-	return encrypted
+	return encrypted, nil
 }
 
 // decryptSensitive descriptografa um valor se estiver criptografado
@@ -847,11 +865,20 @@ func (s *PostgresStore) CreateBoxItem(userID string, item *BoxItem) (*BoxItem, e
 	now := time.Now()
 
 	// Criptografar dados sensíveis antes de salvar
-	encTitle := s.encryptSensitive(item.Title)
-	encContent := s.encryptSensitive(item.Content)
-	encRecipient := s.encryptSensitive(item.Recipient)
+	encTitle, err := s.encryptSensitive(item.Title)
+	if err != nil {
+		return nil, fmt.Errorf("erro ao criptografar título: %w", err)
+	}
+	encContent, err := s.encryptSensitive(item.Content)
+	if err != nil {
+		return nil, fmt.Errorf("erro ao criptografar conteúdo: %w", err)
+	}
+	encRecipient, err := s.encryptSensitive(item.Recipient)
+	if err != nil {
+		return nil, fmt.Errorf("erro ao criptografar destinatário: %w", err)
+	}
 
-	_, err := s.db.Exec(`
+	_, err = s.db.Exec(`
 		INSERT INTO box_items (id, user_id, type, title, content, category, recipient, is_important, is_shared, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 	`, id, userID, item.Type, encTitle, encContent, item.Category, encRecipient, item.IsImportant, item.IsShared, now, now)
@@ -870,9 +897,18 @@ func (s *PostgresStore) CreateBoxItem(userID string, item *BoxItem) (*BoxItem, e
 // UpdateBoxItem atualiza um item existente com dados criptografados
 func (s *PostgresStore) UpdateBoxItem(userID, itemID string, updates *BoxItem) (*BoxItem, error) {
 	// Criptografar dados sensíveis antes de atualizar
-	encTitle := s.encryptSensitive(updates.Title)
-	encContent := s.encryptSensitive(updates.Content)
-	encRecipient := s.encryptSensitive(updates.Recipient)
+	encTitle, err := s.encryptSensitive(updates.Title)
+	if err != nil {
+		return nil, fmt.Errorf("erro ao criptografar título: %w", err)
+	}
+	encContent, err := s.encryptSensitive(updates.Content)
+	if err != nil {
+		return nil, fmt.Errorf("erro ao criptografar conteúdo: %w", err)
+	}
+	encRecipient, err := s.encryptSensitive(updates.Recipient)
+	if err != nil {
+		return nil, fmt.Errorf("erro ao criptografar destinatário: %w", err)
+	}
 
 	result, err := s.db.Exec(`
 		UPDATE box_items 
@@ -1149,12 +1185,24 @@ func (s *PostgresStore) CreateGuardian(userID string, guardian *Guardian) (*Guar
 	}
 
 	// Criptografar dados sensíveis (PII)
-	encName := s.encryptSensitive(guardian.Name)
-	encEmail := s.encryptSensitive(guardian.Email)
-	encPhone := s.encryptSensitive(guardian.Phone)
-	encNotes := s.encryptSensitive(guardian.Notes)
+	encName, err := s.encryptSensitive(guardian.Name)
+	if err != nil {
+		return nil, fmt.Errorf("erro ao criptografar nome: %w", err)
+	}
+	encEmail, err := s.encryptSensitive(guardian.Email)
+	if err != nil {
+		return nil, fmt.Errorf("erro ao criptografar email: %w", err)
+	}
+	encPhone, err := s.encryptSensitive(guardian.Phone)
+	if err != nil {
+		return nil, fmt.Errorf("erro ao criptografar telefone: %w", err)
+	}
+	encNotes, err := s.encryptSensitive(guardian.Notes)
+	if err != nil {
+		return nil, fmt.Errorf("erro ao criptografar notas: %w", err)
+	}
 
-	_, err := s.db.Exec(`
+	_, err = s.db.Exec(`
 		INSERT INTO guardians (id, user_id, name, email, phone, relationship, role, notes, access_token, access_pin, access_type, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
 	`, id, userID, encName, encEmail, encPhone, guardian.Relationship, role, encNotes, accessToken, guardian.AccessPIN, accessType, now, now)
@@ -1191,13 +1239,24 @@ func generateAccessToken() string {
 // UpdateGuardian atualiza um guardião com dados criptografados
 func (s *PostgresStore) UpdateGuardian(userID, guardianID string, updates *Guardian) (*Guardian, error) {
 	// Criptografar dados sensíveis (PII)
-	encName := s.encryptSensitive(updates.Name)
-	encEmail := s.encryptSensitive(updates.Email)
-	encPhone := s.encryptSensitive(updates.Phone)
-	encNotes := s.encryptSensitive(updates.Notes)
+	encName, err := s.encryptSensitive(updates.Name)
+	if err != nil {
+		return nil, fmt.Errorf("erro ao criptografar nome: %w", err)
+	}
+	encEmail, err := s.encryptSensitive(updates.Email)
+	if err != nil {
+		return nil, fmt.Errorf("erro ao criptografar email: %w", err)
+	}
+	encPhone, err := s.encryptSensitive(updates.Phone)
+	if err != nil {
+		return nil, fmt.Errorf("erro ao criptografar telefone: %w", err)
+	}
+	encNotes, err := s.encryptSensitive(updates.Notes)
+	if err != nil {
+		return nil, fmt.Errorf("erro ao criptografar notas: %w", err)
+	}
 
 	var result sql.Result
-	var err error
 
 	// Se PIN foi fornecido, atualizar também
 	if updates.AccessPIN != "" {

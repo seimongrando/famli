@@ -12,10 +12,35 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { VitePWA } from 'vite-plugin-pwa'
+import { execSync } from 'node:child_process'
+
+function buildVersion() {
+  const buildTime = new Date().toISOString()
+  let commit = ''
+  try {
+    commit = execSync('git rev-parse --short HEAD').toString().trim()
+  } catch (_) {
+    commit = ''
+  }
+  const build = commit ? `${commit}-${Date.now()}` : `build-${Date.now()}`
+  return { build, commit, buildTime }
+}
 
 export default defineConfig({
   plugins: [
     vue(),
+    {
+      name: 'generate-version-file',
+      apply: 'build',
+      generateBundle() {
+        const version = buildVersion()
+        this.emitFile({
+          type: 'asset',
+          fileName: 'version.json',
+          source: JSON.stringify(version)
+        })
+      }
+    },
     VitePWA({
       // =======================================================================
       // CONFIGURAÇÃO DO SERVICE WORKER

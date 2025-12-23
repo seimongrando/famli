@@ -48,6 +48,7 @@ async function saveInfo() {
   }
   
   saving.value = true
+  formError.value = ''
   console.log('[Composer] Saving info:', infoForm.value.title)
   
   try {
@@ -65,9 +66,11 @@ async function saveInfo() {
       emit('saved', 'info')
     } else {
       console.error('[Composer] Info save failed - no result')
+      formError.value = boxStore.error || t('errors.generic')
     }
   } catch (error) {
     console.error('[Composer] Info save error:', error)
+    formError.value = boxStore.error || t('errors.generic')
   } finally {
     saving.value = false
   }
@@ -124,6 +127,7 @@ async function saveMemory() {
   }
   
   saving.value = true
+  formError.value = ''
   console.log('[Composer] Saving memory:', memoryForm.value.title)
   
   try {
@@ -141,9 +145,11 @@ async function saveMemory() {
       emit('saved', 'memory')
     } else {
       console.error('[Composer] Memory save failed - no result')
+      formError.value = boxStore.error || t('errors.generic')
     }
   } catch (error) {
     console.error('[Composer] Memory save error:', error)
+    formError.value = boxStore.error || t('errors.generic')
   } finally {
     saving.value = false
   }
@@ -185,8 +191,10 @@ async function saveMemory() {
           type="text"
           class="form-input"
           :placeholder="t('composer.info.titlePlaceholder')"
+          maxlength="255"
           required
         />
+        <small class="form-hint">{{ t('common.maxChars', { count: 255 }) }}</small>
       </div>
       
       <div class="form-group">
@@ -211,6 +219,7 @@ async function saveMemory() {
           class="form-textarea"
           :placeholder="t('composer.info.detailsPlaceholder')"
           rows="4"
+          maxlength="10000"
         ></textarea>
       </div>
 
@@ -229,6 +238,11 @@ async function saveMemory() {
       <button type="submit" class="btn btn--primary" :disabled="saving || !infoForm.title">
         {{ saving ? t('composer.info.saving') : t('composer.info.saveButton') }}
       </button>
+      
+      <div v-if="formError" class="form-error-box">
+        <span class="form-error-icon">⚠️</span>
+        <span>{{ formError }}</span>
+      </div>
     </form>
 
     <!-- Guardian Form -->
@@ -245,8 +259,10 @@ async function saveMemory() {
           type="text"
           class="form-input"
           :placeholder="t('composer.guardian.namePlaceholder')"
+          maxlength="255"
           required
         />
+        <small class="form-hint">{{ t('common.maxChars', { count: 255 }) }}</small>
       </div>
       
       <div class="form-row">
@@ -257,6 +273,7 @@ async function saveMemory() {
             type="email"
             class="form-input"
             placeholder="email@exemplo.com"
+            maxlength="254"
           />
         </div>
         
@@ -267,6 +284,7 @@ async function saveMemory() {
             type="tel"
             class="form-input"
             :placeholder="t('composer.guardian.phonePlaceholder')"
+            maxlength="20"
           />
         </div>
       </div>
@@ -326,8 +344,10 @@ async function saveMemory() {
           type="text"
           class="form-input"
           :placeholder="t('composer.memory.titlePlaceholder')"
+          maxlength="255"
           required
         />
+        <small class="form-hint">{{ t('common.maxChars', { count: 255 }) }}</small>
       </div>
       
       <div class="form-group">
@@ -337,7 +357,9 @@ async function saveMemory() {
           type="text"
           class="form-input"
           :placeholder="t('composer.memory.recipientPlaceholder')"
+          maxlength="255"
         />
+        <small class="form-hint">{{ t('common.maxChars', { count: 255 }) }}</small>
       </div>
       
       <div class="form-group">
@@ -347,6 +369,7 @@ async function saveMemory() {
           class="form-textarea"
           :placeholder="t('composer.memory.messagePlaceholder')"
           rows="6"
+          maxlength="10000"
         ></textarea>
       </div>
 
@@ -365,6 +388,11 @@ async function saveMemory() {
       <button type="submit" class="btn btn--primary" :disabled="saving || !memoryForm.title">
         {{ saving ? t('composer.memory.saving') : t('composer.memory.saveButton') }}
       </button>
+      
+      <div v-if="formError" class="form-error-box">
+        <span class="form-error-icon">⚠️</span>
+        <span>{{ formError }}</span>
+      </div>
     </form>
   </div>
 </template>

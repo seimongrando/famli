@@ -51,6 +51,10 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	payload.Name = security.SanitizeName(payload.Name)
+	payload.Relationship = security.SanitizeText(payload.Relationship, security.MaxNameLength)
+	payload.Notes = security.SanitizeText(payload.Notes, security.MaxNotesLength)
+
 	if payload.Name == "" {
 		writeError(w, http.StatusBadRequest, i18n.Tr(r, "guardian.name_required"))
 		return
@@ -60,7 +64,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Limitar tamanho das notas (1KB para economizar banco)
+	// Limitar tamanho das notas para economizar banco
 	payload.Notes = strings.TrimSpace(payload.Notes)
 	if len(payload.Notes) > security.MaxNotesLength {
 		writeError(w, http.StatusBadRequest, i18n.Tr(r, "guardian.notes_too_long"))
@@ -108,12 +112,16 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	payload.Name = security.SanitizeName(payload.Name)
+	payload.Relationship = security.SanitizeText(payload.Relationship, security.MaxNameLength)
+	payload.Notes = security.SanitizeText(payload.Notes, security.MaxNotesLength)
+
 	if payload.Name == "" {
 		writeError(w, http.StatusBadRequest, i18n.Tr(r, "guardian.name_required"))
 		return
 	}
 
-	// Limitar tamanho das notas (1KB para economizar banco)
+	// Limitar tamanho das notas para economizar banco
 	payload.Notes = strings.TrimSpace(payload.Notes)
 	if len(payload.Notes) > security.MaxNotesLength {
 		writeError(w, http.StatusBadRequest, i18n.Tr(r, "guardian.notes_too_long"))

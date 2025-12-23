@@ -989,6 +989,16 @@ func (s *MemoryStore) CleanupOldLogs(retentionDays int) error {
 	}
 
 	s.analytics = newAnalytics
+
+	if len(s.shareLinkAccesses) > 0 {
+		newShareAccesses := make([]*ShareLinkAccess, 0)
+		for _, access := range s.shareLinkAccesses {
+			if access.AccessedAt.After(cutoff) {
+				newShareAccesses = append(newShareAccesses, access)
+			}
+		}
+		s.shareLinkAccesses = newShareAccesses
+	}
 	return nil
 }
 

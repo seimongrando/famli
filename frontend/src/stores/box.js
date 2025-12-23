@@ -156,6 +156,22 @@ export const useBoxStore = defineStore('box', () => {
     await fetchAll()
   }
 
+  async function readErrorMessage(res, fallback) {
+    try {
+      const data = await res.json()
+      if (data?.error) return data.error
+    } catch (_) {
+      // ignore json parse errors
+    }
+    try {
+      const text = await res.text()
+      if (text) return text
+    } catch (_) {
+      // ignore text errors
+    }
+    return fallback
+  }
+
   async function createItem(payload) {
     console.log('[Box Store] Creating item:', payload.type, payload.title)
     
@@ -173,11 +189,12 @@ export const useBoxStore = defineStore('box', () => {
         // Adicionar no início da lista
         items.value.unshift(item)
         itemsTotal.value++
+        error.value = ''
         return item
       } else {
-        const errorText = await res.text()
+        const errorText = await readErrorMessage(res, 'Erro ao salvar item')
         console.error('[Box Store] Failed to create item:', res.status, errorText)
-        error.value = 'Erro ao salvar item'
+        error.value = errorText
       }
     } catch (e) {
       console.error('[Box Store] Error creating item:', e)
@@ -198,7 +215,12 @@ export const useBoxStore = defineStore('box', () => {
         const updated = await res.json()
         const idx = items.value.findIndex(i => i.id === id)
         if (idx !== -1) items.value[idx] = updated
+        error.value = ''
         return updated
+      } else {
+        const errorText = await readErrorMessage(res, 'Erro ao atualizar item')
+        console.error('[Box Store] Failed to update item:', res.status, errorText)
+        error.value = errorText
       }
     } catch (e) {
       console.error('[Box Store] Error updating item:', e)
@@ -216,7 +238,12 @@ export const useBoxStore = defineStore('box', () => {
       if (res.ok) {
         items.value = items.value.filter(i => i.id !== id)
         itemsTotal.value = Math.max(0, itemsTotal.value - 1)
+        error.value = ''
         return true
+      } else {
+        const errorText = await readErrorMessage(res, 'Erro ao excluir item')
+        console.error('[Box Store] Failed to delete item:', res.status, errorText)
+        error.value = errorText
       }
     } catch (e) {
       console.error('[Box Store] Error deleting item:', e)

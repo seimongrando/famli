@@ -24,6 +24,8 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"net/http"
+	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -106,8 +108,8 @@ func (h *Handler) CreateLink(w http.ResponseWriter, r *http.Request) {
 	if req.Name == "" {
 		req.Name = "Link de Compartilhamento"
 	}
-	if len(req.Name) > 100 {
-		req.Name = req.Name[:100]
+	if len(req.Name) > 255 {
+		req.Name = req.Name[:255]
 	}
 
 	// Validar tipo
@@ -131,10 +133,18 @@ func (h *Handler) CreateLink(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	policy := getShareLinkPolicy()
+	expiresIn := req.ExpiresIn
+	maxUses := req.MaxUses
+	if policy.enforce {
+		expiresIn = normalizeExpiresIn(expiresIn, policy)
+		maxUses = normalizeMaxUses(maxUses, policy)
+	}
+
 	// Calcular expiração
 	var expiresAt *time.Time
-	if req.ExpiresIn > 0 {
-		exp := time.Now().AddDate(0, 0, req.ExpiresIn)
+	if expiresIn > 0 {
+		exp := time.Now().AddDate(0, 0, expiresIn)
 		expiresAt = &exp
 	}
 
@@ -156,7 +166,7 @@ func (h *Handler) CreateLink(w http.ResponseWriter, r *http.Request) {
 		PIN:         pinHash,
 		Categories:  req.Categories,
 		ExpiresAt:   expiresAt,
-		MaxUses:     req.MaxUses,
+		MaxUses:     maxUses,
 		IsActive:    true,
 		CreatedAt:   now,
 		UpdatedAt:   now,
@@ -192,6 +202,7 @@ func (h *Handler) CreateLink(w http.ResponseWriter, r *http.Request) {
 // GET /api/share/links
 func (h *Handler) ListLinks(w http.ResponseWriter, r *http.Request) {
 	userID := auth.GetUserID(r)
+	policy := getShareLinkPolicy()
 
 	links, err := h.store.GetShareLinksByUser(userID)
 	if err != nil {
@@ -203,14 +214,20 @@ func (h *Handler) ListLinks(w http.ResponseWriter, r *http.Request) {
 	baseURL := getBaseURL(r)
 	var responses []ShareLinkResponse
 	for _, link := range links {
+		expiresAt := link.ExpiresAt
+		maxUses := link.MaxUses
+		if policy.enforce {
+			expiresAt = effectiveShareExpiresAt(link, policy)
+			maxUses = effectiveShareMaxUses(link, policy)
+		}
 		responses = append(responses, ShareLinkResponse{
 			ID:         link.ID,
 			Name:       link.Name,
 			Type:       string(link.Type),
 			URL:        baseURL + "/compartilhado/" + link.Token,
 			Categories: link.Categories,
-			ExpiresAt:  link.ExpiresAt,
-			MaxUses:    link.MaxUses,
+			ExpiresAt:  expiresAt,
+			MaxUses:    maxUses,
 			UsageCount: link.UsageCount,
 			IsActive:   link.IsActive,
 			CreatedAt:  link.CreatedAt,
@@ -254,6 +271,7 @@ func (h *Handler) DeleteLink(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) AccessShared(w http.ResponseWriter, r *http.Request) {
 	token := chi.URLParam(r, "token")
 	clientIP := security.GetClientIP(r)
+	policy := getShareLinkPolicy()
 
 	// Buscar link
 	link, err := h.store.GetShareLinkByToken(token)
@@ -263,13 +281,21 @@ func (h *Handler) AccessShared(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Verificar expiração
-	if link.ExpiresAt != nil && link.ExpiresAt.Before(time.Now()) {
+	expiresAt := link.ExpiresAt
+	if policy.enforce {
+		expiresAt = effectiveShareExpiresAt(link, policy)
+	}
+	if expiresAt != nil && expiresAt.Before(time.Now()) {
 		writeError(w, http.StatusGone, i18n.Tr(r, "share.link_expired"))
 		return
 	}
 
 	// Verificar limite de uso
-	if link.MaxUses > 0 && link.UsageCount >= link.MaxUses {
+	maxUses := link.MaxUses
+	if policy.enforce {
+		maxUses = effectiveShareMaxUses(link, policy)
+	}
+	if maxUses > 0 && link.UsageCount >= maxUses {
 		writeError(w, http.StatusGone, i18n.Tr(r, "share.link_expired"))
 		return
 	}
@@ -301,6 +327,7 @@ func (h *Handler) AccessShared(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) VerifyPIN(w http.ResponseWriter, r *http.Request) {
 	token := chi.URLParam(r, "token")
 	clientIP := security.GetClientIP(r)
+	policy := getShareLinkPolicy()
 
 	var req VerifyPINRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -312,6 +339,24 @@ func (h *Handler) VerifyPIN(w http.ResponseWriter, r *http.Request) {
 	link, err := h.store.GetShareLinkByToken(token)
 	if err != nil {
 		writeError(w, http.StatusNotFound, i18n.Tr(r, "share.link_expired"))
+		return
+	}
+
+	expiresAt := link.ExpiresAt
+	if policy.enforce {
+		expiresAt = effectiveShareExpiresAt(link, policy)
+	}
+	if expiresAt != nil && expiresAt.Before(time.Now()) {
+		writeError(w, http.StatusGone, i18n.Tr(r, "share.link_expired"))
+		return
+	}
+
+	maxUses := link.MaxUses
+	if policy.enforce {
+		maxUses = effectiveShareMaxUses(link, policy)
+	}
+	if maxUses > 0 && link.UsageCount >= maxUses {
+		writeError(w, http.StatusGone, i18n.Tr(r, "share.link_expired"))
 		return
 	}
 
@@ -676,6 +721,84 @@ func maskEmail(value string) string {
 		domainMasked = domainMasked + "." + strings.Join(domainParts[1:], ".")
 	}
 	return localMasked + "@" + domainMasked
+}
+
+type shareLinkPolicy struct {
+	enforce            bool
+	defaultExpiresDays int
+	maxExpiresDays     int
+	defaultMaxUses     int
+	maxMaxUses         int
+}
+
+func getShareLinkPolicy() shareLinkPolicy {
+	env := strings.ToLower(strings.TrimSpace(os.Getenv("ENV")))
+	return shareLinkPolicy{
+		enforce:            env == "production",
+		defaultExpiresDays: envInt("SHARE_LINK_DEFAULT_EXPIRES_DAYS", 30),
+		maxExpiresDays:     envInt("SHARE_LINK_MAX_EXPIRES_DAYS", 365),
+		defaultMaxUses:     envInt("SHARE_LINK_DEFAULT_MAX_USES", 50),
+		maxMaxUses:         envInt("SHARE_LINK_MAX_USES", 200),
+	}
+}
+
+func envInt(key string, fallback int) int {
+	raw := strings.TrimSpace(os.Getenv(key))
+	if raw == "" {
+		return fallback
+	}
+	val, err := strconv.Atoi(raw)
+	if err != nil {
+		return fallback
+	}
+	return val
+}
+
+func normalizeExpiresIn(value int, policy shareLinkPolicy) int {
+	if value < 0 {
+		value = 0
+	}
+	if value == 0 {
+		value = policy.defaultExpiresDays
+	}
+	if policy.maxExpiresDays > 0 && value > policy.maxExpiresDays {
+		value = policy.maxExpiresDays
+	}
+	return value
+}
+
+func normalizeMaxUses(value int, policy shareLinkPolicy) int {
+	if value < 0 {
+		value = 0
+	}
+	if value == 0 {
+		value = policy.defaultMaxUses
+	}
+	if policy.maxMaxUses > 0 && value > policy.maxMaxUses {
+		value = policy.maxMaxUses
+	}
+	return value
+}
+
+func effectiveShareExpiresAt(link *storage.ShareLink, policy shareLinkPolicy) *time.Time {
+	if link.ExpiresAt != nil {
+		return link.ExpiresAt
+	}
+	if !policy.enforce || policy.defaultExpiresDays <= 0 {
+		return nil
+	}
+	exp := link.CreatedAt.AddDate(0, 0, policy.defaultExpiresDays)
+	return &exp
+}
+
+func effectiveShareMaxUses(link *storage.ShareLink, policy shareLinkPolicy) int {
+	if link.MaxUses > 0 {
+		return link.MaxUses
+	}
+	if !policy.enforce || policy.defaultMaxUses <= 0 {
+		return 0
+	}
+	return policy.defaultMaxUses
 }
 
 // getBaseURL retorna a URL base da aplicação

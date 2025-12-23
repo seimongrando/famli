@@ -99,13 +99,46 @@ app.use(pinia)
 app.use(router)
 app.use(i18n)
 
-if (import.meta.env.PROD) {
+const enableSW = import.meta.env.VITE_ENABLE_SW === 'true'
+
+if (import.meta.env.PROD && enableSW) {
   const updateSW = registerSW({
     immediate: true,
     onNeedRefresh() {
       updateSW(true)
     }
   })
+} else if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then((regs) => {
+    regs.forEach((reg) => reg.unregister())
+  })
+  if ('caches' in window) {
+    caches.keys().then((keys) => Promise.all(keys.map((key) => caches.delete(key))))
+  }
+}
+
+async function checkVersion() {
+  try {
+    const res = await fetch('/version.json', { cache: 'no-store' })
+    if (!res.ok) return
+    const data = await res.json()
+    const stored = localStorage.getItem('famli:version')
+    const current = data?.build || ''
+    if (stored && current && stored !== current) {
+      localStorage.setItem('famli:version', current)
+      window.location.reload()
+      return
+    }
+    if (current) {
+      localStorage.setItem('famli:version', current)
+    }
+  } catch (_) {
+    // ignore version check errors
+  }
+}
+
+if (import.meta.env.PROD) {
+  checkVersion()
 }
 
 // Importar store após configurar o Pinia

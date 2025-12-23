@@ -19,7 +19,8 @@
     "sending": "Sending...",
     "creating": "Creating...",
     "verifying": "Verifying...",
-    "saving": "Saving..."
+    "saving": "Saving...",
+    "maxChars": "Max {count} characters"
   },
   "brand": {
     "name": "famli",
@@ -271,7 +272,7 @@
       "outro": "Other"
     },
     "shareWithGuardians": "Share with guardians",
-    "shareHint": "Adding a trusted person does not grant automatic access to your information."
+    "shareHint": "Adding a trusted person does not grant automatic access to your information"
   },
   "itemTypes": {
     "info": "Important information",

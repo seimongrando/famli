@@ -33,7 +33,9 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
@@ -144,17 +146,37 @@ func main() {
 		storageType = "PostgreSQL"
 		log.Println("💾 Storage: PostgreSQL")
 
-		// Limpeza automática de logs antigos na inicialização (economizar espaço)
-		if err := pgStore.CleanupOldLogs(30); err != nil {
-			log.Printf("⚠️  Erro na limpeza de logs: %v", err)
-		} else {
-			log.Println("🧹 Logs antigos (>30 dias): limpos")
-		}
 	} else {
 		// Usar memória em desenvolvimento
 		store = storage.NewMemoryStore()
 		storageType = "Memory"
 		log.Println("💾 Storage: Memória (dados serão perdidos ao reiniciar)")
+	}
+
+	// Limpeza automática de logs antigos (economizar espaço)
+	retentionDays := getenvInt("LOG_RETENTION_DAYS", 30)
+	cleanupIntervalHours := getenvInt("LOG_CLEANUP_INTERVAL_HOURS", 24)
+	if err := store.CleanupOldLogs(retentionDays); err != nil {
+		log.Printf("⚠️  Erro na limpeza de logs: %v", err)
+	} else {
+		log.Printf("🧹 Logs antigos (>%d dias): limpos", retentionDays)
+	}
+	if err := store.CleanupExpiredPasswordResetTokens(); err != nil {
+		log.Printf("⚠️  Erro na limpeza de tokens de senha: %v", err)
+	}
+	if cleanupIntervalHours > 0 {
+		go func() {
+			ticker := time.NewTicker(time.Duration(cleanupIntervalHours) * time.Hour)
+			defer ticker.Stop()
+			for range ticker.C {
+				if err := store.CleanupOldLogs(retentionDays); err != nil {
+					log.Printf("⚠️  Erro na limpeza periódica de logs: %v", err)
+				}
+				if err := store.CleanupExpiredPasswordResetTokens(); err != nil {
+					log.Printf("⚠️  Erro na limpeza periódica de tokens de senha: %v", err)
+				}
+			}
+		}()
 	}
 
 	// Encryptor para dados sensíveis
@@ -276,6 +298,8 @@ func main() {
 		api.Group(func(pr chi.Router) {
 			// Middleware de autenticação JWT
 			pr.Use(auth.JWTMiddleware(jwtSecret))
+			// CSRF - validar origem para requisições mutantes
+			pr.Use(security.CSRFMiddleware(allowedOrigins, isDev))
 
 			// Autenticação
 			pr.Get("/auth/me", authHandler.Me)
@@ -355,6 +379,8 @@ func main() {
 		api.Route("/admin", func(ar chi.Router) {
 			// Autenticação JWT obrigatória
 			ar.Use(auth.JWTMiddleware(jwtSecret))
+			// CSRF - validar origem para requisições mutantes
+			ar.Use(security.CSRFMiddleware(allowedOrigins, isDev))
 			// Verificação de permissão admin
 			ar.Use(adminHandler.AdminOnly)
 
@@ -397,6 +423,19 @@ func main() {
 			urlPath := req.URL.Path
 			filePath := filepath.Join(staticDir, urlPath)
 
+			setStaticCacheHeaders := func(path string, isHTML bool) {
+				switch {
+				case isHTML:
+					w.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate")
+				case path == "/sw.js" || path == "/service-worker.js" || strings.HasSuffix(path, "manifest.webmanifest") || path == "/version.json":
+					w.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate")
+				case strings.HasPrefix(path, "/assets/"):
+					w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+				default:
+					w.Header().Set("Cache-Control", "public, max-age=86400")
+				}
+			}
+
 			// Verificar se é uma rota de página (não um arquivo estático)
 			// Se termina em / ou não tem extensão, é uma rota de página SPA
 			isPageRoute := urlPath == "/" ||
@@ -413,6 +452,7 @@ func main() {
 				localizedHTML := i18n.InjectMetaTags(string(indexHTML), lang)
 
 				w.Header().Set("Content-Type", "text/html; charset=utf-8")
+				setStaticCacheHeaders(urlPath, true)
 				io.WriteString(w, localizedHTML)
 				return
 			}
@@ -423,11 +463,13 @@ func main() {
 				lang := i18n.GetPreferredLanguage(req)
 				localizedHTML := i18n.InjectMetaTags(string(indexHTML), lang)
 				w.Header().Set("Content-Type", "text/html; charset=utf-8")
+				setStaticCacheHeaders(urlPath, true)
 				io.WriteString(w, localizedHTML)
 				return
 			}
 
 			// Servir arquivo estático
+			setStaticCacheHeaders(urlPath, false)
 			fileServer.ServeHTTP(w, req)
 		}))
 	} else {
@@ -457,6 +499,15 @@ func main() {
 func getenv(key, fallback string) string {
 	if value := os.Getenv(key); value != "" {
 		return value
+	}
+	return fallback
+}
+
+func getenvInt(key string, fallback int) int {
+	if value := os.Getenv(key); value != "" {
+		if parsed, err := strconv.Atoi(value); err == nil {
+			return parsed
+		}
 	}
 	return fallback
 }

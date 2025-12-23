@@ -133,6 +133,11 @@ func isAdmin(email string) bool {
 		return true
 	}
 
+	// Em produção, falhar fechado se não houver ADMIN_EMAILS configurado
+	if len(adminEmails) == 0 && env == "production" {
+		return false
+	}
+
 	return false
 }
 

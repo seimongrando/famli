@@ -19,7 +19,8 @@
     "sending": "Enviando...",
     "creating": "Criando...",
     "verifying": "Verificando...",
-    "saving": "Salvando..."
+    "saving": "Salvando...",
+    "maxChars": "Máx. {count} caracteres"
   },
   "brand": {
     "name": "famli",
@@ -238,8 +239,8 @@
       "phoneLabel": "Telefone (opcional)",
       "relationshipLabel": "Relação",
       "pinLabel": "PIN de proteção",
-      "pinPlaceholder": "Mínimo 4 caracteres (obrigatório)",
-      "pinHint": "O PIN é obrigatório para liberar o acesso via link.",
+      "pinPlaceholder": "Mínimo 4 caracteres",
+      "pinHint": "O PIN será solicitado quando esta pessoa acessar seu link de acesso. Recomendado para maior segurança.",
       "saveButton": "Adicionar pessoa de confiança",
       "saving": "Salvando..."
     },
@@ -284,8 +285,7 @@
   },
   "guardian": {
     "copyLink": "Copiar link de acesso",
-    "linkCopied": "Link copiado! Envie para esta pessoa para que ela possa acessar as informações compartilhadas.",
-    "pinRequired": "Defina um PIN para esta pessoa antes de compartilhar o link."
+    "linkCopied": "Link copiado! Envie para esta pessoa para que ela possa acessar as informações compartilhadas."
   },
   "guide": {
     "title": "Guia Famli",
@@ -369,7 +369,7 @@
     },
     "guardians": {
       "title": "Sobre pessoas de confiança",
-      "text1": "Adicionar alguém como pessoa de confiança {bold} dá acesso automático às suas informações. No MVP, elas servem para você registrar quem são as pessoas com quem pode compartilhar informações via links quando quiser.",
+      "text1": "Adicionar uma pessoa de confiança não dá acesso automático às suas informações. Você decide o que compartilhar e quando.",
       "text1Bold": "não",
       "text2": "Em versões futuras, você poderá escolher com mais detalhe: quais informações compartilhar, com quem e em quais situações."
     },

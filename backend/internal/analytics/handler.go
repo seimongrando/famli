@@ -28,10 +28,12 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"famli/internal/auth"
 	"famli/internal/i18n"
+	"famli/internal/security"
 	"famli/internal/storage"
 
 	"github.com/google/uuid"
@@ -100,7 +102,7 @@ func (h *Handler) Track(w http.ResponseWriter, r *http.Request) {
 		UserID:    userID,
 		EventType: storage.AnalyticsEventType(req.EventType),
 		Page:      req.Page,
-		Details:   req.Details,
+		Details:   sanitizeAnalyticsDetails(req.Details),
 		CreatedAt: time.Now(),
 	}
 
@@ -109,6 +111,46 @@ func (h *Handler) Track(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{"status": "tracked"})
+}
+
+const (
+	maxAnalyticsDetailsEntries    = 20
+	maxAnalyticsDetailKeyLength   = 64
+	maxAnalyticsDetailValueLength = 255
+	maxAnalyticsDetailsBytes      = 2048
+)
+
+func sanitizeAnalyticsDetails(details map[string]string) map[string]string {
+	if len(details) == 0 {
+		return nil
+	}
+
+	sanitized := make(map[string]string)
+	totalBytes := 0
+
+	for key, value := range details {
+		if len(sanitized) >= maxAnalyticsDetailsEntries {
+			break
+		}
+		cleanKey := security.SanitizeText(strings.TrimSpace(key), maxAnalyticsDetailKeyLength)
+		if cleanKey == "" {
+			continue
+		}
+		cleanValue := security.SanitizeText(strings.TrimSpace(value), maxAnalyticsDetailValueLength)
+
+		itemBytes := len(cleanKey) + len(cleanValue)
+		if totalBytes+itemBytes > maxAnalyticsDetailsBytes {
+			break
+		}
+		sanitized[cleanKey] = cleanValue
+		totalBytes += itemBytes
+	}
+
+	if len(sanitized) == 0 {
+		return nil
+	}
+
+	return sanitized
 }
 
 // GetSummary retorna o resumo de analytics (admin only)

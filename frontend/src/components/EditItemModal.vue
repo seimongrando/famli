@@ -34,6 +34,7 @@ const props = defineProps({
 const emit = defineEmits(['save', 'close'])
 
 const saving = ref(false)
+const errorMessage = ref('')
 const form = ref({
   title: '',
   content: '',
@@ -87,6 +88,7 @@ async function handleSave() {
   if (!props.item) return
   
   saving.value = true
+  errorMessage.value = ''
   
   try {
     if (itemKind.value === 'guardian') {
@@ -105,8 +107,12 @@ async function handleSave() {
       if (result) {
         emit('save', result)
         emit('close')
+      } else {
+        errorMessage.value = boxStore.error || t('errors.generic')
       }
     }
+  } catch (error) {
+    errorMessage.value = boxStore.error || t('errors.generic')
   } finally {
     saving.value = false
   }
@@ -141,8 +147,10 @@ function handleBackdropClick(e) {
                 v-model="form.title"
                 type="text"
                 class="form-input"
+                maxlength="255"
                 required
               />
+              <small class="form-hint">{{ t('common.maxChars', { count: 255 }) }}</small>
             </div>
             
             <div class="form-group">
@@ -166,6 +174,7 @@ function handleBackdropClick(e) {
                 v-model="form.content"
                 class="form-textarea"
                 rows="5"
+                maxlength="10000"
               ></textarea>
             </div>
 
@@ -187,6 +196,10 @@ function handleBackdropClick(e) {
               <button type="submit" class="btn btn--primary" :disabled="saving || !form.title">
                 {{ saving ? t('common.loading') : t('common.save') }}
               </button>
+            </div>
+            <div v-if="errorMessage" class="form-error-box">
+              <span class="form-error-icon">⚠️</span>
+              <span>{{ errorMessage }}</span>
             </div>
           </form>
           
@@ -198,8 +211,10 @@ function handleBackdropClick(e) {
                 v-model="form.title"
                 type="text"
                 class="form-input"
+                maxlength="255"
                 required
               />
+              <small class="form-hint">{{ t('common.maxChars', { count: 255 }) }}</small>
             </div>
             
             <div class="form-group">
@@ -208,7 +223,9 @@ function handleBackdropClick(e) {
                 v-model="form.recipient"
                 type="text"
                 class="form-input"
+                maxlength="255"
               />
+              <small class="form-hint">{{ t('common.maxChars', { count: 255 }) }}</small>
             </div>
             
             <div class="form-group">
@@ -217,6 +234,7 @@ function handleBackdropClick(e) {
                 v-model="form.content"
                 class="form-textarea"
                 rows="6"
+                maxlength="10000"
               ></textarea>
             </div>
 
@@ -239,6 +257,10 @@ function handleBackdropClick(e) {
                 {{ saving ? t('common.loading') : t('common.save') }}
               </button>
             </div>
+            <div v-if="errorMessage" class="form-error-box">
+              <span class="form-error-icon">⚠️</span>
+              <span>{{ errorMessage }}</span>
+            </div>
           </form>
           
           <!-- Guardian Form (view only for now) -->
@@ -249,6 +271,7 @@ function handleBackdropClick(e) {
                 v-model="form.name"
                 type="text"
                 class="form-input"
+                maxlength="255"
                 disabled
               />
             </div>
@@ -259,6 +282,7 @@ function handleBackdropClick(e) {
                 v-model="form.email"
                 type="email"
                 class="form-input"
+                maxlength="254"
                 disabled
               />
             </div>
@@ -269,6 +293,7 @@ function handleBackdropClick(e) {
                 v-model="form.phone"
                 type="tel"
                 class="form-input"
+                maxlength="20"
                 disabled
               />
             </div>
@@ -450,6 +475,22 @@ function handleBackdropClick(e) {
 .toggle-icon {
   font-size: 1rem;
 }
+
+.form-error-box {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  background: #fef2f2;
+  border: 1px solid var(--color-danger);
+  border-radius: var(--radius-md);
+  color: var(--color-danger);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  margin-top: var(--space-md);
+}
+
+.form-error-icon {
+  font-size: 1.2em;
+}
 </style>
-
-

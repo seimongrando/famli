@@ -87,10 +87,10 @@ Importar em App.vue ou DashboardPage.vue
               :placeholder="$t('feedback.messagePlaceholder')"
               class="form-textarea"
               rows="4"
-              maxlength="5000"
+              maxlength="2000"
               required
             ></textarea>
-            <span class="char-count">{{ message.length }}/5000</span>
+            <span class="char-count">{{ message.length }}/2000</span>
           </div>
 
           <!-- Error -->
@@ -477,5 +477,4 @@ async function submitFeedback() {
   }
 }
 </style>
-
 

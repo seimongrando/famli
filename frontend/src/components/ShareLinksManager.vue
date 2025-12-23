@@ -74,8 +74,10 @@
               v-model="newLink.name" 
               type="text" 
               :placeholder="$t('share.link_name_placeholder')"
+              maxlength="255"
               required
             />
+            <small class="form-hint">{{ $t('common.maxChars', { count: 255 }) }}</small>
           </div>
 
           <div class="form-group">
@@ -732,4 +734,3 @@ function showToast(type, message) {
   color: #64748b;
 }
 </style>
-

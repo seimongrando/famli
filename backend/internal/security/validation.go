@@ -62,7 +62,7 @@ const (
 	MaxTitleLength    = 200   // Título de item
 	MaxContentLength  = 10000 // Conteúdo de item (10KB - ~2500 palavras)
 	MaxFeedbackLength = 2000  // Feedback do usuário (2KB)
-	MaxNotesLength    = 1000  // Notas de guardião (1KB)
+	MaxNotesLength    = 255   // Notas de guardião (curtas)
 	MaxPhoneLength    = 20    // Telefone internacional
 	MaxURLLength      = 2048  // URL
 )
