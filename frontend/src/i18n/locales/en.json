@@ -402,8 +402,7 @@
     "emailExists": "This email is already registered.",
     "requiredField": "This field is required.",
     "invalidEmail": "Invalid email.",
-    "passwordTooShort": "Password must be at least 8 characters.",
-    "encryptedContent": "Protected content. Reload the page to view."
+    "passwordTooShort": "Password must be at least 8 characters."
   },
   "confirmations": {
     "deleteItem": "Are you sure you want to delete this item?",

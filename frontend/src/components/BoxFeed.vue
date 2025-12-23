@@ -126,27 +126,6 @@ function getRelationshipLabel(relationship) {
   return translated === key ? relationship : translated
 }
 
-// Detectar se um texto parece estar criptografado (base64 longo sem espaços, ou caracteres estranhos)
-function looksEncrypted(text) {
-  if (!text || typeof text !== 'string') return false
-  
-  // Se o texto é muito longo sem espaços e parece base64
-  const hasNoSpaces = !text.includes(' ') && text.length > 50
-  const looksLikeBase64 = /^[A-Za-z0-9+/=]{50,}$/.test(text)
-  const hasNonPrintable = /[\x00-\x08\x0E-\x1F]/.test(text)
-  
-  return (hasNoSpaces && looksLikeBase64) || hasNonPrintable
-}
-
-// Obter texto seguro para exibição
-function getSafeDisplayText(text, fallback = '') {
-  if (!text) return fallback
-  if (looksEncrypted(text)) {
-    return t('errors.encryptedContent')
-  }
-  return text
-}
-
 // Abrir modal de edição
 function openEditModal(entry) {
   selectedItem.value = entry
@@ -249,15 +228,12 @@ async function copyGuardianLink(guardian) {
         
         <div class="feed-item__content">
           <div class="feed-item__header">
-            <h3 class="feed-item__title">{{ getSafeDisplayText(entry.title, '...') }}</h3>
+            <h3 class="feed-item__title">{{ entry.title || '...' }}</h3>
             <span class="feed-item__type">{{ getTypeLabel(entry.type || entry.kind) }}</span>
           </div>
           
-          <p v-if="entry.content && !looksEncrypted(entry.content)" class="feed-item__description">
+          <p v-if="entry.content" class="feed-item__description">
             {{ entry.content.length > 120 ? entry.content.slice(0, 120) + '...' : entry.content }}
-          </p>
-          <p v-else-if="entry.content && looksEncrypted(entry.content)" class="feed-item__description feed-item__description--warning">
-            ⚠️ {{ t('errors.encryptedContent') }}
           </p>
           
           <div class="feed-item__meta">
@@ -490,11 +466,6 @@ async function copyGuardianLink(guardian) {
   -webkit-box-orient: vertical;
   overflow: hidden;
   word-break: break-word;
-}
-
-.feed-item__description--warning {
-  color: var(--color-warning, #d97706);
-  font-style: italic;
 }
 
 .feed-item__meta {

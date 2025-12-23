@@ -401,8 +401,7 @@
     "emailExists": "Este e-mail já está cadastrado.",
     "requiredField": "Este campo é obrigatório.",
     "invalidEmail": "E-mail inválido.",
-    "passwordTooShort": "A senha deve ter pelo menos 8 caracteres.",
-    "encryptedContent": "Conteúdo protegido. Recarregue a página para visualizar."
+    "passwordTooShort": "A senha deve ter pelo menos 8 caracteres."
   },
   "confirmations": {
     "deleteItem": "Tem certeza que deseja excluir este item?",

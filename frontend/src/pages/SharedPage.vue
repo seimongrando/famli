@@ -98,14 +98,11 @@
               <article v-for="item in category.items" :key="item.id" class="item-card" :class="{ important: item.is_important }">
                 <div class="item-header">
                   <span class="item-type-icon">{{ getTypeIcon(item.type) }}</span>
-                  <h4 class="item-title">{{ getSafeDisplayText(item.title, '...') }}</h4>
+                  <h4 class="item-title">{{ item.title || '...' }}</h4>
                   <span v-if="item.is_important" class="important-badge" title="Importante">⭐</span>
                 </div>
-                <div class="item-content" v-if="item.content && !looksEncrypted(item.content)">
+                <div class="item-content" v-if="item.content">
                   <p>{{ item.content }}</p>
-                </div>
-                <div class="item-content item-content--warning" v-else-if="item.content && looksEncrypted(item.content)">
-                  <p>⚠️ {{ t('errors.encryptedContent') }}</p>
                 </div>
                 <div class="item-footer" v-if="item.recipient">
                   <span class="recipient-label">💌 {{ $t('shared.for') }}: {{ item.recipient }}</span>
@@ -329,21 +326,6 @@ async function verifyPin() {
 function formatDate(date) {
   const loc = locale.value === 'en' ? 'en-US' : 'pt-BR'
   return new Date(date).toLocaleString(loc)
-}
-
-// Detectar se um texto parece estar criptografado
-function looksEncrypted(text) {
-  if (!text || typeof text !== 'string') return false
-  const hasNoSpaces = !text.includes(' ') && text.length > 50
-  const looksLikeBase64 = /^[A-Za-z0-9+/=]{50,}$/.test(text)
-  const hasNonPrintable = /[\x00-\x08\x0E-\x1F]/.test(text)
-  return (hasNoSpaces && looksLikeBase64) || hasNonPrintable
-}
-
-function getSafeDisplayText(text, fallback = '') {
-  if (!text) return fallback
-  if (looksEncrypted(text)) return t('errors.encryptedContent')
-  return text
 }
 
 function formatCategory(cat) {
@@ -845,11 +827,6 @@ function getTypeIcon(type) {
 .item-content p {
   margin: 0;
   white-space: pre-wrap;
-}
-
-.item-content--warning {
-  color: #d97706;
-  font-style: italic;
 }
 
 .item-footer {
