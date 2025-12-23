@@ -14,37 +14,66 @@ import { ref, computed } from 'vue'
 import i18n from '../i18n'
 
 // =============================================================================
-// FETCH COM RETRY
+// FETCH COM RETRY (APENAS PARA OPERAÇÕES IDEMPOTENTES)
 // =============================================================================
-// Implementa retry automático para erros de rede e 502 (Bad Gateway)
-// Isso lida com cold starts do Render e instabilidades temporárias
+// Retry automático APENAS para GET, PUT, DELETE - operações idempotentes
+// POST de criação NÃO deve ter retry pois pode criar duplicatas
+//
+// Operações idempotentes:
+// - GET: ler dados (sempre seguro)
+// - PUT: atualizar (pode repetir sem efeito colateral)
+// - DELETE: remover (pode repetir sem efeito colateral)
+//
+// Operações NÃO idempotentes:
+// - POST de criação: cria novo recurso cada vez
 
 const MAX_RETRIES = 3
 const RETRY_DELAY_MS = 1000
 
+// Métodos seguros para retry (idempotentes)
+const IDEMPOTENT_METHODS = ['GET', 'PUT', 'DELETE', 'HEAD', 'OPTIONS']
+
 async function fetchWithRetry(url, options = {}, retries = MAX_RETRIES) {
-  for (let attempt = 1; attempt <= retries; attempt++) {
+  const method = (options.method || 'GET').toUpperCase()
+  const isIdempotent = IDEMPOTENT_METHODS.includes(method)
+  
+  // Se não é idempotente (POST de criação), não fazer retry
+  const maxAttempts = isIdempotent ? retries : 1
+  
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
       const res = await fetch(url, { ...options, credentials: 'include' })
       
-      // Retry em erros 502/503/504 (erros de gateway/servidor temporário)
-      if (res.status >= 502 && res.status <= 504 && attempt < retries) {
-        console.warn(`[Box Store] Erro ${res.status}, tentativa ${attempt}/${retries}`)
+      // Retry em erros 502/503/504 APENAS para operações idempotentes
+      if (res.status >= 502 && res.status <= 504 && attempt < maxAttempts) {
+        console.warn(`[Box Store] Erro ${res.status}, tentativa ${attempt}/${maxAttempts} (${method})`)
         await new Promise(r => setTimeout(r, RETRY_DELAY_MS * attempt))
         continue
       }
       
       return res
     } catch (e) {
-      // Retry em erros de rede (fetch failed)
-      if (attempt < retries) {
-        console.warn(`[Box Store] Erro de rede, tentativa ${attempt}/${retries}:`, e.message)
+      // Retry em erros de rede APENAS para operações idempotentes
+      if (attempt < maxAttempts) {
+        console.warn(`[Box Store] Erro de rede, tentativa ${attempt}/${maxAttempts}:`, e.message)
         await new Promise(r => setTimeout(r, RETRY_DELAY_MS * attempt))
         continue
       }
       throw e
     }
   }
+}
+
+// =============================================================================
+// IDEMPOTENCY KEY PARA POST DE CRIAÇÃO
+// =============================================================================
+// Gera uma chave única para cada operação de criação
+// O backend pode usar isso para detectar requisições duplicadas
+
+function generateIdempotencyKey() {
+  const timestamp = Date.now().toString(36)
+  const random = Math.random().toString(36).substring(2, 10)
+  return `${timestamp}-${random}`
 }
 
 // Mapeamento de erros do backend para chaves i18n
@@ -277,18 +306,26 @@ export const useBoxStore = defineStore('box', () => {
   }
 
   async function createItem(payload) {
+    // Gerar idempotency key para evitar duplicatas em caso de retry do navegador
+    const idempotencyKey = generateIdempotencyKey()
+    
     try {
       const res = await fetchWithRetry('/api/box/items', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Idempotency-Key': idempotencyKey
+        },
         body: JSON.stringify(payload)
       })
       
       if (res.ok) {
         const item = await res.json()
-        // Adicionar no início da lista
-        items.value.unshift(item)
-        itemsTotal.value++
+        // Adicionar no início da lista (evitar duplicatas locais)
+        if (!items.value.some(i => i.id === item.id)) {
+          items.value.unshift(item)
+          itemsTotal.value++
+        }
         error.value = ''
         return item
       } else {
@@ -345,17 +382,26 @@ export const useBoxStore = defineStore('box', () => {
   }
 
   async function createGuardian(payload) {
+    // Gerar idempotency key para evitar duplicatas
+    const idempotencyKey = generateIdempotencyKey()
+    
     try {
       const res = await fetchWithRetry('/api/guardians', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Idempotency-Key': idempotencyKey
+        },
         body: JSON.stringify(payload)
       })
       
       if (res.ok) {
         const guardian = await res.json()
         error.value = ''
-        guardians.value.unshift(guardian)
+        // Evitar duplicatas locais
+        if (!guardians.value.some(g => g.id === guardian.id)) {
+          guardians.value.unshift(guardian)
+        }
         return guardian
       } else {
         let data = null

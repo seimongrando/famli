@@ -16,30 +16,40 @@ import { ref, computed } from 'vue'
 import i18n from '../i18n'
 
 // =============================================================================
-// FETCH COM RETRY PARA AUTH
+// FETCH COM RETRY PARA AUTH (APENAS OPERAÇÕES IDEMPOTENTES)
 // =============================================================================
-// Retry automático para lidar com cold starts do Render
+// Retry automático APENAS para GET (verificar sessão)
+// NÃO fazer retry em login/register pois são operações sensíveis
 
 const MAX_RETRIES = 3
 const RETRY_DELAY_MS = 1000
 
+// Métodos seguros para retry (idempotentes)
+const IDEMPOTENT_METHODS = ['GET', 'HEAD', 'OPTIONS']
+
 async function fetchWithRetry(url, options = {}, retries = MAX_RETRIES) {
-  for (let attempt = 1; attempt <= retries; attempt++) {
+  const method = (options.method || 'GET').toUpperCase()
+  const isIdempotent = IDEMPOTENT_METHODS.includes(method)
+  
+  // Se não é idempotente (POST de login/register), não fazer retry
+  const maxAttempts = isIdempotent ? retries : 1
+  
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
       const res = await fetch(url, { ...options, credentials: 'include' })
       
-      // Retry em erros 502/503/504 (gateway errors)
-      if (res.status >= 502 && res.status <= 504 && attempt < retries) {
-        console.warn(`[Auth] Erro ${res.status}, tentativa ${attempt}/${retries}`)
+      // Retry em erros 502/503/504 APENAS para operações idempotentes
+      if (res.status >= 502 && res.status <= 504 && attempt < maxAttempts) {
+        console.warn(`[Auth] Erro ${res.status}, tentativa ${attempt}/${maxAttempts} (${method})`)
         await new Promise(r => setTimeout(r, RETRY_DELAY_MS * attempt))
         continue
       }
       
       return res
     } catch (e) {
-      // Retry em erros de rede
-      if (attempt < retries) {
-        console.warn(`[Auth] Erro de rede, tentativa ${attempt}/${retries}:`, e.message)
+      // Retry em erros de rede APENAS para operações idempotentes
+      if (attempt < maxAttempts) {
+        console.warn(`[Auth] Erro de rede, tentativa ${attempt}/${maxAttempts}:`, e.message)
         await new Promise(r => setTimeout(r, RETRY_DELAY_MS * attempt))
         continue
       }

@@ -1,21 +1,38 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 
-// Fetch com retry para lidar com cold starts do Render
+// =============================================================================
+// FETCH COM RETRY (APENAS OPERAÇÕES IDEMPOTENTES)
+// =============================================================================
+// Retry automático para GET e operações upsert (POST com cardId é idempotente)
+
 const MAX_RETRIES = 3
 const RETRY_DELAY_MS = 1000
 
+// markProgress é uma operação upsert (idempotente por natureza)
+// GET também é idempotente
+const IDEMPOTENT_METHODS = ['GET', 'PUT', 'DELETE', 'HEAD', 'OPTIONS']
+
 async function fetchWithRetry(url, options = {}, retries = MAX_RETRIES) {
-  for (let attempt = 1; attempt <= retries; attempt++) {
+  const method = (options.method || 'GET').toUpperCase()
+  
+  // markProgress é POST mas é idempotente (upsert)
+  // Detectar pelo padrão da URL
+  const isUpsertProgress = url.includes('/guide/progress/') && method === 'POST'
+  const isIdempotent = IDEMPOTENT_METHODS.includes(method) || isUpsertProgress
+  
+  const maxAttempts = isIdempotent ? retries : 1
+  
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
       const res = await fetch(url, { ...options, credentials: 'include' })
-      if (res.status >= 502 && res.status <= 504 && attempt < retries) {
+      if (res.status >= 502 && res.status <= 504 && attempt < maxAttempts) {
         await new Promise(r => setTimeout(r, RETRY_DELAY_MS * attempt))
         continue
       }
       return res
     } catch (e) {
-      if (attempt < retries) {
+      if (attempt < maxAttempts) {
         await new Promise(r => setTimeout(r, RETRY_DELAY_MS * attempt))
         continue
       }
