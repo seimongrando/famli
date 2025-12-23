@@ -402,7 +402,8 @@
     "emailExists": "This email is already registered.",
     "requiredField": "This field is required.",
     "invalidEmail": "Invalid email.",
-    "passwordTooShort": "Password must be at least 8 characters."
+    "passwordTooShort": "Password must be at least 8 characters.",
+    "encryptedContent": "Protected content. Reload the page to view."
   },
   "confirmations": {
     "deleteItem": "Are you sure you want to delete this item?",
@@ -782,17 +783,17 @@
   },
   "apiErrors": {
     "title_required": "Title is required.",
-    "title_too_long": "Title must be at most 255 characters.",
-    "content_too_long": "Content must be at most 10000 characters.",
+    "title_too_long": "Title must be at most 100 characters.",
+    "content_too_long": "Content must be at most 2000 characters.",
     "name_required": "Name is required.",
-    "name_too_long": "Name must be at most 255 characters.",
+    "name_too_long": "Name must be at most 100 characters.",
     "email_invalid": "Invalid email.",
     "email_too_long": "Email must be at most 254 characters.",
     "phone_too_long": "Phone must be at most 20 characters.",
     "pin_required": "PIN is required.",
     "pin_too_short": "PIN must be at least 4 characters.",
     "pin_too_long": "PIN must be at most 20 characters.",
-    "recipient_too_long": "Recipient must be at most 255 characters.",
+    "recipient_too_long": "Recipient must be at most 100 characters.",
     "type_invalid": "Invalid item type.",
     "item_not_found": "Item not found.",
     "guardian_not_found": "Trusted person not found.",

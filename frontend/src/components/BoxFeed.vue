@@ -17,7 +17,7 @@ import { useBoxStore } from '../stores/box'
 import ConfirmModal from './ConfirmModal.vue'
 import EditItemModal from './EditItemModal.vue'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const boxStore = useBoxStore()
 
 // Filtro ativo
@@ -96,7 +96,10 @@ function formatDate(dateStr) {
   if (!dateStr) return ''
   const date = new Date(dateStr)
   if (isNaN(date.getTime())) return ''
-  return date.toLocaleDateString(undefined, {
+  
+  // Usar locale do usuário (pt-BR ou en)
+  const userLocale = locale.value === 'pt-BR' ? 'pt-BR' : 'en-US'
+  return date.toLocaleDateString(userLocale, {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric'
@@ -121,6 +124,27 @@ function getRelationshipLabel(relationship) {
   const key = `composer.relationships.${relationship}`
   const translated = t(key)
   return translated === key ? relationship : translated
+}
+
+// Detectar se um texto parece estar criptografado (base64 longo sem espaços, ou caracteres estranhos)
+function looksEncrypted(text) {
+  if (!text || typeof text !== 'string') return false
+  
+  // Se o texto é muito longo sem espaços e parece base64
+  const hasNoSpaces = !text.includes(' ') && text.length > 50
+  const looksLikeBase64 = /^[A-Za-z0-9+/=]{50,}$/.test(text)
+  const hasNonPrintable = /[\x00-\x08\x0E-\x1F]/.test(text)
+  
+  return (hasNoSpaces && looksLikeBase64) || hasNonPrintable
+}
+
+// Obter texto seguro para exibição
+function getSafeDisplayText(text, fallback = '') {
+  if (!text) return fallback
+  if (looksEncrypted(text)) {
+    return t('errors.encryptedContent')
+  }
+  return text
 }
 
 // Abrir modal de edição
@@ -225,12 +249,15 @@ async function copyGuardianLink(guardian) {
         
         <div class="feed-item__content">
           <div class="feed-item__header">
-            <h3 class="feed-item__title">{{ entry.title }}</h3>
+            <h3 class="feed-item__title">{{ getSafeDisplayText(entry.title, '...') }}</h3>
             <span class="feed-item__type">{{ getTypeLabel(entry.type || entry.kind) }}</span>
           </div>
           
-          <p v-if="entry.content" class="feed-item__description">
+          <p v-if="entry.content && !looksEncrypted(entry.content)" class="feed-item__description">
             {{ entry.content.length > 120 ? entry.content.slice(0, 120) + '...' : entry.content }}
+          </p>
+          <p v-else-if="entry.content && looksEncrypted(entry.content)" class="feed-item__description feed-item__description--warning">
+            ⚠️ {{ t('errors.encryptedContent') }}
           </p>
           
           <div class="feed-item__meta">
@@ -418,6 +445,7 @@ async function copyGuardianLink(guardian) {
 
 .feed-item__content {
   min-width: 0;
+  overflow: hidden;
 }
 
 .feed-item__header {
@@ -425,13 +453,19 @@ async function copyGuardianLink(guardian) {
   align-items: center;
   gap: var(--space-sm);
   margin-bottom: var(--space-xs);
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  overflow: hidden;
 }
 
 .feed-item__title {
   font-size: var(--font-size-base);
   font-weight: 600;
   margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
 }
 
 .feed-item__type {
@@ -441,6 +475,8 @@ async function copyGuardianLink(guardian) {
   font-size: 0.7rem;
   font-weight: 600;
   color: var(--color-primary);
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .feed-item__description {
@@ -448,6 +484,17 @@ async function copyGuardianLink(guardian) {
   font-size: var(--font-size-sm);
   margin: 0 0 var(--space-sm);
   line-height: 1.5;
+  /* Limitar a 2 linhas */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
+}
+
+.feed-item__description--warning {
+  color: var(--color-warning, #d97706);
+  font-style: italic;
 }
 
 .feed-item__meta {
@@ -456,6 +503,7 @@ async function copyGuardianLink(guardian) {
   gap: var(--space-sm);
   font-size: 0.75rem;
   color: var(--color-text-muted);
+  overflow: hidden;
 }
 
 .feed-item__category,
@@ -464,6 +512,15 @@ async function copyGuardianLink(guardian) {
   padding: 2px 6px;
   background: var(--color-bg-warm);
   border-radius: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 150px;
+}
+
+.feed-item__date {
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .feed-item__actions {

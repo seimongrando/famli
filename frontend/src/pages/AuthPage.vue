@@ -290,10 +290,10 @@ async function handleSubmit() {
               type="text"
               class="form-input"
               :placeholder="t('auth.namePlaceholder')"
-              maxlength="255"
+              maxlength="100"
               autocomplete="name"
             />
-            <p class="form-hint">{{ t('common.maxChars', { count: 255 }) }}</p>
+            <p class="form-hint">{{ t('common.maxChars', { count: 100 }) }}</p>
           </div>
 
           <!-- Email -->

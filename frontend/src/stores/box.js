@@ -13,6 +13,7 @@ import { ref, computed } from 'vue'
 import i18n from '../i18n'
 
 // Mapeamento de erros do backend para chaves i18n
+// Limites MVP: title=100, content=2000, name=100, recipient=100
 const errorMap = {
   // Erros em inglês
   'title is required': 'apiErrors.title_required',

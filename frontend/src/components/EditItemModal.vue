@@ -22,14 +22,14 @@ import ErrorModal from './ErrorModal.vue'
 const { t } = useI18n()
 const boxStore = useBoxStore()
 
-// Limites de caracteres
+// Limites de caracteres (MVP)
 const LIMITS = {
-  title: 255,
-  content: 10000,
-  name: 255,
+  title: 100,
+  content: 2000,
+  name: 100,
   email: 254,
   phone: 20,
-  recipient: 255
+  recipient: 100
 }
 
 // Função para traduzir erros do backend

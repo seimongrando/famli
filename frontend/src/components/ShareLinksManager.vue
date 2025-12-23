@@ -184,11 +184,12 @@ import { useI18n } from 'vue-i18n'
 import { useBoxStore } from '@/stores/box'
 import CharCounter from './CharCounter.vue'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const boxStore = useBoxStore()
 
+// Limites de caracteres (MVP)
 const LIMITS = {
-  name: 255,
+  name: 100,
   pin: 10
 }
 
@@ -332,7 +333,13 @@ function getLinkTypeName(type) {
 }
 
 function formatDate(date) {
-  return new Date(date).toLocaleDateString('pt-BR')
+  // Usar locale do usuário (pt-BR ou en)
+  const userLocale = locale.value === 'pt-BR' ? 'pt-BR' : 'en-US'
+  return new Date(date).toLocaleDateString(userLocale, {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  })
 }
 
 function showToast(type, message) {

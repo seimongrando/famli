@@ -126,8 +126,9 @@ import CharCounter from './CharCounter.vue'
 const { t } = useI18n()
 const route = useRoute()
 
+// Limites de caracteres (MVP)
 const LIMITS = {
-  message: 2000
+  message: 1000
 }
 
 // Estado do modal

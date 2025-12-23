@@ -22,7 +22,7 @@ import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../stores/auth'
 import { useLocalizedRoutes } from '../composables/useLocalizedRoutes'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const router = useRouter()
 const authStore = useAuthStore()
 const { paths, getPath } = useLocalizedRoutes()
@@ -350,7 +350,8 @@ function formatEventType(type) {
 
 function formatTimestamp(timestamp) {
   const date = new Date(timestamp)
-  return date.toLocaleString('pt-BR', {
+  const userLocale = locale.value === 'pt-BR' ? 'pt-BR' : 'en-US'
+  return date.toLocaleString(userLocale, {
     day: '2-digit',
     month: '2-digit',
     hour: '2-digit',
