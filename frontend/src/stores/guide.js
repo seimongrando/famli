@@ -1,6 +1,29 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 
+// Fetch com retry para lidar com cold starts do Render
+const MAX_RETRIES = 3
+const RETRY_DELAY_MS = 1000
+
+async function fetchWithRetry(url, options = {}, retries = MAX_RETRIES) {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const res = await fetch(url, { ...options, credentials: 'include' })
+      if (res.status >= 502 && res.status <= 504 && attempt < retries) {
+        await new Promise(r => setTimeout(r, RETRY_DELAY_MS * attempt))
+        continue
+      }
+      return res
+    } catch (e) {
+      if (attempt < retries) {
+        await new Promise(r => setTimeout(r, RETRY_DELAY_MS * attempt))
+        continue
+      }
+      throw e
+    }
+  }
+}
+
 export const useGuideStore = defineStore('guide', () => {
   const cards = ref([])
   const progress = ref({})
@@ -17,7 +40,7 @@ export const useGuideStore = defineStore('guide', () => {
 
   async function fetchCards() {
     try {
-      const res = await fetch('/api/guide/cards', { credentials: 'include' })
+      const res = await fetchWithRetry('/api/guide/cards')
       if (res.ok) {
         const data = await res.json()
         cards.value = data.cards || []
@@ -29,7 +52,7 @@ export const useGuideStore = defineStore('guide', () => {
 
   async function fetchProgress() {
     try {
-      const res = await fetch('/api/guide/progress', { credentials: 'include' })
+      const res = await fetchWithRetry('/api/guide/progress')
       if (res.ok) {
         const data = await res.json()
         progress.value = {}
@@ -52,10 +75,9 @@ export const useGuideStore = defineStore('guide', () => {
     console.log('[Guide Store] Marking progress:', cardId, status)
     
     try {
-      const res = await fetch(`/api/guide/progress/${cardId}`, {
+      const res = await fetchWithRetry(`/api/guide/progress/${cardId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({ status })
       })
       

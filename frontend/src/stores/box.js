@@ -6,11 +6,46 @@
 // - Cache local
 // - Otimizações de performance
 // - Tradução de erros de negócio
+// - Retry automático para erros de rede/502
 // =============================================================================
 
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import i18n from '../i18n'
+
+// =============================================================================
+// FETCH COM RETRY
+// =============================================================================
+// Implementa retry automático para erros de rede e 502 (Bad Gateway)
+// Isso lida com cold starts do Render e instabilidades temporárias
+
+const MAX_RETRIES = 3
+const RETRY_DELAY_MS = 1000
+
+async function fetchWithRetry(url, options = {}, retries = MAX_RETRIES) {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const res = await fetch(url, { ...options, credentials: 'include' })
+      
+      // Retry em erros 502/503/504 (erros de gateway/servidor temporário)
+      if (res.status >= 502 && res.status <= 504 && attempt < retries) {
+        console.warn(`[Box Store] Erro ${res.status}, tentativa ${attempt}/${retries}`)
+        await new Promise(r => setTimeout(r, RETRY_DELAY_MS * attempt))
+        continue
+      }
+      
+      return res
+    } catch (e) {
+      // Retry em erros de rede (fetch failed)
+      if (attempt < retries) {
+        console.warn(`[Box Store] Erro de rede, tentativa ${attempt}/${retries}:`, e.message)
+        await new Promise(r => setTimeout(r, RETRY_DELAY_MS * attempt))
+        continue
+      }
+      throw e
+    }
+  }
+}
 
 // Mapeamento de erros do backend para chaves i18n
 // Limites MVP: title=100, content=2000, name=100, recipient=100
@@ -161,9 +196,7 @@ export const useBoxStore = defineStore('box', () => {
   // Buscar primeira página de itens
   async function fetchItems() {
     try {
-      const res = await fetch(`/api/box/items?limit=${PAGE_SIZE}`, { 
-        credentials: 'include' 
-      })
+      const res = await fetchWithRetry(`/api/box/items?limit=${PAGE_SIZE}`)
       if (res.ok) {
         const data = await res.json()
         items.value = data.items || []
@@ -183,7 +216,7 @@ export const useBoxStore = defineStore('box', () => {
     loadingMore.value = true
     try {
       const url = `/api/box/items?limit=${PAGE_SIZE}${itemsCursor.value ? `&cursor=${itemsCursor.value}` : ''}`
-      const res = await fetch(url, { credentials: 'include' })
+      const res = await fetchWithRetry(url)
       
       if (res.ok) {
         const data = await res.json()
@@ -204,7 +237,7 @@ export const useBoxStore = defineStore('box', () => {
 
   async function fetchGuardians() {
     try {
-      const res = await fetch('/api/guardians', { credentials: 'include' })
+      const res = await fetchWithRetry('/api/guardians')
       if (res.ok) {
         const data = await res.json()
         guardians.value = data.guardians || []
@@ -245,10 +278,9 @@ export const useBoxStore = defineStore('box', () => {
 
   async function createItem(payload) {
     try {
-      const res = await fetch('/api/box/items', {
+      const res = await fetchWithRetry('/api/box/items', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify(payload)
       })
       
@@ -271,10 +303,9 @@ export const useBoxStore = defineStore('box', () => {
 
   async function updateItem(id, payload) {
     try {
-      const res = await fetch(`/api/box/items/${id}`, {
+      const res = await fetchWithRetry(`/api/box/items/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify(payload)
       })
       if (res.ok) {
@@ -295,9 +326,8 @@ export const useBoxStore = defineStore('box', () => {
 
   async function deleteItem(id) {
     try {
-      const res = await fetch(`/api/box/items/${id}`, {
-        method: 'DELETE',
-        credentials: 'include'
+      const res = await fetchWithRetry(`/api/box/items/${id}`, {
+        method: 'DELETE'
       })
       if (res.ok) {
         items.value = items.value.filter(i => i.id !== id)
@@ -316,10 +346,9 @@ export const useBoxStore = defineStore('box', () => {
 
   async function createGuardian(payload) {
     try {
-      const res = await fetch('/api/guardians', {
+      const res = await fetchWithRetry('/api/guardians', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify(payload)
       })
       
@@ -346,9 +375,8 @@ export const useBoxStore = defineStore('box', () => {
 
   async function deleteGuardian(id) {
     try {
-      const res = await fetch(`/api/guardians/${id}`, {
-        method: 'DELETE',
-        credentials: 'include'
+      const res = await fetchWithRetry(`/api/guardians/${id}`, {
+        method: 'DELETE'
       })
       if (res.ok) {
         guardians.value = guardians.value.filter(g => g.id !== id)

@@ -8,11 +8,45 @@
 // - Verificação de sessão com retry
 // - Mensagens de erro traduzidas
 // - Tratamento de sessão expirada
+// - Retry automático para erros de rede/502
 // =============================================================================
 
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import i18n from '../i18n'
+
+// =============================================================================
+// FETCH COM RETRY PARA AUTH
+// =============================================================================
+// Retry automático para lidar com cold starts do Render
+
+const MAX_RETRIES = 3
+const RETRY_DELAY_MS = 1000
+
+async function fetchWithRetry(url, options = {}, retries = MAX_RETRIES) {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const res = await fetch(url, { ...options, credentials: 'include' })
+      
+      // Retry em erros 502/503/504 (gateway errors)
+      if (res.status >= 502 && res.status <= 504 && attempt < retries) {
+        console.warn(`[Auth] Erro ${res.status}, tentativa ${attempt}/${retries}`)
+        await new Promise(r => setTimeout(r, RETRY_DELAY_MS * attempt))
+        continue
+      }
+      
+      return res
+    } catch (e) {
+      // Retry em erros de rede
+      if (attempt < retries) {
+        console.warn(`[Auth] Erro de rede, tentativa ${attempt}/${retries}:`, e.message)
+        await new Promise(r => setTimeout(r, RETRY_DELAY_MS * attempt))
+        continue
+      }
+      throw e
+    }
+  }
+}
 
 // Mapeamento de erros do backend para chaves i18n
 const errorMap = {
@@ -79,8 +113,7 @@ export const useAuthStore = defineStore('auth', () => {
     lastSessionCheck.value = now
 
     try {
-      const res = await fetch('/api/auth/me', { 
-        credentials: 'include',
+      const res = await fetchWithRetry('/api/auth/me', { 
         headers: {
           'Cache-Control': 'no-cache'
         }
@@ -128,10 +161,9 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = ''
 
     try {
-      const res = await fetch('/api/auth/register', {
+      const res = await fetchWithRetry('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({ email, password, name })
       })
 
@@ -157,10 +189,9 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = ''
 
     try {
-      const res = await fetch('/api/auth/login', {
+      const res = await fetchWithRetry('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({ email, password })
       })
 
@@ -200,10 +231,9 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = ''
 
     try {
-      const res = await fetch('/api/auth/oauth/google', {
+      const res = await fetchWithRetry('/api/auth/oauth/google', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({ token: idToken })
       })
 
@@ -230,10 +260,9 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = ''
 
     try {
-      const res = await fetch('/api/auth/oauth/apple', {
+      const res = await fetchWithRetry('/api/auth/oauth/apple', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({ token: idToken })
       })
 
