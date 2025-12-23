@@ -16,9 +16,62 @@
 import { ref, watch, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useBoxStore } from '../stores/box'
+import CharCounter from './CharCounter.vue'
+import ErrorModal from './ErrorModal.vue'
 
 const { t } = useI18n()
 const boxStore = useBoxStore()
+
+// Limites de caracteres
+const LIMITS = {
+  title: 255,
+  content: 10000,
+  name: 255,
+  email: 254,
+  phone: 20,
+  recipient: 255
+}
+
+// Função para traduzir erros do backend
+function translateError(error) {
+  const errorMap = {
+    'title is required': 'apiErrors.title_required',
+    'title too long': 'apiErrors.title_too_long',
+    'content too long': 'apiErrors.content_too_long',
+    'name is required': 'apiErrors.name_required',
+    'name too long': 'apiErrors.name_too_long',
+    'invalid email': 'apiErrors.email_invalid',
+    'email too long': 'apiErrors.email_too_long',
+    'phone too long': 'apiErrors.phone_too_long',
+    'recipient too long': 'apiErrors.recipient_too_long',
+    'invalid type': 'apiErrors.type_invalid',
+    'item not found': 'apiErrors.item_not_found',
+    'unauthorized': 'apiErrors.unauthorized',
+    'Título é obrigatório': 'apiErrors.title_required',
+    'Título muito longo': 'apiErrors.title_too_long',
+    'Conteúdo muito longo': 'apiErrors.content_too_long',
+    'Nome é obrigatório': 'apiErrors.name_required',
+    'Nome muito longo': 'apiErrors.name_too_long',
+    'E-mail inválido': 'apiErrors.email_invalid',
+    'E-mail muito longo': 'apiErrors.email_too_long',
+    'Telefone muito longo': 'apiErrors.phone_too_long',
+    'Destinatário muito longo': 'apiErrors.recipient_too_long',
+    'Tipo inválido': 'apiErrors.type_invalid',
+    'Item não encontrado': 'apiErrors.item_not_found',
+    'Não autorizado': 'apiErrors.unauthorized'
+  }
+
+  if (!error) return t('apiErrors.generic')
+  
+  const lowerError = error.toLowerCase()
+  for (const [key, translationKey] of Object.entries(errorMap)) {
+    if (lowerError.includes(key.toLowerCase())) {
+      return t(translationKey)
+    }
+  }
+  
+  return t('apiErrors.generic')
+}
 
 const props = defineProps({
   show: {
@@ -35,6 +88,15 @@ const emit = defineEmits(['save', 'close'])
 
 const saving = ref(false)
 const errorMessage = ref('')
+const showErrorModal = ref(false)
+const errorModalMessage = ref('')
+
+// Mostrar erro em modal
+function showError(error) {
+  errorModalMessage.value = translateError(error)
+  showErrorModal.value = true
+}
+
 const form = ref({
   title: '',
   content: '',
@@ -87,6 +149,12 @@ watch(() => props.show, (show) => {
 async function handleSave() {
   if (!props.item) return
   
+  // Validação frontend
+  if (!form.value.title && itemKind.value !== 'guardian') {
+    errorMessage.value = t('apiErrors.title_required')
+    return
+  }
+  
   saving.value = true
   errorMessage.value = ''
   
@@ -108,11 +176,11 @@ async function handleSave() {
         emit('save', result)
         emit('close')
       } else {
-        errorMessage.value = boxStore.error || t('errors.generic')
+        showError(boxStore.error)
       }
     }
   } catch (error) {
-    errorMessage.value = boxStore.error || t('errors.generic')
+    showError(boxStore.error || error.message)
   } finally {
     saving.value = false
   }
@@ -147,10 +215,13 @@ function handleBackdropClick(e) {
                 v-model="form.title"
                 type="text"
                 class="form-input"
-                maxlength="255"
+                :class="{ 'form-input--error': form.title.length > LIMITS.title }"
+                :maxlength="LIMITS.title"
                 required
               />
-              <small class="form-hint">{{ t('common.maxChars', { count: 255 }) }}</small>
+              <div class="form-hint-row">
+                <CharCounter :current="form.title.length" :max="LIMITS.title" />
+              </div>
             </div>
             
             <div class="form-group">
@@ -173,9 +244,13 @@ function handleBackdropClick(e) {
               <textarea 
                 v-model="form.content"
                 class="form-textarea"
+                :class="{ 'form-input--error': form.content.length > LIMITS.content }"
                 rows="5"
-                maxlength="10000"
+                :maxlength="LIMITS.content"
               ></textarea>
+              <div class="form-hint-row">
+                <CharCounter :current="form.content.length" :max="LIMITS.content" />
+              </div>
             </div>
 
             <div class="form-group share-toggle">
@@ -211,10 +286,13 @@ function handleBackdropClick(e) {
                 v-model="form.title"
                 type="text"
                 class="form-input"
-                maxlength="255"
+                :class="{ 'form-input--error': form.title.length > LIMITS.title }"
+                :maxlength="LIMITS.title"
                 required
               />
-              <small class="form-hint">{{ t('common.maxChars', { count: 255 }) }}</small>
+              <div class="form-hint-row">
+                <CharCounter :current="form.title.length" :max="LIMITS.title" />
+              </div>
             </div>
             
             <div class="form-group">
@@ -223,9 +301,12 @@ function handleBackdropClick(e) {
                 v-model="form.recipient"
                 type="text"
                 class="form-input"
-                maxlength="255"
+                :class="{ 'form-input--error': form.recipient.length > LIMITS.recipient }"
+                :maxlength="LIMITS.recipient"
               />
-              <small class="form-hint">{{ t('common.maxChars', { count: 255 }) }}</small>
+              <div class="form-hint-row">
+                <CharCounter :current="form.recipient.length" :max="LIMITS.recipient" />
+              </div>
             </div>
             
             <div class="form-group">
@@ -233,9 +314,13 @@ function handleBackdropClick(e) {
               <textarea 
                 v-model="form.content"
                 class="form-textarea"
+                :class="{ 'form-input--error': form.content.length > LIMITS.content }"
                 rows="6"
-                maxlength="10000"
+                :maxlength="LIMITS.content"
               ></textarea>
+              <div class="form-hint-row">
+                <CharCounter :current="form.content.length" :max="LIMITS.content" />
+              </div>
             </div>
 
             <div class="form-group share-toggle">
@@ -271,7 +356,7 @@ function handleBackdropClick(e) {
                 v-model="form.name"
                 type="text"
                 class="form-input"
-                maxlength="255"
+                :maxlength="LIMITS.name"
                 disabled
               />
             </div>
@@ -282,7 +367,7 @@ function handleBackdropClick(e) {
                 v-model="form.email"
                 type="email"
                 class="form-input"
-                maxlength="254"
+                :maxlength="LIMITS.email"
                 disabled
               />
             </div>
@@ -293,7 +378,7 @@ function handleBackdropClick(e) {
                 v-model="form.phone"
                 type="tel"
                 class="form-input"
-                maxlength="20"
+                :maxlength="LIMITS.phone"
                 disabled
               />
             </div>
@@ -309,6 +394,13 @@ function handleBackdropClick(e) {
             </div>
           </div>
         </div>
+        
+        <!-- Error Modal -->
+        <ErrorModal 
+          :show="showErrorModal"
+          :message="errorModalMessage"
+          @close="showErrorModal = false"
+        />
       </div>
     </Transition>
   </Teleport>
@@ -492,5 +584,18 @@ function handleBackdropClick(e) {
 
 .form-error-icon {
   font-size: 1.2em;
+}
+
+/* Form hint row */
+.form-hint-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--space-xs);
+}
+
+/* Error input state */
+.form-input--error {
+  border-color: var(--color-danger);
+  background-color: #fef2f2;
 }
 </style>

@@ -765,5 +765,41 @@
     "documents": "Documentos",
     "memories": "Memórias",
     "other": "Outros"
+  },
+  "charCounter": {
+    "remaining": "{remaining} de {max} restantes",
+    "typed": "{current} de {max}"
+  },
+  "errorModal": {
+    "title": {
+      "error": "Ops! Algo deu errado",
+      "warning": "Atenção",
+      "info": "Informação"
+    },
+    "understood": "Entendi",
+    "retry": "Tentar novamente"
+  },
+  "apiErrors": {
+    "title_required": "O título é obrigatório.",
+    "title_too_long": "O título deve ter no máximo 255 caracteres.",
+    "content_too_long": "O conteúdo deve ter no máximo 10000 caracteres.",
+    "name_required": "O nome é obrigatório.",
+    "name_too_long": "O nome deve ter no máximo 255 caracteres.",
+    "email_invalid": "E-mail inválido.",
+    "email_too_long": "O e-mail deve ter no máximo 254 caracteres.",
+    "phone_too_long": "O telefone deve ter no máximo 20 caracteres.",
+    "pin_required": "O PIN é obrigatório.",
+    "pin_too_short": "O PIN deve ter no mínimo 4 caracteres.",
+    "pin_too_long": "O PIN deve ter no máximo 20 caracteres.",
+    "recipient_too_long": "O destinatário deve ter no máximo 255 caracteres.",
+    "type_invalid": "Tipo de item inválido.",
+    "item_not_found": "Item não encontrado.",
+    "guardian_not_found": "Pessoa de confiança não encontrada.",
+    "duplicate_guardian_email": "Já existe uma pessoa de confiança com este e-mail.",
+    "unauthorized": "Você não tem permissão para realizar esta ação.",
+    "rate_limit": "Muitas requisições. Aguarde um momento e tente novamente.",
+    "server_error": "Erro no servidor. Tente novamente mais tarde.",
+    "network_error": "Erro de conexão. Verifique sua internet e tente novamente.",
+    "generic": "Algo deu errado. Tente novamente."
   }
 }

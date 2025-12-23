@@ -86,11 +86,14 @@ Importar em App.vue ou DashboardPage.vue
               v-model="message"
               :placeholder="$t('feedback.messagePlaceholder')"
               class="form-textarea"
+              :class="{ 'form-input--error': message.length > LIMITS.message }"
               rows="4"
-              maxlength="2000"
+              :maxlength="LIMITS.message"
               required
             ></textarea>
-            <span class="char-count">{{ message.length }}/2000</span>
+            <div class="form-hint-row">
+              <CharCounter :current="message.length" :max="LIMITS.message" />
+            </div>
           </div>
 
           <!-- Error -->
@@ -115,12 +118,17 @@ Importar em App.vue ou DashboardPage.vue
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
+import CharCounter from './CharCounter.vue'
 
 const { t } = useI18n()
 const route = useRoute()
+
+const LIMITS = {
+  message: 2000
+}
 
 // Estado do modal
 const isOpen = ref(false)
@@ -178,7 +186,7 @@ async function submitFeedback() {
 
     if (!response.ok) {
       const data = await response.json()
-      throw new Error(data.error || 'Erro ao enviar feedback')
+      throw new Error(data.error || t('apiErrors.generic'))
     }
 
     // Tracking do evento
@@ -374,12 +382,15 @@ async function submitFeedback() {
   border-color: var(--color-primary);
 }
 
-.char-count {
-  display: block;
-  text-align: right;
-  font-size: 0.75rem;
-  color: var(--color-text-muted);
+.form-hint-row {
+  display: flex;
+  justify-content: flex-end;
   margin-top: 4px;
+}
+
+.form-input--error {
+  border-color: #dc2626;
+  background-color: #fef2f2;
 }
 
 /* Error */

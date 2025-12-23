@@ -1,11 +1,88 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useBoxStore } from '../stores/box'
+import CharCounter from './CharCounter.vue'
+import ErrorModal from './ErrorModal.vue'
 
 const { t } = useI18n()
 const boxStore = useBoxStore()
 const formError = ref('')
+const showErrorModal = ref(false)
+const errorModalMessage = ref('')
+
+// Limites de caracteres
+const LIMITS = {
+  title: 255,
+  content: 10000,
+  name: 255,
+  email: 254,
+  phone: 20,
+  pin: 20,
+  recipient: 255
+}
+
+// Função para traduzir erros do backend
+function translateError(error) {
+  // Mapeamento de erros conhecidos do backend
+  const errorMap = {
+    'title is required': 'apiErrors.title_required',
+    'title too long': 'apiErrors.title_too_long',
+    'content too long': 'apiErrors.content_too_long',
+    'name is required': 'apiErrors.name_required',
+    'name too long': 'apiErrors.name_too_long',
+    'invalid email': 'apiErrors.email_invalid',
+    'email too long': 'apiErrors.email_too_long',
+    'phone too long': 'apiErrors.phone_too_long',
+    'pin is required': 'apiErrors.pin_required',
+    'pin too short': 'apiErrors.pin_too_short',
+    'pin too long': 'apiErrors.pin_too_long',
+    'recipient too long': 'apiErrors.recipient_too_long',
+    'invalid type': 'apiErrors.type_invalid',
+    'item not found': 'apiErrors.item_not_found',
+    'guardian not found': 'apiErrors.guardian_not_found',
+    'duplicate email': 'apiErrors.duplicate_guardian_email',
+    'unauthorized': 'apiErrors.unauthorized',
+    'rate limit exceeded': 'apiErrors.rate_limit',
+    'Título é obrigatório': 'apiErrors.title_required',
+    'Título muito longo': 'apiErrors.title_too_long',
+    'Conteúdo muito longo': 'apiErrors.content_too_long',
+    'Nome é obrigatório': 'apiErrors.name_required',
+    'Nome muito longo': 'apiErrors.name_too_long',
+    'E-mail inválido': 'apiErrors.email_invalid',
+    'E-mail muito longo': 'apiErrors.email_too_long',
+    'Telefone muito longo': 'apiErrors.phone_too_long',
+    'PIN é obrigatório': 'apiErrors.pin_required',
+    'PIN muito curto': 'apiErrors.pin_too_short',
+    'PIN muito longo': 'apiErrors.pin_too_long',
+    'Destinatário muito longo': 'apiErrors.recipient_too_long',
+    'Tipo inválido': 'apiErrors.type_invalid',
+    'Item não encontrado': 'apiErrors.item_not_found',
+    'Guardião não encontrado': 'apiErrors.guardian_not_found',
+    'E-mail já cadastrado': 'apiErrors.duplicate_guardian_email',
+    'Não autorizado': 'apiErrors.unauthorized',
+    'Muitas requisições': 'apiErrors.rate_limit'
+  }
+
+  if (!error) return t('apiErrors.generic')
+  
+  // Procurar match exato ou parcial
+  const lowerError = error.toLowerCase()
+  for (const [key, translationKey] of Object.entries(errorMap)) {
+    if (lowerError.includes(key.toLowerCase())) {
+      return t(translationKey)
+    }
+  }
+  
+  // Se não encontrou tradução, retornar erro genérico
+  return t('apiErrors.generic')
+}
+
+// Mostrar erro em modal
+function showError(error) {
+  errorModalMessage.value = translateError(error)
+  showErrorModal.value = true
+}
 
 // Props para permitir selecionar tipo externamente
 const props = defineProps({
@@ -43,13 +120,12 @@ const relationships = ['filho', 'neto', 'conjuge', 'irmao', 'amigo', 'outro']
 
 async function saveInfo() {
   if (!infoForm.value.title) {
-    console.log('[Composer] Info form validation failed: title required')
+    formError.value = t('apiErrors.title_required')
     return
   }
   
   saving.value = true
   formError.value = ''
-  console.log('[Composer] Saving info:', infoForm.value.title)
   
   try {
     const result = await boxStore.createItem({
@@ -61,16 +137,13 @@ async function saveInfo() {
     })
     
     if (result) {
-      console.log('[Composer] Info saved successfully:', result.id)
       infoForm.value = { title: '', content: '', category: '', isShared: false }
       emit('saved', 'info')
     } else {
-      console.error('[Composer] Info save failed - no result')
-      formError.value = boxStore.error || t('errors.generic')
+      showError(boxStore.error)
     }
   } catch (error) {
-    console.error('[Composer] Info save error:', error)
-    formError.value = boxStore.error || t('errors.generic')
+    showError(boxStore.error || error.message)
   } finally {
     saving.value = false
   }
@@ -78,19 +151,20 @@ async function saveInfo() {
 
 async function saveGuardian() {
   if (!guardianForm.value.name) {
-    console.log('[Composer] Guardian form validation failed: name required')
-    formError.value = t('errors.requiredField')
+    formError.value = t('apiErrors.name_required')
     return
   }
   if (!guardianForm.value.accessPin) {
-    console.log('[Composer] Guardian form validation failed: pin required')
-    formError.value = t('guardian.pinRequired')
+    formError.value = t('apiErrors.pin_required')
+    return
+  }
+  if (guardianForm.value.accessPin.length < 4) {
+    formError.value = t('apiErrors.pin_too_short')
     return
   }
   
   saving.value = true
   formError.value = ''
-  console.log('[Composer] Saving guardian:', guardianForm.value.name)
   
   try {
     const payload = {
@@ -105,16 +179,13 @@ async function saveGuardian() {
     const result = await boxStore.createGuardian(payload)
     
     if (result) {
-      console.log('[Composer] Guardian saved successfully:', result.id)
       guardianForm.value = { name: '', email: '', phone: '', relationship: '', accessPin: '' }
       emit('saved', 'guardian')
     } else {
-      console.error('[Composer] Guardian save failed - no result')
-      formError.value = boxStore.error || t('errors.generic')
+      showError(boxStore.error)
     }
   } catch (error) {
-    console.error('[Composer] Guardian save error:', error)
-    formError.value = boxStore.error || t('errors.generic')
+    showError(boxStore.error || error.message)
   } finally {
     saving.value = false
   }
@@ -122,13 +193,12 @@ async function saveGuardian() {
 
 async function saveMemory() {
   if (!memoryForm.value.title) {
-    console.log('[Composer] Memory form validation failed: title required')
+    formError.value = t('apiErrors.title_required')
     return
   }
   
   saving.value = true
   formError.value = ''
-  console.log('[Composer] Saving memory:', memoryForm.value.title)
   
   try {
     const result = await boxStore.createItem({
@@ -140,16 +210,13 @@ async function saveMemory() {
     })
     
     if (result) {
-      console.log('[Composer] Memory saved successfully:', result.id)
       memoryForm.value = { title: '', content: '', recipient: '', isShared: false }
       emit('saved', 'memory')
     } else {
-      console.error('[Composer] Memory save failed - no result')
-      formError.value = boxStore.error || t('errors.generic')
+      showError(boxStore.error)
     }
   } catch (error) {
-    console.error('[Composer] Memory save error:', error)
-    formError.value = boxStore.error || t('errors.generic')
+    showError(boxStore.error || error.message)
   } finally {
     saving.value = false
   }
@@ -190,11 +257,14 @@ async function saveMemory() {
           v-model="infoForm.title"
           type="text"
           class="form-input"
+          :class="{ 'form-input--error': infoForm.title.length > LIMITS.title }"
           :placeholder="t('composer.info.titlePlaceholder')"
-          maxlength="255"
+          :maxlength="LIMITS.title"
           required
         />
-        <small class="form-hint">{{ t('common.maxChars', { count: 255 }) }}</small>
+        <div class="form-hint-row">
+          <CharCounter :current="infoForm.title.length" :max="LIMITS.title" />
+        </div>
       </div>
       
       <div class="form-group">
@@ -217,10 +287,14 @@ async function saveMemory() {
         <textarea 
           v-model="infoForm.content"
           class="form-textarea"
+          :class="{ 'form-input--error': infoForm.content.length > LIMITS.content }"
           :placeholder="t('composer.info.detailsPlaceholder')"
           rows="4"
-          maxlength="10000"
+          :maxlength="LIMITS.content"
         ></textarea>
+        <div class="form-hint-row">
+          <CharCounter :current="infoForm.content.length" :max="LIMITS.content" />
+        </div>
       </div>
 
       <div class="form-group share-toggle">
@@ -258,11 +332,14 @@ async function saveMemory() {
           v-model="guardianForm.name"
           type="text"
           class="form-input"
+          :class="{ 'form-input--error': guardianForm.name.length > LIMITS.name }"
           :placeholder="t('composer.guardian.namePlaceholder')"
-          maxlength="255"
+          :maxlength="LIMITS.name"
           required
         />
-        <small class="form-hint">{{ t('common.maxChars', { count: 255 }) }}</small>
+        <div class="form-hint-row">
+          <CharCounter :current="guardianForm.name.length" :max="LIMITS.name" />
+        </div>
       </div>
       
       <div class="form-row">
@@ -272,9 +349,13 @@ async function saveMemory() {
             v-model="guardianForm.email"
             type="email"
             class="form-input"
+            :class="{ 'form-input--error': guardianForm.email.length > LIMITS.email }"
             placeholder="email@exemplo.com"
-            maxlength="254"
+            :maxlength="LIMITS.email"
           />
+          <div class="form-hint-row">
+            <CharCounter :current="guardianForm.email.length" :max="LIMITS.email" />
+          </div>
         </div>
         
         <div class="form-group">
@@ -283,9 +364,13 @@ async function saveMemory() {
             v-model="guardianForm.phone"
             type="tel"
             class="form-input"
+            :class="{ 'form-input--error': guardianForm.phone.length > LIMITS.phone }"
             :placeholder="t('composer.guardian.phonePlaceholder')"
-            maxlength="20"
+            :maxlength="LIMITS.phone"
           />
+          <div class="form-hint-row">
+            <CharCounter :current="guardianForm.phone.length" :max="LIMITS.phone" />
+          </div>
         </div>
       </div>
       
@@ -312,13 +397,16 @@ async function saveMemory() {
           v-model="guardianForm.accessPin"
           type="password"
           class="form-input"
-          :class="{ 'form-input--error': formError && !guardianForm.accessPin }"
+          :class="{ 'form-input--error': formError && (!guardianForm.accessPin || guardianForm.accessPin.length < 4) }"
           :placeholder="t('composer.guardian.pinPlaceholder')"
           minlength="4"
-          maxlength="20"
+          :maxlength="LIMITS.pin"
           required
         />
-        <small class="form-hint">{{ t('composer.guardian.pinHint') }}</small>
+        <div class="form-hint-row">
+          <small class="form-hint">{{ t('composer.guardian.pinHint') }}</small>
+          <CharCounter :current="guardianForm.accessPin.length" :max="LIMITS.pin" />
+        </div>
       </div>
       
       <div v-if="formError" class="form-error-box">
@@ -343,11 +431,14 @@ async function saveMemory() {
           v-model="memoryForm.title"
           type="text"
           class="form-input"
+          :class="{ 'form-input--error': memoryForm.title.length > LIMITS.title }"
           :placeholder="t('composer.memory.titlePlaceholder')"
-          maxlength="255"
+          :maxlength="LIMITS.title"
           required
         />
-        <small class="form-hint">{{ t('common.maxChars', { count: 255 }) }}</small>
+        <div class="form-hint-row">
+          <CharCounter :current="memoryForm.title.length" :max="LIMITS.title" />
+        </div>
       </div>
       
       <div class="form-group">
@@ -356,10 +447,13 @@ async function saveMemory() {
           v-model="memoryForm.recipient"
           type="text"
           class="form-input"
+          :class="{ 'form-input--error': memoryForm.recipient.length > LIMITS.recipient }"
           :placeholder="t('composer.memory.recipientPlaceholder')"
-          maxlength="255"
+          :maxlength="LIMITS.recipient"
         />
-        <small class="form-hint">{{ t('common.maxChars', { count: 255 }) }}</small>
+        <div class="form-hint-row">
+          <CharCounter :current="memoryForm.recipient.length" :max="LIMITS.recipient" />
+        </div>
       </div>
       
       <div class="form-group">
@@ -367,10 +461,14 @@ async function saveMemory() {
         <textarea 
           v-model="memoryForm.content"
           class="form-textarea"
+          :class="{ 'form-input--error': memoryForm.content.length > LIMITS.content }"
           :placeholder="t('composer.memory.messagePlaceholder')"
           rows="6"
-          maxlength="10000"
+          :maxlength="LIMITS.content"
         ></textarea>
+        <div class="form-hint-row">
+          <CharCounter :current="memoryForm.content.length" :max="LIMITS.content" />
+        </div>
       </div>
 
       <div class="form-group share-toggle">
@@ -394,6 +492,13 @@ async function saveMemory() {
         <span>{{ formError }}</span>
       </div>
     </form>
+    
+    <!-- Error Modal -->
+    <ErrorModal 
+      :show="showErrorModal"
+      :message="errorModalMessage"
+      @close="showErrorModal = false"
+    />
   </div>
 </template>
 
@@ -457,6 +562,20 @@ async function saveMemory() {
 .chip--small {
   padding: var(--space-xs) var(--space-sm);
   font-size: 0.8125rem;
+}
+
+/* Form hint row - alinha hint e contador */
+.form-hint-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: var(--space-xs);
+  gap: var(--space-sm);
+}
+
+.form-hint-row .form-hint {
+  margin: 0;
+  flex: 1;
 }
 
 /* Share Toggle */

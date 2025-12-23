@@ -5,10 +5,82 @@
 // - Paginação infinita (cursor-based)
 // - Cache local
 // - Otimizações de performance
+// - Tradução de erros de negócio
 // =============================================================================
 
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import i18n from '../i18n'
+
+// Mapeamento de erros do backend para chaves i18n
+const errorMap = {
+  // Erros em inglês
+  'title is required': 'apiErrors.title_required',
+  'title too long': 'apiErrors.title_too_long',
+  'content too long': 'apiErrors.content_too_long',
+  'name is required': 'apiErrors.name_required',
+  'name too long': 'apiErrors.name_too_long',
+  'invalid email': 'apiErrors.email_invalid',
+  'email too long': 'apiErrors.email_too_long',
+  'phone too long': 'apiErrors.phone_too_long',
+  'pin is required': 'apiErrors.pin_required',
+  'pin too short': 'apiErrors.pin_too_short',
+  'pin too long': 'apiErrors.pin_too_long',
+  'recipient too long': 'apiErrors.recipient_too_long',
+  'invalid type': 'apiErrors.type_invalid',
+  'item not found': 'apiErrors.item_not_found',
+  'guardian not found': 'apiErrors.guardian_not_found',
+  'duplicate email': 'apiErrors.duplicate_guardian_email',
+  'unauthorized': 'apiErrors.unauthorized',
+  'rate limit': 'apiErrors.rate_limit',
+  // Erros em português (compatibilidade legada)
+  'título é obrigatório': 'apiErrors.title_required',
+  'título muito longo': 'apiErrors.title_too_long',
+  'conteúdo muito longo': 'apiErrors.content_too_long',
+  'nome é obrigatório': 'apiErrors.name_required',
+  'nome muito longo': 'apiErrors.name_too_long',
+  'e-mail inválido': 'apiErrors.email_invalid',
+  'e-mail muito longo': 'apiErrors.email_too_long',
+  'telefone muito longo': 'apiErrors.phone_too_long',
+  'pin é obrigatório': 'apiErrors.pin_required',
+  'pin muito curto': 'apiErrors.pin_too_short',
+  'pin muito longo': 'apiErrors.pin_too_long',
+  'destinatário muito longo': 'apiErrors.recipient_too_long',
+  'tipo inválido': 'apiErrors.type_invalid',
+  'item não encontrado': 'apiErrors.item_not_found',
+  'guardião não encontrado': 'apiErrors.guardian_not_found',
+  'e-mail já cadastrado': 'apiErrors.duplicate_guardian_email',
+  'não autorizado': 'apiErrors.unauthorized',
+  'muitas requisições': 'apiErrors.rate_limit'
+}
+
+// Função para traduzir erros do backend
+function translateError(backendError) {
+  const { t } = i18n.global
+  
+  if (!backendError) return t('apiErrors.generic')
+  
+  const lowerError = backendError.toLowerCase()
+  
+  for (const [key, translationKey] of Object.entries(errorMap)) {
+    if (lowerError.includes(key.toLowerCase())) {
+      return t(translationKey)
+    }
+  }
+  
+  // Verificar se é erro de conexão/rede
+  if (lowerError.includes('network') || lowerError.includes('fetch') || lowerError.includes('connection')) {
+    return t('apiErrors.network_error')
+  }
+  
+  // Verificar se é erro de servidor
+  if (lowerError.includes('server') || lowerError.includes('500')) {
+    return t('apiErrors.server_error')
+  }
+  
+  // Se não encontrou tradução, retornar o erro original ou genérico
+  return t('apiErrors.generic')
+}
 
 export const useBoxStore = defineStore('box', () => {
   // Estado dos itens
@@ -99,8 +171,7 @@ export const useBoxStore = defineStore('box', () => {
         itemsTotal.value = data.total || 0
       }
     } catch (e) {
-      console.error('[Box Store] Erro ao carregar itens:', e)
-      error.value = 'Erro ao carregar itens'
+      error.value = translateError('network error')
     }
   }
 
@@ -138,8 +209,7 @@ export const useBoxStore = defineStore('box', () => {
         guardians.value = data.guardians || []
       }
     } catch (e) {
-      console.error('[Box Store] Erro ao carregar pessoas:', e)
-      error.value = 'Erro ao carregar pessoas'
+      error.value = translateError('network error')
     }
   }
 
@@ -173,8 +243,6 @@ export const useBoxStore = defineStore('box', () => {
   }
 
   async function createItem(payload) {
-    console.log('[Box Store] Creating item:', payload.type, payload.title)
-    
     try {
       const res = await fetch('/api/box/items', {
         method: 'POST',
@@ -185,20 +253,17 @@ export const useBoxStore = defineStore('box', () => {
       
       if (res.ok) {
         const item = await res.json()
-        console.log('[Box Store] Item created successfully:', item.id)
         // Adicionar no início da lista
         items.value.unshift(item)
         itemsTotal.value++
         error.value = ''
         return item
       } else {
-        const errorText = await readErrorMessage(res, 'Erro ao salvar item')
-        console.error('[Box Store] Failed to create item:', res.status, errorText)
-        error.value = errorText
+        const errorText = await readErrorMessage(res, 'server error')
+        error.value = translateError(errorText)
       }
     } catch (e) {
-      console.error('[Box Store] Error creating item:', e)
-      error.value = 'Erro ao salvar'
+      error.value = translateError('network error')
     }
     return null
   }
@@ -218,13 +283,11 @@ export const useBoxStore = defineStore('box', () => {
         error.value = ''
         return updated
       } else {
-        const errorText = await readErrorMessage(res, 'Erro ao atualizar item')
-        console.error('[Box Store] Failed to update item:', res.status, errorText)
-        error.value = errorText
+        const errorText = await readErrorMessage(res, 'server error')
+        error.value = translateError(errorText)
       }
     } catch (e) {
-      console.error('[Box Store] Error updating item:', e)
-      error.value = 'Erro ao atualizar'
+      error.value = translateError('network error')
     }
     return null
   }
@@ -241,20 +304,16 @@ export const useBoxStore = defineStore('box', () => {
         error.value = ''
         return true
       } else {
-        const errorText = await readErrorMessage(res, 'Erro ao excluir item')
-        console.error('[Box Store] Failed to delete item:', res.status, errorText)
-        error.value = errorText
+        const errorText = await readErrorMessage(res, 'server error')
+        error.value = translateError(errorText)
       }
     } catch (e) {
-      console.error('[Box Store] Error deleting item:', e)
-      error.value = 'Erro ao excluir'
+      error.value = translateError('network error')
     }
     return false
   }
 
   async function createGuardian(payload) {
-    console.log('[Box Store] Creating guardian:', payload.name)
-    
     try {
       const res = await fetch('/api/guardians', {
         method: 'POST',
@@ -265,7 +324,6 @@ export const useBoxStore = defineStore('box', () => {
       
       if (res.ok) {
         const guardian = await res.json()
-        console.log('[Box Store] Guardian created successfully:', guardian.id)
         error.value = ''
         guardians.value.unshift(guardian)
         return guardian
@@ -276,13 +334,11 @@ export const useBoxStore = defineStore('box', () => {
         } catch (_) {
           // ignore json parse errors
         }
-        const errorText = data?.error || (await res.text())
-        console.error('[Box Store] Failed to create guardian:', res.status, errorText)
-        error.value = errorText || 'Erro ao adicionar pessoa'
+        const errorText = data?.error || (await res.text()) || 'server error'
+        error.value = translateError(errorText)
       }
     } catch (e) {
-      console.error('[Box Store] Error creating guardian:', e)
-      error.value = 'Erro ao adicionar pessoa'
+      error.value = translateError('network error')
     }
     return null
   }
@@ -295,11 +351,14 @@ export const useBoxStore = defineStore('box', () => {
       })
       if (res.ok) {
         guardians.value = guardians.value.filter(g => g.id !== id)
+        error.value = ''
         return true
+      } else {
+        const errorText = await readErrorMessage(res, 'server error')
+        error.value = translateError(errorText)
       }
     } catch (e) {
-      console.error('[Box Store] Error deleting guardian:', e)
-      error.value = 'Erro ao remover pessoa'
+      error.value = translateError('network error')
     }
     return false
   }

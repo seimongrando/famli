@@ -766,5 +766,41 @@
     "documents": "Documents",
     "memories": "Memories",
     "other": "Other"
+  },
+  "charCounter": {
+    "remaining": "{remaining} of {max} remaining",
+    "typed": "{current} of {max}"
+  },
+  "errorModal": {
+    "title": {
+      "error": "Oops! Something went wrong",
+      "warning": "Warning",
+      "info": "Information"
+    },
+    "understood": "Got it",
+    "retry": "Try again"
+  },
+  "apiErrors": {
+    "title_required": "Title is required.",
+    "title_too_long": "Title must be at most 255 characters.",
+    "content_too_long": "Content must be at most 10000 characters.",
+    "name_required": "Name is required.",
+    "name_too_long": "Name must be at most 255 characters.",
+    "email_invalid": "Invalid email.",
+    "email_too_long": "Email must be at most 254 characters.",
+    "phone_too_long": "Phone must be at most 20 characters.",
+    "pin_required": "PIN is required.",
+    "pin_too_short": "PIN must be at least 4 characters.",
+    "pin_too_long": "PIN must be at most 20 characters.",
+    "recipient_too_long": "Recipient must be at most 255 characters.",
+    "type_invalid": "Invalid item type.",
+    "item_not_found": "Item not found.",
+    "guardian_not_found": "Trusted person not found.",
+    "duplicate_guardian_email": "A trusted person with this email already exists.",
+    "unauthorized": "You don't have permission to perform this action.",
+    "rate_limit": "Too many requests. Please wait a moment and try again.",
+    "server_error": "Server error. Please try again later.",
+    "network_error": "Connection error. Check your internet and try again.",
+    "generic": "Something went wrong. Please try again."
   }
 }

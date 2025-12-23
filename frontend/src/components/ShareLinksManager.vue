@@ -74,10 +74,13 @@
               v-model="newLink.name" 
               type="text" 
               :placeholder="$t('share.link_name_placeholder')"
-              maxlength="255"
+              :maxlength="LIMITS.name"
+              :class="{ 'form-input--error': newLink.name.length > LIMITS.name }"
               required
             />
-            <small class="form-hint">{{ $t('common.maxChars', { count: 255 }) }}</small>
+            <div class="form-hint-row">
+              <CharCounter :current="newLink.name.length" :max="LIMITS.name" />
+            </div>
           </div>
 
           <div class="form-group">
@@ -123,9 +126,13 @@
               v-model="newLink.pin" 
               type="password" 
               :placeholder="$t('share.pin_placeholder')"
-              maxlength="10"
+              :maxlength="LIMITS.pin"
+              :class="{ 'form-input--error': newLink.pin.length > LIMITS.pin }"
             />
-            <small>{{ $t('share.pin_hint') }}</small>
+            <div class="form-hint-row">
+              <small>{{ $t('share.pin_hint') }}</small>
+              <CharCounter :current="newLink.pin.length" :max="LIMITS.pin" />
+            </div>
           </div>
 
           <div class="form-row">
@@ -175,9 +182,15 @@
 import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useBoxStore } from '@/stores/box'
+import CharCounter from './CharCounter.vue'
 
 const { t } = useI18n()
 const boxStore = useBoxStore()
+
+const LIMITS = {
+  name: 255,
+  pin: 10
+}
 
 const loading = ref(true)
 const links = ref([])
@@ -250,7 +263,7 @@ async function createLink() {
     })
 
     if (!response.ok) {
-      throw new Error('Failed to create link')
+      throw new Error(t('apiErrors.generic'))
     }
 
     const created = await response.json()
@@ -570,6 +583,24 @@ function showToast(type, message) {
   margin-top: 0.25rem;
   color: #64748b;
   font-size: 0.75rem;
+}
+
+.form-hint-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.25rem;
+  gap: 0.5rem;
+}
+
+.form-hint-row small {
+  margin: 0;
+  flex: 1;
+}
+
+.form-input--error {
+  border-color: #dc2626 !important;
+  background-color: #fef2f2;
 }
 
 .categories-grid {
