@@ -682,7 +682,7 @@
       },
       "cookies": {
         "title": "Cookies",
-        "text": "Usamos cookies essenciais apenas para manter sua sessão de login ativa. Não usamos cookies de rastreamento ou publicidade."
+        "text": "Usamos cookies essenciais para manter sua sessão e proteger sua conta. Com seu consentimento, podemos coletar métricas de uso e salvar preferências. Você pode revisar essas escolhas a qualquer momento."
       },
       "changes": {
         "title": "Alterações nesta Política",
@@ -829,7 +829,7 @@
   "cookies": {
     "title": "Nós usamos cookies",
     "subtitle": "Sua privacidade é importante para nós",
-    "description": "Utilizamos cookies para melhorar sua experiência, analisar o tráfego do site e personalizar conteúdo. Você pode escolher quais cookies aceitar. Para mais informações, consulte nossa Política de Privacidade.",
+    "description": "Usamos cookies essenciais para manter sua sessão e segurança. Com seu consentimento, podemos coletar métricas de uso e lembrar preferências como idioma. Você pode escolher o que permitir.",
     "showDetails": "Ver detalhes",
     "hideDetails": "Ocultar detalhes",
     "acceptAll": "Aceitar todos",
@@ -840,15 +840,15 @@
     "required": "Obrigatório",
     "necessary": {
       "title": "Cookies Essenciais",
-      "description": "Necessários para o funcionamento básico do site. Não podem ser desativados."
+      "description": "Necessários para login, segurança e funcionamento básico. Não podem ser desativados."
     },
     "analytics": {
       "title": "Cookies de Análise",
-      "description": "Nos ajudam a entender como você usa o site para melhorarmos sua experiência."
+      "description": "Métricas de uso para melhorar o produto. Só ativamos com seu consentimento."
     },
     "preferences": {
       "title": "Cookies de Preferências",
-      "description": "Permitem lembrar suas escolhas e personalizar sua experiência."
+      "description": "Lembram escolhas como idioma e layout. Só ativamos com seu consentimento."
     },
     "manageLabel": "Gerenciar cookies"
   }

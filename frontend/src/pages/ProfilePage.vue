@@ -16,6 +16,7 @@ import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../stores/auth'
 import { useLocalizedRoutes } from '../composables/useLocalizedRoutes'
+import { useCookieConsent } from '../composables/useCookieConsent'
 import LanguageSelector from '../components/LanguageSelector.vue'
 import ConfirmModal from '../components/ConfirmModal.vue'
 
@@ -23,6 +24,7 @@ const { t, locale } = useI18n()
 const router = useRouter()
 const authStore = useAuthStore()
 const { paths } = useLocalizedRoutes()
+const { openPreferences: openCookiePreferences } = useCookieConsent()
 
 // Estado local
 const loading = ref(true)
@@ -295,6 +297,20 @@ async function confirmDeleteAccount() {
               :disabled="exporting"
             >
               {{ exporting ? t('common.loading') : t('profile.lgpd.exportButton') }}
+            </button>
+          </div>
+
+          <!-- Cookies -->
+          <div class="lgpd-action">
+            <div class="lgpd-action__info">
+              <span class="lgpd-action__icon">🍪</span>
+              <div>
+                <h4 class="lgpd-action__title">{{ t('cookies.manageLabel') }}</h4>
+                <p class="lgpd-action__description">{{ t('cookies.subtitle') }}</p>
+              </div>
+            </div>
+            <button @click="openCookiePreferences" class="btn btn--secondary">
+              {{ t('cookies.manageLabel') }}
             </button>
           </div>
           
@@ -883,4 +899,3 @@ async function confirmDeleteAccount() {
   }
 }
 </style>
-

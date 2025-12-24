@@ -6,6 +6,7 @@ import { useAuthStore } from '../stores/auth'
 import { useBoxStore } from '../stores/box'
 import { useGuideStore } from '../stores/guide'
 import { useLocalizedRoutes } from '../composables/useLocalizedRoutes'
+import { useCookieConsent } from '../composables/useCookieConsent'
 
 // Components
 import LanguageSelector from '../components/LanguageSelector.vue'
@@ -23,6 +24,7 @@ const authStore = useAuthStore()
 const boxStore = useBoxStore()
 const guideStore = useGuideStore()
 const { paths } = useLocalizedRoutes()
+const { openPreferences: openCookiePreferences } = useCookieConsent()
 
 // UI State
 const activeTab = ref('caixa') // 'caixa' | 'guia'
@@ -240,6 +242,9 @@ onMounted(async () => {
                 </p>
                 <button class="btn btn--link btn--small" @click="showPrivacy = true">
                   {{ t('sidebar.privacy.link') }}
+                </button>
+                <button class="btn btn--link btn--small" @click="openCookiePreferences">
+                  🍪 {{ t('cookies.manageLabel') }}
                 </button>
               </div>
             </aside>

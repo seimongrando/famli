@@ -683,7 +683,7 @@
       },
       "cookies": {
         "title": "Cookies",
-        "text": "We use essential cookies only to keep your login session active. We do not use tracking or advertising cookies."
+        "text": "We use essential cookies to keep your session active and protect your account. With your consent, we may collect usage metrics and store preferences. You can review these choices at any time."
       },
       "changes": {
         "title": "Changes to This Policy",
@@ -830,7 +830,7 @@
   "cookies": {
     "title": "We use cookies",
     "subtitle": "Your privacy matters to us",
-    "description": "We use cookies to improve your experience, analyze site traffic, and personalize content. You can choose which cookies to accept. For more information, see our Privacy Policy.",
+    "description": "We use essential cookies to keep your session secure. With your consent, we may collect usage metrics and remember preferences like language. You can choose what to allow.",
     "showDetails": "Show details",
     "hideDetails": "Hide details",
     "acceptAll": "Accept all",
@@ -841,15 +841,15 @@
     "required": "Required",
     "necessary": {
       "title": "Essential Cookies",
-      "description": "Required for basic site functionality. Cannot be disabled."
+      "description": "Required for login, security, and basic functionality. Cannot be disabled."
     },
     "analytics": {
       "title": "Analytics Cookies",
-      "description": "Help us understand how you use the site so we can improve your experience."
+      "description": "Usage metrics to improve the product. Enabled only with your consent."
     },
     "preferences": {
       "title": "Preference Cookies",
-      "description": "Allow us to remember your choices and personalize your experience."
+      "description": "Remember choices like language and layout. Enabled only with your consent."
     },
     "manageLabel": "Manage cookies"
   }
