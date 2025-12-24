@@ -729,6 +729,8 @@
     "select_all": "Selecionar todos",
     "deselect_all": "Desmarcar todos",
     "generic_link_info": "O link será genérico e qualquer pessoa com acesso poderá visualizar",
+    "selected_count": "{count} de {total} selecionados",
+    "select_hint": "Selecione pelo menos uma pessoa para compartilhar. Se nenhuma for selecionada, a informação será privada.",
     "pin_optional": "PIN de proteção (opcional)",
     "pin_placeholder": "Digite um PIN",
     "pin_hint": "Adicione um PIN para maior segurança",

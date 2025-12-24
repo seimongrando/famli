@@ -148,6 +148,52 @@ watch(() => form.value.isShared, (newVal) => {
   }
 })
 
+// Quando todos os guardiões forem desmarcados, desativar isShared automaticamente
+watch(() => form.value.guardianIds, (newIds) => {
+  if (form.value.isShared && newIds.length === 0) {
+    form.value.isShared = false
+  }
+}, { deep: true })
+
+// Função para toggle individual de guardião
+function toggleGuardian(guardianId) {
+  const index = form.value.guardianIds.indexOf(guardianId)
+  if (index === -1) {
+    form.value.guardianIds.push(guardianId)
+  } else {
+    form.value.guardianIds.splice(index, 1)
+  }
+}
+
+// Função para gerar cor de avatar baseada no nome
+function getAvatarColor(name) {
+  const colors = [
+    '#2D5A47', // verde escuro (primária)
+    '#7C5E4A', // marrom quente
+    '#4A6572', // azul acinzentado
+    '#8B6B4F', // caramelo
+    '#5A7A6B', // verde médio
+    '#6B5B73', // roxo suave
+    '#5C6B5E', // verde oliva
+    '#7A6055'  // terracota
+  ]
+  let hash = 0
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash)
+  }
+  return colors[Math.abs(hash) % colors.length]
+}
+
+// Função para obter iniciais do nome
+function getInitials(name) {
+  if (!name) return '?'
+  const parts = name.trim().split(/\s+/)
+  if (parts.length === 1) {
+    return parts[0].charAt(0).toUpperCase()
+  }
+  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase()
+}
+
 // Tipo do item atual
 const itemKind = computed(() => {
   if (!props.item) return null
@@ -312,30 +358,56 @@ function handleBackdropClick(e) {
               <small class="toggle-hint">{{ t('composer.shareHint') }}</small>
               
               <!-- Seleção de guardiões (aparece quando toggle ativo) -->
-              <div v-if="form.isShared && guardians.length > 0" class="guardians-selection-panel">
-                <div class="select-all-row">
-                  <label class="select-all-checkbox">
-                    <input 
-                      type="checkbox" 
-                      :checked="infoAllGuardiansSelected" 
-                      :indeterminate="infoSomeGuardiansSelected && !infoAllGuardiansSelected"
-                      @change="toggleInfoSelectAll"
-                    />
-                    <span class="select-all-text">
-                      {{ infoAllGuardiansSelected ? t('share.deselect_all') : t('share.select_all') }}
-                      <small>({{ form.guardianIds.length }}/{{ guardians.length }})</small>
-                    </span>
-                  </label>
+              <div v-if="form.isShared && guardians.length > 0" class="guardians-selection-modern">
+                <div class="guardians-header">
+                  <span class="guardians-count">
+                    {{ t('share.selected_count', { count: form.guardianIds.length, total: guardians.length }) }}
+                  </span>
+                  <button 
+                    type="button" 
+                    class="select-all-btn"
+                    @click="toggleInfoSelectAll"
+                  >
+                    {{ infoAllGuardiansSelected ? t('share.deselect_all') : t('share.select_all') }}
+                  </button>
                 </div>
-                <div class="guardians-grid">
-                  <label v-for="guardian in guardians" :key="guardian.id" class="guardian-checkbox">
-                    <input type="checkbox" :value="guardian.id" v-model="form.guardianIds" />
-                    <span class="guardian-option">
-                      <strong>{{ guardian.name }}</strong>
-                      <small v-if="guardian.relationship">{{ t(`composer.relationships.${guardian.relationship}`) }}</small>
-                    </span>
-                  </label>
+                
+                <!-- Grid de guardiões com avatares -->
+                <div class="guardians-cards">
+                  <div 
+                    v-for="guardian in guardians" 
+                    :key="guardian.id" 
+                    class="guardian-card"
+                    :class="{ 'guardian-card--selected': form.guardianIds.includes(guardian.id) }"
+                    @click="toggleGuardian(guardian.id)"
+                  >
+                    <div 
+                      class="guardian-avatar"
+                      :style="{ backgroundColor: getAvatarColor(guardian.name) }"
+                    >
+                      {{ getInitials(guardian.name) }}
+                    </div>
+                    <div class="guardian-info">
+                      <span class="guardian-name">{{ guardian.name }}</span>
+                      <span v-if="guardian.relationship" class="guardian-relationship">
+                        {{ t(`composer.relationships.${guardian.relationship}`) }}
+                      </span>
+                    </div>
+                    <div class="guardian-check">
+                      <svg v-if="form.guardianIds.includes(guardian.id)" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="10" fill="currentColor"/>
+                        <path d="M8 12l2.5 2.5L16 9" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                      <svg v-else viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="9.5" stroke="currentColor" stroke-opacity="0.3"/>
+                      </svg>
+                    </div>
+                  </div>
                 </div>
+                
+                <p v-if="form.guardianIds.length === 0" class="guardians-hint">
+                  {{ t('share.select_hint') }}
+                </p>
               </div>
             </div>
             
@@ -410,30 +482,56 @@ function handleBackdropClick(e) {
               <small class="toggle-hint">{{ t('composer.shareHint') }}</small>
               
               <!-- Seleção de guardiões (aparece quando toggle ativo) -->
-              <div v-if="form.isShared && guardians.length > 0" class="guardians-selection-panel">
-                <div class="select-all-row">
-                  <label class="select-all-checkbox">
-                    <input 
-                      type="checkbox" 
-                      :checked="memoryAllGuardiansSelected" 
-                      :indeterminate="memorySomeGuardiansSelected && !memoryAllGuardiansSelected"
-                      @change="toggleMemorySelectAll"
-                    />
-                    <span class="select-all-text">
-                      {{ memoryAllGuardiansSelected ? t('share.deselect_all') : t('share.select_all') }}
-                      <small>({{ form.guardianIds.length }}/{{ guardians.length }})</small>
-                    </span>
-                  </label>
+              <div v-if="form.isShared && guardians.length > 0" class="guardians-selection-modern">
+                <div class="guardians-header">
+                  <span class="guardians-count">
+                    {{ t('share.selected_count', { count: form.guardianIds.length, total: guardians.length }) }}
+                  </span>
+                  <button 
+                    type="button" 
+                    class="select-all-btn"
+                    @click="toggleMemorySelectAll"
+                  >
+                    {{ memoryAllGuardiansSelected ? t('share.deselect_all') : t('share.select_all') }}
+                  </button>
                 </div>
-                <div class="guardians-grid">
-                  <label v-for="guardian in guardians" :key="guardian.id" class="guardian-checkbox">
-                    <input type="checkbox" :value="guardian.id" v-model="form.guardianIds" />
-                    <span class="guardian-option">
-                      <strong>{{ guardian.name }}</strong>
-                      <small v-if="guardian.relationship">{{ t(`composer.relationships.${guardian.relationship}`) }}</small>
-                    </span>
-                  </label>
+                
+                <!-- Grid de guardiões com avatares -->
+                <div class="guardians-cards">
+                  <div 
+                    v-for="guardian in guardians" 
+                    :key="guardian.id" 
+                    class="guardian-card"
+                    :class="{ 'guardian-card--selected': form.guardianIds.includes(guardian.id) }"
+                    @click="toggleGuardian(guardian.id)"
+                  >
+                    <div 
+                      class="guardian-avatar"
+                      :style="{ backgroundColor: getAvatarColor(guardian.name) }"
+                    >
+                      {{ getInitials(guardian.name) }}
+                    </div>
+                    <div class="guardian-info">
+                      <span class="guardian-name">{{ guardian.name }}</span>
+                      <span v-if="guardian.relationship" class="guardian-relationship">
+                        {{ t(`composer.relationships.${guardian.relationship}`) }}
+                      </span>
+                    </div>
+                    <div class="guardian-check">
+                      <svg v-if="form.guardianIds.includes(guardian.id)" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="10" fill="currentColor"/>
+                        <path d="M8 12l2.5 2.5L16 9" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                      <svg v-else viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="9.5" stroke="currentColor" stroke-opacity="0.3"/>
+                      </svg>
+                    </div>
+                  </div>
                 </div>
+                
+                <p v-if="form.guardianIds.length === 0" class="guardians-hint">
+                  {{ t('share.select_hint') }}
+                </p>
               </div>
             </div>
             
@@ -679,96 +777,131 @@ function handleBackdropClick(e) {
   font-size: var(--font-size-xs);
 }
 
-/* Guardians Selection Panel */
-.guardians-selection-panel {
+/* Design moderno para seleção de guardiões */
+.guardians-selection-modern {
   margin-top: var(--space-md);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  background: white;
+  padding: var(--space-md);
+  background: linear-gradient(135deg, #fafbfc 0%, #f5f7f6 100%);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-light);
 }
 
-.select-all-row {
-  padding: 0.75rem 1rem;
-  background: #f8fafc;
-  border-bottom: 1px solid var(--color-border);
-}
-
-.select-all-checkbox {
+.guardians-header {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  cursor: pointer;
-  user-select: none;
+  justify-content: space-between;
+  margin-bottom: var(--space-md);
 }
 
-.select-all-checkbox input {
-  width: 18px;
-  height: 18px;
-  accent-color: var(--color-primary);
-}
-
-.select-all-text {
-  font-weight: 600;
-  color: var(--color-text);
-  font-size: 0.9rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.select-all-text small {
+.guardians-count {
+  font-size: 0.85rem;
   color: var(--color-text-muted);
-  font-weight: 400;
+  font-weight: 500;
 }
 
-.guardians-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-}
-
-.guardian-checkbox {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid var(--color-border-light);
+.select-all-btn {
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  font-size: 0.85rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-sm);
+  transition: all 0.2s ease;
 }
 
-.guardian-checkbox:last-child {
-  border-bottom: none;
-}
-
-.guardian-checkbox:hover {
-  background: rgba(45, 90, 71, 0.02);
-}
-
-.guardian-checkbox:has(input:checked) {
+.select-all-btn:hover {
   background: var(--color-primary-soft);
 }
 
-.guardian-checkbox input {
-  width: 18px;
-  height: 18px;
-  accent-color: var(--color-primary);
-}
-
-.guardian-option {
+.guardians-cards {
   display: flex;
   flex-direction: column;
+  gap: 0.5rem;
 }
 
-.guardian-option strong {
-  color: var(--color-text);
+.guardian-card {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  padding: 0.875rem 1rem;
+  background: white;
+  border-radius: var(--radius-md);
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.guardian-card:hover {
+  border-color: var(--color-border);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.guardian-card--selected {
+  border-color: var(--color-primary);
+  background: linear-gradient(135deg, rgba(45, 90, 71, 0.03) 0%, rgba(45, 90, 71, 0.06) 100%);
+  box-shadow: 0 2px 8px rgba(45, 90, 71, 0.12);
+}
+
+.guardian-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 600;
   font-size: 0.9rem;
+  letter-spacing: 0.02em;
+  flex-shrink: 0;
 }
 
-.guardian-option small {
-  color: var(--color-text-muted);
+.guardian-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.guardian-name {
+  font-weight: 600;
+  color: var(--color-text);
+  font-size: 0.95rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.guardian-relationship {
   font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.guardian-check {
+  width: 24px;
+  height: 24px;
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.guardian-check svg {
+  width: 100%;
+  height: 100%;
+}
+
+.guardians-hint {
+  margin: 0;
+  margin-top: var(--space-sm);
+  padding: 0.75rem;
+  background: #fef3cd;
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  color: #856404;
+  text-align: center;
 }
 
 .form-error-box {
