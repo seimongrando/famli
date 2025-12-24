@@ -86,9 +86,14 @@
 
       <!-- Main Content -->
       <main class="content-main">
-        <!-- Items by Category -->
-        <section class="items-section" v-if="groupedItems.length > 0">
-          <div v-for="category in groupedItems" :key="category.name" class="category-group">
+        <!-- Informações Section -->
+        <section class="items-section" v-if="hasInfoItems">
+          <div class="section-header-block">
+            <h2 class="section-main-title">📋 {{ $t('shared.info_section_title') }}</h2>
+            <p class="section-main-subtitle">{{ $t('shared.info_section_subtitle') }}</p>
+          </div>
+          
+          <div v-for="category in groupedInfoItems" :key="category.name" class="category-group">
             <h3 class="category-title">
               <span class="category-icon">{{ getCategoryIcon(category.name) }}</span>
               {{ formatCategory(category.name) }}
@@ -113,16 +118,46 @@
                     {{ isExpanded(item.id) ? $t('common.seeLess') : $t('common.seeMore') }}
                   </button>
                 </div>
-                <div class="item-footer" v-if="item.recipient">
-                  <span class="recipient-label">💌 {{ $t('shared.for') }}: {{ item.recipient }}</span>
-                </div>
               </article>
             </div>
           </div>
         </section>
 
+        <!-- Memórias Section -->
+        <section class="memories-section" v-if="hasMemoryItems">
+          <div class="section-header-block memories-header">
+            <h2 class="section-main-title">💝 {{ $t('shared.memories_section_title') }}</h2>
+            <p class="section-main-subtitle">{{ $t('shared.memories_section_subtitle') }}</p>
+          </div>
+          
+          <div class="memories-grid">
+            <article v-for="item in memoryItems" :key="item.id" class="memory-card" :class="{ important: item.is_important }">
+              <div class="memory-header">
+                <span class="memory-icon">{{ getTypeIcon(item.type) }}</span>
+                <h4 class="memory-title">{{ item.title || '...' }}</h4>
+                <span v-if="item.is_important" class="important-badge" title="Importante">⭐</span>
+              </div>
+              <div class="memory-content" v-if="item.content">
+                <p :class="{ 'content-collapsed': !isExpanded(item.id) && needsExpansion(item.content) }">
+                  {{ isExpanded(item.id) ? item.content : getPreviewContent(item.content) }}
+                </p>
+                <button 
+                  v-if="needsExpansion(item.content)" 
+                  class="expand-btn"
+                  @click="toggleExpand(item.id)"
+                >
+                  {{ isExpanded(item.id) ? $t('common.seeLess') : $t('common.seeMore') }}
+                </button>
+              </div>
+              <div class="memory-footer" v-if="item.recipient">
+                <span class="recipient-label">💌 {{ $t('shared.for') }}: {{ item.recipient }}</span>
+              </div>
+            </article>
+          </div>
+        </section>
+
         <!-- Empty State -->
-        <div v-else class="empty-state">
+        <div v-if="!hasAnyItems" class="empty-state">
           <div class="empty-icon">📭</div>
           <p>{{ $t('shared.no_items') }}</p>
         </div>
@@ -230,11 +265,18 @@ const headerTitle = computed(() => {
   }
 })
 
-const groupedItems = computed(() => {
+// Separar itens por tipo: informações vs memórias
+const isMemoryType = (type) => type === 'memory' || type === 'note'
+
+// Itens de informação agrupados por categoria
+const groupedInfoItems = computed(() => {
   if (!sharedView.value?.items) return []
   
+  // Filtrar apenas itens de informação (não memórias)
+  const infoItems = sharedView.value.items.filter(item => !isMemoryType(item.type))
+  
   const groups = {}
-  for (const item of sharedView.value.items) {
+  for (const item of infoItems) {
     const cat = item.category || 'other'
     if (!groups[cat]) {
       groups[cat] = { name: cat, items: [] }
@@ -242,14 +284,25 @@ const groupedItems = computed(() => {
     groups[cat].items.push(item)
   }
   
-  // Ordenar por prioridade (usar chaves em inglês como padrão)
-  const order = ['health', 'saúde', 'finances', 'finanças', 'family', 'família', 'documents', 'documentos', 'memories', 'memórias', 'other', 'outros']
+  // Ordenar por prioridade
+  const order = ['health', 'saúde', 'finances', 'finanças', 'family', 'família', 'documents', 'documentos', 'other', 'outros']
   return Object.values(groups).sort((a, b) => {
     const aIndex = order.indexOf(a.name) >= 0 ? order.indexOf(a.name) : 999
     const bIndex = order.indexOf(b.name) >= 0 ? order.indexOf(b.name) : 999
     return aIndex - bIndex
   })
 })
+
+// Itens de memória (agrupados separadamente)
+const memoryItems = computed(() => {
+  if (!sharedView.value?.items) return []
+  return sharedView.value.items.filter(item => isMemoryType(item.type))
+})
+
+// Verificar se há itens para mostrar
+const hasInfoItems = computed(() => groupedInfoItems.value.length > 0)
+const hasMemoryItems = computed(() => memoryItems.value.length > 0)
+const hasAnyItems = computed(() => hasInfoItems.value || hasMemoryItems.value)
 
 onMounted(async () => {
   await fetchSharedContent()
@@ -782,16 +835,127 @@ function getTypeIcon(type) {
 }
 
 /* =============================================================================
+   SECTION HEADERS
+   ============================================================================= */
+.section-header-block {
+  margin-bottom: 1.5rem;
+  padding: 1.25rem 1.5rem;
+  background: linear-gradient(135deg, #2d5a47 0%, #1e3d30 100%);
+  border-radius: 1rem;
+  color: white;
+}
+
+.section-header-block.memories-header {
+  background: linear-gradient(135deg, #8b5a3c 0%, #5c3d2a 100%);
+}
+
+.section-main-title {
+  margin: 0 0 0.25rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.section-main-subtitle {
+  margin: 0;
+  font-size: 0.9rem;
+  opacity: 0.9;
+}
+
+/* =============================================================================
    ITEMS SECTION
    ============================================================================= */
 .items-section {
   display: flex;
   flex-direction: column;
-  gap: 2.5rem;
+  gap: 2rem;
+  margin-bottom: 2rem;
 }
 
 .category-group {
   /* grouped categories */
+}
+
+/* =============================================================================
+   MEMORIES SECTION
+   ============================================================================= */
+.memories-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 2px solid #e5ddd0;
+}
+
+.memories-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.memory-card {
+  background: linear-gradient(135deg, #fef7f1 0%, white 30%);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  border: 1px solid #f0ebe3;
+  border-left: 4px solid #e07b39;
+  transition: all 0.2s;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.memory-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.memory-card.important {
+  border-left-width: 6px;
+  background: linear-gradient(135deg, #fef3ec 0%, #fef7f1 30%);
+}
+
+.memory-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.memory-icon {
+  font-size: 1.5rem;
+}
+
+.memory-title {
+  flex: 1;
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #2c2a26;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  min-width: 0;
+}
+
+.memory-content {
+  color: #5c584f;
+  font-size: 1rem;
+  line-height: 1.7;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.memory-content p {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+.memory-footer {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid #f0ebe3;
 }
 
 .category-title {

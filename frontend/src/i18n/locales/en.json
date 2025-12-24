@@ -724,8 +724,12 @@
     "categories": "Allowed categories",
     "categories_hint": "Leave empty to allow all categories",
     "guardians": "Share with",
-    "guardians_hint": "Leave empty to create a generic link",
+    "guardians_hint": "Select who can see the shared information",
     "no_guardians": "You haven't added any trusted people yet",
+    "share_with_specific": "Share with specific people",
+    "select_all": "Select all",
+    "deselect_all": "Deselect all",
+    "generic_link_info": "The link will be generic and anyone with access can view it",
     "pin_optional": "Protection PIN (optional)",
     "pin_placeholder": "Enter a PIN",
     "pin_hint": "Add a PIN for extra security",
@@ -765,7 +769,11 @@
     "memorial": "Memorial",
     "famli_box": "Famli Box",
     "for": "For",
-    "privacy_note": "Private content shared by you"
+    "privacy_note": "Private content shared by you",
+    "info_section_title": "Important Information",
+    "info_section_subtitle": "Data, guidance, and instructions organized for you",
+    "memories_section_title": "Memories and Messages",
+    "memories_section_subtitle": "Words lovingly kept for those you love"
   },
   "categories": {
     "saúde": "Health",

@@ -105,14 +105,53 @@
 
           <div class="form-group">
             <label>👤 {{ $t('share.guardians') }}</label>
-            <div v-if="guardians.length > 0" class="guardians-grid">
-              <label v-for="guardian in guardians" :key="guardian.id" class="guardian-checkbox">
-                <input type="checkbox" :value="guardian.id" v-model="newLink.guardianIds" />
-                <span class="guardian-option">
-                  <strong>{{ guardian.name }}</strong>
-                  <small v-if="guardian.relationship">{{ guardian.relationship }}</small>
-                </span>
-              </label>
+            <div v-if="guardians.length > 0" class="guardians-selection">
+              <!-- Toggle para mostrar seleção de guardiões -->
+              <div class="guardians-toggle">
+                <label class="toggle-label">
+                  <input type="checkbox" v-model="showGuardianSelection" class="toggle-input" />
+                  <span class="toggle-switch"></span>
+                  <span class="toggle-text">
+                    {{ $t('share.share_with_specific') }}
+                  </span>
+                </label>
+              </div>
+              
+              <!-- Seleção de guardiões (aparece quando toggle ativo) -->
+              <div v-if="showGuardianSelection" class="guardians-selection-panel">
+                <!-- Opção selecionar todos -->
+                <div class="select-all-row">
+                  <label class="select-all-checkbox">
+                    <input 
+                      type="checkbox" 
+                      :checked="allGuardiansSelected" 
+                      :indeterminate="someGuardiansSelected && !allGuardiansSelected"
+                      @change="toggleSelectAll"
+                    />
+                    <span class="select-all-text">
+                      {{ allGuardiansSelected ? $t('share.deselect_all') : $t('share.select_all') }}
+                      <small>({{ selectedGuardiansCount }}/{{ guardians.length }})</small>
+                    </span>
+                  </label>
+                </div>
+                
+                <!-- Lista de guardiões -->
+                <div class="guardians-grid">
+                  <label v-for="guardian in guardians" :key="guardian.id" class="guardian-checkbox">
+                    <input type="checkbox" :value="guardian.id" v-model="newLink.guardianIds" />
+                    <span class="guardian-option">
+                      <strong>{{ guardian.name }}</strong>
+                      <small v-if="guardian.relationship">{{ guardian.relationship }}</small>
+                    </span>
+                  </label>
+                </div>
+              </div>
+              
+              <!-- Info quando não há seleção específica -->
+              <div v-if="!showGuardianSelection" class="generic-link-info">
+                <span class="info-icon">ℹ️</span>
+                <span>{{ $t('share.generic_link_info') }}</span>
+              </div>
             </div>
             <div v-else class="no-guardians">
               <span>{{ $t('share.no_guardians') }}</span>
@@ -198,6 +237,7 @@ const links = ref([])
 const showCreateModal = ref(false)
 const creating = ref(false)
 const toast = ref(null)
+const showGuardianSelection = ref(false)
 
 const newLink = ref({
   name: '',
@@ -211,6 +251,26 @@ const newLink = ref({
 
 // Guardiões do store
 const guardians = computed(() => boxStore.guardians || [])
+
+// Computed para seleção de guardiões
+const selectedGuardiansCount = computed(() => newLink.value.guardianIds.length)
+const allGuardiansSelected = computed(() => {
+  return guardians.value.length > 0 && newLink.value.guardianIds.length === guardians.value.length
+})
+const someGuardiansSelected = computed(() => {
+  return newLink.value.guardianIds.length > 0 && newLink.value.guardianIds.length < guardians.value.length
+})
+
+// Função para selecionar/deselecionar todos
+function toggleSelectAll() {
+  if (allGuardiansSelected.value) {
+    // Deselecionar todos
+    newLink.value.guardianIds = []
+  } else {
+    // Selecionar todos
+    newLink.value.guardianIds = guardians.value.map(g => g.id)
+  }
+}
 
 // Categorias com i18n
 const categories = computed(() => [
@@ -316,6 +376,7 @@ function resetNewLink() {
     expiresIn: 0,
     maxUses: 0
   }
+  showGuardianSelection.value = false
 }
 
 function getLinkTypeIcon(type) {
@@ -636,11 +697,114 @@ function showToast(type, message) {
   width: auto;
 }
 
+/* Guardians Selection */
+.guardians-selection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.guardians-toggle {
+  padding: 0.75rem 1rem;
+  background: var(--color-primary-soft);
+  border-radius: 0.5rem;
+  border: 1px solid rgba(45, 90, 71, 0.2);
+}
+
+.toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.toggle-input {
+  display: none;
+}
+
+.toggle-switch {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  background: #cbd5e1;
+  border-radius: 12px;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+
+.toggle-switch::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  background: white;
+  border-radius: 50%;
+  transition: transform 0.2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.toggle-input:checked + .toggle-switch {
+  background: var(--color-primary);
+}
+
+.toggle-input:checked + .toggle-switch::after {
+  transform: translateX(20px);
+}
+
+.toggle-text {
+  font-weight: 500;
+  color: #1e293b;
+  font-size: 0.9rem;
+}
+
+.guardians-selection-panel {
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.select-all-row {
+  padding: 0.75rem 1rem;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.select-all-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.select-all-checkbox input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--color-primary);
+}
+
+.select-all-text {
+  font-weight: 600;
+  color: #1e293b;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.select-all-text small {
+  color: #64748b;
+  font-weight: 400;
+}
+
 /* Guardians Grid */
 .guardians-grid {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0;
 }
 
 .guardian-checkbox {
@@ -648,24 +812,26 @@ function showToast(type, message) {
   align-items: center;
   gap: 0.75rem;
   padding: 0.75rem 1rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 0.5rem;
+  border-bottom: 1px solid #e2e8f0;
   cursor: pointer;
   transition: all 0.2s;
 }
 
+.guardian-checkbox:last-child {
+  border-bottom: none;
+}
+
 .guardian-checkbox:hover {
-  border-color: var(--color-primary);
   background: rgba(45, 90, 71, 0.02);
 }
 
 .guardian-checkbox:has(input:checked) {
   background: var(--color-primary-soft);
-  border-color: var(--color-primary);
 }
 
 .guardian-checkbox input {
-  width: auto;
+  width: 18px;
+  height: 18px;
   accent-color: var(--color-primary);
 }
 
@@ -682,6 +848,21 @@ function showToast(type, message) {
 .guardian-option small {
   color: #64748b;
   font-size: 0.8rem;
+}
+
+.generic-link-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: #f8fafc;
+  border-radius: 0.5rem;
+  color: #64748b;
+  font-size: 0.85rem;
+}
+
+.info-icon {
+  font-size: 1rem;
 }
 
 .no-guardians {
