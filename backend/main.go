@@ -245,7 +245,7 @@ func main() {
 	// CORS - Cross-Origin Resource Sharing
 	allowedOrigins := []string{"http://localhost:5173", "http://localhost:8080"}
 	if !isDev {
-		allowedOrigins = append(allowedOrigins, "https://famli.net", "https://www.famli.net")
+		allowedOrigins = append(allowedOrigins, "https://famli.me", "https://www.famli.me")
 	}
 
 	r.Use(cors.Handler(cors.Options{
