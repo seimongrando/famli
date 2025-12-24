@@ -105,9 +105,58 @@ watch(() => props.initialType, (newType) => {
 })
 
 // Forms para cada tipo
-const infoForm = ref({ title: '', content: '', category: '', isShared: false })
+const infoForm = ref({ title: '', content: '', category: '', isShared: false, guardianIds: [] })
 const guardianForm = ref({ name: '', email: '', phone: '', relationship: '', accessPin: '' })
-const memoryForm = ref({ title: '', content: '', recipient: '', isShared: false })
+const memoryForm = ref({ title: '', content: '', recipient: '', isShared: false, guardianIds: [] })
+
+// Guardiões do store
+const guardians = computed(() => boxStore.guardians || [])
+
+// Computed para seleção de guardiões (Info form)
+const infoAllGuardiansSelected = computed(() => {
+  return guardians.value.length > 0 && infoForm.value.guardianIds.length === guardians.value.length
+})
+const infoSomeGuardiansSelected = computed(() => {
+  return infoForm.value.guardianIds.length > 0 && infoForm.value.guardianIds.length < guardians.value.length
+})
+
+// Computed para seleção de guardiões (Memory form)
+const memoryAllGuardiansSelected = computed(() => {
+  return guardians.value.length > 0 && memoryForm.value.guardianIds.length === guardians.value.length
+})
+const memorySomeGuardiansSelected = computed(() => {
+  return memoryForm.value.guardianIds.length > 0 && memoryForm.value.guardianIds.length < guardians.value.length
+})
+
+// Funções para selecionar/deselecionar todos
+function toggleInfoSelectAll() {
+  if (infoAllGuardiansSelected.value) {
+    infoForm.value.guardianIds = []
+  } else {
+    infoForm.value.guardianIds = guardians.value.map(g => g.id)
+  }
+}
+
+function toggleMemorySelectAll() {
+  if (memoryAllGuardiansSelected.value) {
+    memoryForm.value.guardianIds = []
+  } else {
+    memoryForm.value.guardianIds = guardians.value.map(g => g.id)
+  }
+}
+
+// Quando o toggle é ativado, selecionar todos por padrão
+watch(() => infoForm.value.isShared, (newVal) => {
+  if (newVal && infoForm.value.guardianIds.length === 0 && guardians.value.length > 0) {
+    infoForm.value.guardianIds = guardians.value.map(g => g.id)
+  }
+})
+
+watch(() => memoryForm.value.isShared, (newVal) => {
+  if (newVal && memoryForm.value.guardianIds.length === 0 && guardians.value.length > 0) {
+    memoryForm.value.guardianIds = guardians.value.map(g => g.id)
+  }
+})
 
 const types = [
   { id: 'info', labelKey: 'composer.types.info', icon: '📋' },
@@ -133,11 +182,12 @@ async function saveInfo() {
       title: infoForm.value.title,
       content: infoForm.value.content,
       category: infoForm.value.category,
-      is_shared: infoForm.value.isShared
+      is_shared: infoForm.value.isShared,
+      guardian_ids: infoForm.value.isShared ? infoForm.value.guardianIds : []
     })
     
     if (result) {
-      infoForm.value = { title: '', content: '', category: '', isShared: false }
+      infoForm.value = { title: '', content: '', category: '', isShared: false, guardianIds: [] }
       emit('saved', 'info')
     } else {
       showError(boxStore.error)
@@ -206,11 +256,12 @@ async function saveMemory() {
       title: memoryForm.value.title,
       content: memoryForm.value.content,
       recipient: memoryForm.value.recipient,
-      is_shared: memoryForm.value.isShared
+      is_shared: memoryForm.value.isShared,
+      guardian_ids: memoryForm.value.isShared ? memoryForm.value.guardianIds : []
     })
     
     if (result) {
-      memoryForm.value = { title: '', content: '', recipient: '', isShared: false }
+      memoryForm.value = { title: '', content: '', recipient: '', isShared: false, guardianIds: [] }
       emit('saved', 'memory')
     } else {
       showError(boxStore.error)
@@ -307,6 +358,42 @@ async function saveMemory() {
           </span>
         </label>
         <small class="toggle-hint">{{ t('composer.shareHint') }}</small>
+        
+        <!-- Seleção de guardiões (aparece quando toggle ativo) -->
+        <div v-if="infoForm.isShared && guardians.length > 0" class="guardians-selection-panel">
+          <!-- Opção selecionar todos -->
+          <div class="select-all-row">
+            <label class="select-all-checkbox">
+              <input 
+                type="checkbox" 
+                :checked="infoAllGuardiansSelected" 
+                :indeterminate="infoSomeGuardiansSelected && !infoAllGuardiansSelected"
+                @change="toggleInfoSelectAll"
+              />
+              <span class="select-all-text">
+                {{ infoAllGuardiansSelected ? t('share.deselect_all') : t('share.select_all') }}
+                <small>({{ infoForm.guardianIds.length }}/{{ guardians.length }})</small>
+              </span>
+            </label>
+          </div>
+          
+          <!-- Lista de guardiões -->
+          <div class="guardians-grid">
+            <label v-for="guardian in guardians" :key="guardian.id" class="guardian-checkbox">
+              <input type="checkbox" :value="guardian.id" v-model="infoForm.guardianIds" />
+              <span class="guardian-option">
+                <strong>{{ guardian.name }}</strong>
+                <small v-if="guardian.relationship">{{ t(`composer.relationships.${guardian.relationship}`) }}</small>
+              </span>
+            </label>
+          </div>
+        </div>
+        
+        <!-- Info quando não há guardiões -->
+        <div v-if="infoForm.isShared && guardians.length === 0" class="no-guardians-warning">
+          <span class="warning-icon">⚠️</span>
+          <span>{{ t('share.no_guardians') }}</span>
+        </div>
       </div>
       
       <button type="submit" class="btn btn--primary" :disabled="saving || !infoForm.title">
@@ -481,6 +568,42 @@ async function saveMemory() {
           </span>
         </label>
         <small class="toggle-hint">{{ t('composer.shareHint') }}</small>
+        
+        <!-- Seleção de guardiões (aparece quando toggle ativo) -->
+        <div v-if="memoryForm.isShared && guardians.length > 0" class="guardians-selection-panel">
+          <!-- Opção selecionar todos -->
+          <div class="select-all-row">
+            <label class="select-all-checkbox">
+              <input 
+                type="checkbox" 
+                :checked="memoryAllGuardiansSelected" 
+                :indeterminate="memorySomeGuardiansSelected && !memoryAllGuardiansSelected"
+                @change="toggleMemorySelectAll"
+              />
+              <span class="select-all-text">
+                {{ memoryAllGuardiansSelected ? t('share.deselect_all') : t('share.select_all') }}
+                <small>({{ memoryForm.guardianIds.length }}/{{ guardians.length }})</small>
+              </span>
+            </label>
+          </div>
+          
+          <!-- Lista de guardiões -->
+          <div class="guardians-grid">
+            <label v-for="guardian in guardians" :key="guardian.id" class="guardian-checkbox">
+              <input type="checkbox" :value="guardian.id" v-model="memoryForm.guardianIds" />
+              <span class="guardian-option">
+                <strong>{{ guardian.name }}</strong>
+                <small v-if="guardian.relationship">{{ t(`composer.relationships.${guardian.relationship}`) }}</small>
+              </span>
+            </label>
+          </div>
+        </div>
+        
+        <!-- Info quando não há guardiões -->
+        <div v-if="memoryForm.isShared && guardians.length === 0" class="no-guardians-warning">
+          <span class="warning-icon">⚠️</span>
+          <span>{{ t('share.no_guardians') }}</span>
+        </div>
       </div>
       
       <button type="submit" class="btn btn--primary" :disabled="saving || !memoryForm.title">
@@ -648,6 +771,114 @@ async function saveMemory() {
   margin-left: 56px;
   color: var(--color-text-muted);
   font-size: var(--font-size-xs);
+}
+
+/* Guardians Selection Panel */
+.guardians-selection-panel {
+  margin-top: var(--space-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: white;
+}
+
+.select-all-row {
+  padding: 0.75rem 1rem;
+  background: #f8fafc;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.select-all-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.select-all-checkbox input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--color-primary);
+}
+
+.select-all-text {
+  font-weight: 600;
+  color: var(--color-text);
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.select-all-text small {
+  color: var(--color-text-muted);
+  font-weight: 400;
+}
+
+.guardians-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.guardian-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--color-border-light);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.guardian-checkbox:last-child {
+  border-bottom: none;
+}
+
+.guardian-checkbox:hover {
+  background: rgba(45, 90, 71, 0.02);
+}
+
+.guardian-checkbox:has(input:checked) {
+  background: var(--color-primary-soft);
+}
+
+.guardian-checkbox input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--color-primary);
+}
+
+.guardian-option {
+  display: flex;
+  flex-direction: column;
+}
+
+.guardian-option strong {
+  color: var(--color-text);
+  font-size: 0.9rem;
+}
+
+.guardian-option small {
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+
+.no-guardians-warning {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: var(--space-sm);
+  padding: 0.75rem 1rem;
+  background: #fef3cd;
+  border-radius: var(--radius-sm);
+  color: #856404;
+  font-size: 0.85rem;
+}
+
+.warning-icon {
+  font-size: 1rem;
 }
 
 /* Required field indicator */

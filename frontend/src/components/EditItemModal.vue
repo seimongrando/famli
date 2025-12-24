@@ -106,11 +106,47 @@ const form = ref({
   phone: '',
   relationship: '',
   recipient: '',
-  isShared: false
+  isShared: false,
+  guardianIds: []
 })
 
 const categories = ['saude', 'financas', 'documentos', 'casa', 'familia', 'outro']
 const relationships = ['filho', 'neto', 'conjuge', 'irmao', 'amigo', 'outro']
+
+// Guardiões do store
+const guardians = computed(() => boxStore.guardians || [])
+
+// Computed para seleção de guardiões (Info form)
+const infoAllGuardiansSelected = computed(() => {
+  return guardians.value.length > 0 && form.value.guardianIds.length === guardians.value.length
+})
+const infoSomeGuardiansSelected = computed(() => {
+  return form.value.guardianIds.length > 0 && form.value.guardianIds.length < guardians.value.length
+})
+
+// Computed para seleção de guardiões (Memory form) - usa os mesmos computeds
+const memoryAllGuardiansSelected = infoAllGuardiansSelected
+const memorySomeGuardiansSelected = infoSomeGuardiansSelected
+
+// Funções para selecionar/deselecionar todos
+function toggleInfoSelectAll() {
+  if (infoAllGuardiansSelected.value) {
+    form.value.guardianIds = []
+  } else {
+    form.value.guardianIds = guardians.value.map(g => g.id)
+  }
+}
+
+function toggleMemorySelectAll() {
+  toggleInfoSelectAll() // Usa a mesma lógica
+}
+
+// Quando o toggle é ativado, selecionar todos por padrão
+watch(() => form.value.isShared, (newVal) => {
+  if (newVal && form.value.guardianIds.length === 0 && guardians.value.length > 0) {
+    form.value.guardianIds = guardians.value.map(g => g.id)
+  }
+})
 
 // Tipo do item atual
 const itemKind = computed(() => {
@@ -123,19 +159,29 @@ const itemKind = computed(() => {
 // Observar mudanças no item para preencher o form
 watch(() => props.item, (newItem) => {
   if (newItem) {
+    // Extrair o conteúdo original (para guardiões, o content contém "relacionamento • email")
+    let contentValue = newItem.content || ''
+    
+    // Para guardiões, o content no unifiedEntries é "relacionamento • email", 
+    // mas precisamos usar os campos originais
+    if (newItem.kind === 'guardian') {
+      contentValue = '' // Guardiões não têm content editável
+    }
+    
     form.value = {
       title: newItem.title || '',
-      content: newItem.content || '',
+      content: contentValue,
       category: newItem.category || '',
-      name: newItem.name || '',
+      name: newItem.name || newItem.title || '', // Para guardiões, title = name
       email: newItem.email || '',
       phone: newItem.phone || '',
       relationship: newItem.relationship || '',
       recipient: newItem.recipient || '',
-      isShared: newItem.is_shared || false
+      isShared: newItem.is_shared || false,
+      guardianIds: newItem.guardian_ids || []
     }
   }
-}, { immediate: true })
+}, { immediate: true, deep: true })
 
 // Prevenir scroll do body quando modal está aberto
 watch(() => props.show, (show) => {
@@ -169,7 +215,8 @@ async function handleSave() {
         content: form.value.content,
         category: form.value.category,
         recipient: form.value.recipient,
-        is_shared: form.value.isShared
+        is_shared: form.value.isShared,
+        guardian_ids: form.value.isShared ? form.value.guardianIds : []
       })
       
       if (result) {
@@ -259,9 +306,37 @@ function handleBackdropClick(e) {
                 <span class="toggle-switch"></span>
                 <span class="toggle-text">
                   <span class="toggle-icon">👥</span>
-                  {{ t('composer.shareLabel') }}
+                  {{ t('composer.shareWithGuardians') }}
                 </span>
               </label>
+              <small class="toggle-hint">{{ t('composer.shareHint') }}</small>
+              
+              <!-- Seleção de guardiões (aparece quando toggle ativo) -->
+              <div v-if="form.isShared && guardians.length > 0" class="guardians-selection-panel">
+                <div class="select-all-row">
+                  <label class="select-all-checkbox">
+                    <input 
+                      type="checkbox" 
+                      :checked="infoAllGuardiansSelected" 
+                      :indeterminate="infoSomeGuardiansSelected && !infoAllGuardiansSelected"
+                      @change="toggleInfoSelectAll"
+                    />
+                    <span class="select-all-text">
+                      {{ infoAllGuardiansSelected ? t('share.deselect_all') : t('share.select_all') }}
+                      <small>({{ form.guardianIds.length }}/{{ guardians.length }})</small>
+                    </span>
+                  </label>
+                </div>
+                <div class="guardians-grid">
+                  <label v-for="guardian in guardians" :key="guardian.id" class="guardian-checkbox">
+                    <input type="checkbox" :value="guardian.id" v-model="form.guardianIds" />
+                    <span class="guardian-option">
+                      <strong>{{ guardian.name }}</strong>
+                      <small v-if="guardian.relationship">{{ t(`composer.relationships.${guardian.relationship}`) }}</small>
+                    </span>
+                  </label>
+                </div>
+              </div>
             </div>
             
             <div class="modal__actions">
@@ -329,9 +404,37 @@ function handleBackdropClick(e) {
                 <span class="toggle-switch"></span>
                 <span class="toggle-text">
                   <span class="toggle-icon">👥</span>
-                  {{ t('composer.shareLabel') }}
+                  {{ t('composer.shareWithGuardians') }}
                 </span>
               </label>
+              <small class="toggle-hint">{{ t('composer.shareHint') }}</small>
+              
+              <!-- Seleção de guardiões (aparece quando toggle ativo) -->
+              <div v-if="form.isShared && guardians.length > 0" class="guardians-selection-panel">
+                <div class="select-all-row">
+                  <label class="select-all-checkbox">
+                    <input 
+                      type="checkbox" 
+                      :checked="memoryAllGuardiansSelected" 
+                      :indeterminate="memorySomeGuardiansSelected && !memoryAllGuardiansSelected"
+                      @change="toggleMemorySelectAll"
+                    />
+                    <span class="select-all-text">
+                      {{ memoryAllGuardiansSelected ? t('share.deselect_all') : t('share.select_all') }}
+                      <small>({{ form.guardianIds.length }}/{{ guardians.length }})</small>
+                    </span>
+                  </label>
+                </div>
+                <div class="guardians-grid">
+                  <label v-for="guardian in guardians" :key="guardian.id" class="guardian-checkbox">
+                    <input type="checkbox" :value="guardian.id" v-model="form.guardianIds" />
+                    <span class="guardian-option">
+                      <strong>{{ guardian.name }}</strong>
+                      <small v-if="guardian.relationship">{{ t(`composer.relationships.${guardian.relationship}`) }}</small>
+                    </span>
+                  </label>
+                </div>
+              </div>
             </div>
             
             <div class="modal__actions">
@@ -566,6 +669,106 @@ function handleBackdropClick(e) {
 
 .toggle-icon {
   font-size: 1rem;
+}
+
+.toggle-hint {
+  display: block;
+  margin-top: var(--space-xs);
+  margin-left: 56px;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+/* Guardians Selection Panel */
+.guardians-selection-panel {
+  margin-top: var(--space-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: white;
+}
+
+.select-all-row {
+  padding: 0.75rem 1rem;
+  background: #f8fafc;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.select-all-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.select-all-checkbox input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--color-primary);
+}
+
+.select-all-text {
+  font-weight: 600;
+  color: var(--color-text);
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.select-all-text small {
+  color: var(--color-text-muted);
+  font-weight: 400;
+}
+
+.guardians-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.guardian-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--color-border-light);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.guardian-checkbox:last-child {
+  border-bottom: none;
+}
+
+.guardian-checkbox:hover {
+  background: rgba(45, 90, 71, 0.02);
+}
+
+.guardian-checkbox:has(input:checked) {
+  background: var(--color-primary-soft);
+}
+
+.guardian-checkbox input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--color-primary);
+}
+
+.guardian-option {
+  display: flex;
+  flex-direction: column;
+}
+
+.guardian-option strong {
+  color: var(--color-text);
+  font-size: 0.9rem;
+}
+
+.guardian-option small {
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
 }
 
 .form-error-box {
