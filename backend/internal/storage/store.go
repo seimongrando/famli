@@ -28,6 +28,7 @@ type Store interface {
 	ListBoxItems(userID string) []*BoxItem
 	GetBoxItem(userID, itemID string) (*BoxItem, error)
 	CreateBoxItem(userID string, item *BoxItem) (*BoxItem, error)
+	CreateBoxItemWithID(userID string, item *BoxItem, itemID string) (*BoxItem, error)
 	UpdateBoxItem(userID, itemID string, updates *BoxItem) (*BoxItem, error)
 	DeleteBoxItem(userID, itemID string) error
 
@@ -39,6 +40,7 @@ type Store interface {
 	GetGuardians(userID string) ([]*Guardian, error)
 	ListGuardians(userID string) []*Guardian
 	CreateGuardian(userID string, guardian *Guardian) (*Guardian, error)
+	CreateGuardianWithID(userID string, guardian *Guardian, guardianID string) (*Guardian, error)
 	UpdateGuardian(userID, guardianID string, updates *Guardian) (*Guardian, error)
 	DeleteGuardian(userID, guardianID string) error
 
@@ -98,6 +100,10 @@ type Store interface {
 
 	// Maintenance
 	CleanupOldLogs(retentionDays int) error
+
+	// Idempotência
+	RegisterIdempotencyKey(userID, key, resourceType, resourceID string) (existingID string, inserted bool, err error)
+	DeleteIdempotencyKey(userID, key, resourceType string) error
 }
 
 // Garantir que as implementações satisfazem a interface

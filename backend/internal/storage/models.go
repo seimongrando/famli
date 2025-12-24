@@ -91,6 +91,7 @@ type BoxItem struct {
 	Recipient   string    `json:"recipient,omitempty"` // Criptografado no banco
 	IsImportant bool      `json:"is_important"`
 	IsShared    bool      `json:"is_shared"` // Se o item é visível para guardiões
+	GuardianIDs []string  `json:"guardian_ids,omitempty"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
 }
@@ -103,6 +104,8 @@ type BoxItemSummary struct {
 	Title       string    `json:"title"`
 	Category    string    `json:"category,omitempty"`
 	IsImportant bool      `json:"is_important"`
+	IsShared    bool      `json:"is_shared"`
+	GuardianIDs []string  `json:"guardian_ids,omitempty"`
 	UpdatedAt   time.Time `json:"updated_at"`
 }
 

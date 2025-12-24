@@ -19,6 +19,7 @@ package security
 
 import (
 	"net/http"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -306,12 +307,12 @@ func (rl *RateLimiter) Middleware(getIdentifier func(*http.Request) string) func
 
 			// Adicionar headers de rate limit
 			remaining, resetIn, _ := rl.GetStatus(identifier)
-			w.Header().Set("X-RateLimit-Limit", string(rune(rl.config.Requests)))
-			w.Header().Set("X-RateLimit-Remaining", string(rune(remaining)))
-			w.Header().Set("X-RateLimit-Reset", string(rune(int(resetIn.Seconds()))))
+			w.Header().Set("X-RateLimit-Limit", strconv.Itoa(rl.config.Requests))
+			w.Header().Set("X-RateLimit-Remaining", strconv.Itoa(remaining))
+			w.Header().Set("X-RateLimit-Reset", strconv.Itoa(int(resetIn.Seconds())))
 
 			if !allowed {
-				w.Header().Set("Retry-After", string(rune(int(retryAfter.Seconds()))))
+				w.Header().Set("Retry-After", strconv.Itoa(int(retryAfter.Seconds())))
 				http.Error(w, `{"error":"Muitas requisições. Tente novamente em alguns minutos."}`, http.StatusTooManyRequests)
 				return
 			}

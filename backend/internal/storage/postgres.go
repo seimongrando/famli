@@ -131,6 +131,17 @@ func (s *PostgresStore) migrate() error {
 			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		)`,
 
+		// Idempotência (evita criação duplicada por retries)
+		`CREATE TABLE IF NOT EXISTS idempotency_keys (
+			user_id VARCHAR(50) NOT NULL,
+			key VARCHAR(120) NOT NULL,
+			resource_type VARCHAR(50) NOT NULL,
+			resource_id VARCHAR(50) NOT NULL,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			PRIMARY KEY (user_id, key, resource_type)
+		)`,
+		`CREATE INDEX IF NOT EXISTS idx_idempotency_created ON idempotency_keys(created_at DESC)`,
+
 		// Tabela box_items (com limite de 10KB para content)
 		`CREATE TABLE IF NOT EXISTS box_items (
 			id VARCHAR(50) PRIMARY KEY,
@@ -204,11 +215,13 @@ func (s *PostgresStore) migrate() error {
 
 		// Migrações: Compartilhamento integrado
 		`ALTER TABLE box_items ADD COLUMN IF NOT EXISTS is_shared BOOLEAN DEFAULT FALSE`,
+		`ALTER TABLE box_items ADD COLUMN IF NOT EXISTS guardian_ids TEXT[]`,
 		`ALTER TABLE guardians ADD COLUMN IF NOT EXISTS access_token VARCHAR(100)`,
 		`ALTER TABLE guardians ADD COLUMN IF NOT EXISTS access_pin VARCHAR(255)`,
 		`ALTER TABLE guardians ADD COLUMN IF NOT EXISTS access_type VARCHAR(20) DEFAULT 'normal'`,
 		`CREATE INDEX IF NOT EXISTS idx_guardians_token ON guardians(access_token) WHERE access_token IS NOT NULL`,
 		`CREATE INDEX IF NOT EXISTS idx_box_items_shared ON box_items(user_id, is_shared) WHERE is_shared = TRUE`,
+		`CREATE INDEX IF NOT EXISTS idx_box_items_guardian_ids ON box_items USING GIN (guardian_ids)`,
 		`CREATE INDEX IF NOT EXISTS idx_box_items_user_updated ON box_items(user_id, updated_at DESC)`,
 
 		// Índices de guide_progress (para verificar progresso rapidamente)
@@ -794,7 +807,7 @@ func (s *PostgresStore) GetBoxItems(userID string) ([]*BoxItem, error) {
 func (s *PostgresStore) ListBoxItems(userID string) []*BoxItem {
 	// Query com campos específicos (não usa SELECT *)
 	rows, err := s.db.Query(`
-		SELECT id, user_id, type, title, content, category, recipient, is_important, is_shared, created_at, updated_at
+		SELECT id, user_id, type, title, content, category, recipient, is_important, is_shared, guardian_ids, created_at, updated_at
 		FROM box_items 
 		WHERE user_id = $1
 		ORDER BY updated_at DESC
@@ -809,10 +822,11 @@ func (s *PostgresStore) ListBoxItems(userID string) []*BoxItem {
 	for rows.Next() {
 		var item BoxItem
 		var title, content, category, recipient sql.NullString
+		var guardianIDs pq.StringArray
 		err := rows.Scan(
 			&item.ID, &item.UserID, &item.Type, &title,
 			&content, &category, &recipient,
-			&item.IsImportant, &item.IsShared, &item.CreatedAt, &item.UpdatedAt,
+			&item.IsImportant, &item.IsShared, &guardianIDs, &item.CreatedAt, &item.UpdatedAt,
 		)
 		if err != nil {
 			// Pular itens com erro de leitura
@@ -823,6 +837,7 @@ func (s *PostgresStore) ListBoxItems(userID string) []*BoxItem {
 		item.Content = s.decryptSensitive(content.String)
 		item.Category = category.String
 		item.Recipient = s.decryptSensitive(recipient.String)
+		item.GuardianIDs = guardianIDs
 		items = append(items, &item)
 	}
 
@@ -841,7 +856,7 @@ func (s *PostgresStore) ListBoxItemsPaginated(userID string, params *PaginationP
 	if params.Cursor != "" {
 		// Buscar itens após o cursor (baseado no ID)
 		rows, err = s.db.Query(`
-			SELECT id, type, title, category, is_important, updated_at
+			SELECT id, type, title, category, is_important, is_shared, guardian_ids, updated_at
 			FROM box_items 
 			WHERE user_id = $1 AND id < $2
 			ORDER BY id DESC
@@ -850,7 +865,7 @@ func (s *PostgresStore) ListBoxItemsPaginated(userID string, params *PaginationP
 	} else {
 		// Primeira página
 		rows, err = s.db.Query(`
-			SELECT id, type, title, category, is_important, updated_at
+			SELECT id, type, title, category, is_important, is_shared, guardian_ids, updated_at
 			FROM box_items 
 			WHERE user_id = $1
 			ORDER BY id DESC
@@ -867,9 +882,10 @@ func (s *PostgresStore) ListBoxItemsPaginated(userID string, params *PaginationP
 	for rows.Next() {
 		var item BoxItemSummary
 		var title, category sql.NullString
+		var guardianIDs pq.StringArray
 		err := rows.Scan(
 			&item.ID, &item.Type, &title, &category,
-			&item.IsImportant, &item.UpdatedAt,
+			&item.IsImportant, &item.IsShared, &guardianIDs, &item.UpdatedAt,
 		)
 		if err != nil {
 			// Pular itens com erro de leitura
@@ -877,6 +893,7 @@ func (s *PostgresStore) ListBoxItemsPaginated(userID string, params *PaginationP
 		}
 		item.Title = s.decryptSensitive(title.String)
 		item.Category = category.String
+		item.GuardianIDs = guardianIDs
 		items = append(items, &item)
 	}
 
@@ -912,16 +929,17 @@ func (s *PostgresStore) CountBoxItems(userID string) (int, error) {
 func (s *PostgresStore) GetBoxItem(userID, itemID string) (*BoxItem, error) {
 	var item BoxItem
 	var title, content, category, recipient sql.NullString
+	var guardianIDs pq.StringArray
 
 	// Query com campos específicos (não usa SELECT *)
 	err := s.db.QueryRow(`
-		SELECT id, user_id, type, title, content, category, recipient, is_important, is_shared, created_at, updated_at
+		SELECT id, user_id, type, title, content, category, recipient, is_important, is_shared, guardian_ids, created_at, updated_at
 		FROM box_items 
 		WHERE user_id = $1 AND id = $2
 	`, userID, itemID).Scan(
 		&item.ID, &item.UserID, &item.Type, &title,
 		&content, &category, &recipient,
-		&item.IsImportant, &item.IsShared, &item.CreatedAt, &item.UpdatedAt,
+		&item.IsImportant, &item.IsShared, &guardianIDs, &item.CreatedAt, &item.UpdatedAt,
 	)
 
 	if err == sql.ErrNoRows {
@@ -936,12 +954,18 @@ func (s *PostgresStore) GetBoxItem(userID, itemID string) (*BoxItem, error) {
 	item.Content = s.decryptSensitive(content.String)
 	item.Category = category.String
 	item.Recipient = s.decryptSensitive(recipient.String)
+	item.GuardianIDs = guardianIDs
 	return &item, nil
 }
 
 // CreateBoxItem cria um novo item com dados criptografados
 func (s *PostgresStore) CreateBoxItem(userID string, item *BoxItem) (*BoxItem, error) {
 	id := fmt.Sprintf("itm_%d", time.Now().UnixNano())
+	return s.CreateBoxItemWithID(userID, item, id)
+}
+
+// CreateBoxItemWithID cria um novo item com ID pré-definido (idempotência).
+func (s *PostgresStore) CreateBoxItemWithID(userID string, item *BoxItem, itemID string) (*BoxItem, error) {
 	now := time.Now()
 
 	// Criptografar dados sensíveis antes de salvar
@@ -959,15 +983,15 @@ func (s *PostgresStore) CreateBoxItem(userID string, item *BoxItem) (*BoxItem, e
 	}
 
 	_, err = s.db.Exec(`
-		INSERT INTO box_items (id, user_id, type, title, content, category, recipient, is_important, is_shared, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-	`, id, userID, item.Type, encTitle, encContent, item.Category, encRecipient, item.IsImportant, item.IsShared, now, now)
+		INSERT INTO box_items (id, user_id, type, title, content, category, recipient, is_important, is_shared, guardian_ids, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+	`, itemID, userID, item.Type, encTitle, encContent, item.Category, encRecipient, item.IsImportant, item.IsShared, pq.Array(item.GuardianIDs), now, now)
 
 	if err != nil {
 		return nil, err
 	}
 
-	item.ID = id
+	item.ID = itemID
 	item.UserID = userID
 	item.CreatedAt = now
 	item.UpdatedAt = now
@@ -992,9 +1016,9 @@ func (s *PostgresStore) UpdateBoxItem(userID, itemID string, updates *BoxItem) (
 
 	result, err := s.db.Exec(`
 		UPDATE box_items 
-		SET title = $1, content = $2, type = $3, category = $4, recipient = $5, is_important = $6, is_shared = $7, updated_at = $8
-		WHERE user_id = $9 AND id = $10
-	`, encTitle, encContent, updates.Type, updates.Category, encRecipient, updates.IsImportant, updates.IsShared, time.Now(), userID, itemID)
+		SET title = $1, content = $2, type = $3, category = $4, recipient = $5, is_important = $6, is_shared = $7, guardian_ids = $8, updated_at = $9
+		WHERE user_id = $10 AND id = $11
+	`, encTitle, encContent, updates.Type, updates.Category, encRecipient, updates.IsImportant, updates.IsShared, pq.Array(updates.GuardianIDs), time.Now(), userID, itemID)
 
 	if err != nil {
 		return nil, err
@@ -1215,7 +1239,7 @@ func (s *PostgresStore) GetGuardianByAccessToken(token string) (*Guardian, error
 // ListSharedItems lista itens compartilhados de um usuário
 func (s *PostgresStore) ListSharedItems(userID string) []*BoxItem {
 	rows, err := s.db.Query(`
-		SELECT id, user_id, type, title, content, category, recipient, is_important, is_shared, created_at, updated_at
+		SELECT id, user_id, type, title, content, category, recipient, is_important, is_shared, guardian_ids, created_at, updated_at
 		FROM box_items 
 		WHERE user_id = $1 AND is_shared = TRUE
 		ORDER BY updated_at DESC
@@ -1230,10 +1254,11 @@ func (s *PostgresStore) ListSharedItems(userID string) []*BoxItem {
 	for rows.Next() {
 		var item BoxItem
 		var title, content, category, recipient sql.NullString
+		var guardianIDs pq.StringArray
 		err := rows.Scan(
 			&item.ID, &item.UserID, &item.Type, &title,
 			&content, &category, &recipient,
-			&item.IsImportant, &item.IsShared, &item.CreatedAt, &item.UpdatedAt,
+			&item.IsImportant, &item.IsShared, &guardianIDs, &item.CreatedAt, &item.UpdatedAt,
 		)
 		if err != nil {
 			continue
@@ -1242,6 +1267,7 @@ func (s *PostgresStore) ListSharedItems(userID string) []*BoxItem {
 		item.Content = s.decryptSensitive(content.String)
 		item.Category = category.String
 		item.Recipient = s.decryptSensitive(recipient.String)
+		item.GuardianIDs = guardianIDs
 		items = append(items, &item)
 	}
 
@@ -1251,6 +1277,10 @@ func (s *PostgresStore) ListSharedItems(userID string) []*BoxItem {
 // CreateGuardian cria um novo guardião com dados criptografados
 func (s *PostgresStore) CreateGuardian(userID string, guardian *Guardian) (*Guardian, error) {
 	id := fmt.Sprintf("grd_%d", time.Now().UnixNano())
+	return s.CreateGuardianWithID(userID, guardian, id)
+}
+
+func (s *PostgresStore) CreateGuardianWithID(userID string, guardian *Guardian, guardianID string) (*Guardian, error) {
 	now := time.Now()
 	role := guardian.Role
 	if role == "" {
@@ -1285,13 +1315,13 @@ func (s *PostgresStore) CreateGuardian(userID string, guardian *Guardian) (*Guar
 	_, err = s.db.Exec(`
 		INSERT INTO guardians (id, user_id, name, email, phone, relationship, role, notes, access_token, access_pin, access_type, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-	`, id, userID, encName, encEmail, encPhone, guardian.Relationship, role, encNotes, accessToken, guardian.AccessPIN, accessType, now, now)
+	`, guardianID, userID, encName, encEmail, encPhone, guardian.Relationship, role, encNotes, accessToken, guardian.AccessPIN, accessType, now, now)
 
 	if err != nil {
 		return nil, err
 	}
 
-	guardian.ID = id
+	guardian.ID = guardianID
 	guardian.UserID = userID
 	guardian.Role = role
 	guardian.AccessToken = accessToken
@@ -1404,6 +1434,44 @@ func (s *PostgresStore) DeleteGuardian(userID, guardianID string) error {
 	}
 
 	return nil
+}
+
+// RegisterIdempotencyKey registra uma chave idempotente para um recurso.
+func (s *PostgresStore) RegisterIdempotencyKey(userID, key, resourceType, resourceID string) (string, bool, error) {
+	result, err := s.db.Exec(`
+		INSERT INTO idempotency_keys (user_id, key, resource_type, resource_id, created_at)
+		VALUES ($1, $2, $3, $4, $5)
+		ON CONFLICT DO NOTHING
+	`, userID, key, resourceType, resourceID, time.Now())
+	if err != nil {
+		return "", false, err
+	}
+
+	rows, _ := result.RowsAffected()
+	if rows == 1 {
+		return "", true, nil
+	}
+
+	var existingID string
+	err = s.db.QueryRow(`
+		SELECT resource_id FROM idempotency_keys
+		WHERE user_id = $1 AND key = $2 AND resource_type = $3
+	`, userID, key, resourceType).Scan(&existingID)
+	if err == sql.ErrNoRows {
+		return "", false, ErrNotFound
+	}
+	if err != nil {
+		return "", false, err
+	}
+	return existingID, false, nil
+}
+
+// DeleteIdempotencyKey remove uma chave idempotente (ex.: após falha).
+func (s *PostgresStore) DeleteIdempotencyKey(userID, key, resourceType string) error {
+	_, err := s.db.Exec(`
+		DELETE FROM idempotency_keys WHERE user_id = $1 AND key = $2 AND resource_type = $3
+	`, userID, key, resourceType)
+	return err
 }
 
 // ============================================================================
@@ -1793,9 +1861,9 @@ func (s *PostgresStore) GetDailyStats(days int) ([]map[string]interface{}, error
 // CreateShareLink cria um novo link de compartilhamento
 func (s *PostgresStore) CreateShareLink(link *ShareLink) error {
 	_, err := s.db.Exec(`
-		INSERT INTO share_links (id, user_id, guardian_id, token, type, name, pin_hash, categories, expires_at, max_uses, is_active, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-	`, link.ID, link.UserID, nullString(link.GuardianID), link.Token, link.Type, link.Name,
+		INSERT INTO share_links (id, user_id, guardian_id, guardian_ids, token, type, name, pin_hash, categories, expires_at, max_uses, is_active, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+	`, link.ID, link.UserID, nullString(link.GuardianID), pq.Array(link.GuardianIDs), link.Token, link.Type, link.Name,
 		nullString(link.PIN), pq.Array(link.Categories), link.ExpiresAt, link.MaxUses, link.IsActive, link.CreatedAt, link.UpdatedAt)
 	return err
 }
@@ -1805,13 +1873,13 @@ func (s *PostgresStore) GetShareLinkByToken(token string) (*ShareLink, error) {
 	var link ShareLink
 	var guardianID, pinHash sql.NullString
 	var expiresAt, lastUsedAt sql.NullTime
-	var categories pq.StringArray
+	var categories, guardianIDs pq.StringArray
 
 	err := s.db.QueryRow(`
-		SELECT id, user_id, guardian_id, token, type, name, pin_hash, categories, expires_at, max_uses, usage_count, last_used_at, is_active, created_at, updated_at
+		SELECT id, user_id, guardian_id, guardian_ids, token, type, name, pin_hash, categories, expires_at, max_uses, usage_count, last_used_at, is_active, created_at, updated_at
 		FROM share_links
 		WHERE token = $1 AND is_active = TRUE
-	`, token).Scan(&link.ID, &link.UserID, &guardianID, &link.Token, &link.Type, &link.Name,
+	`, token).Scan(&link.ID, &link.UserID, &guardianID, &guardianIDs, &link.Token, &link.Type, &link.Name,
 		&pinHash, &categories, &expiresAt, &link.MaxUses, &link.UsageCount, &lastUsedAt, &link.IsActive, &link.CreatedAt, &link.UpdatedAt)
 
 	if err == sql.ErrNoRows {
@@ -1822,6 +1890,7 @@ func (s *PostgresStore) GetShareLinkByToken(token string) (*ShareLink, error) {
 	}
 
 	link.GuardianID = guardianID.String
+	link.GuardianIDs = guardianIDs
 	link.PIN = pinHash.String
 	link.Categories = categories
 	if expiresAt.Valid {
@@ -1837,7 +1906,7 @@ func (s *PostgresStore) GetShareLinkByToken(token string) (*ShareLink, error) {
 // GetShareLinksByUser lista todos os links de um usuário
 func (s *PostgresStore) GetShareLinksByUser(userID string) ([]*ShareLink, error) {
 	rows, err := s.db.Query(`
-		SELECT id, user_id, guardian_id, token, type, name, categories, expires_at, max_uses, usage_count, last_used_at, is_active, created_at, updated_at
+		SELECT id, user_id, guardian_id, guardian_ids, token, type, name, categories, expires_at, max_uses, usage_count, last_used_at, is_active, created_at, updated_at
 		FROM share_links
 		WHERE user_id = $1
 		ORDER BY created_at DESC
@@ -1853,15 +1922,16 @@ func (s *PostgresStore) GetShareLinksByUser(userID string) ([]*ShareLink, error)
 		var link ShareLink
 		var guardianID sql.NullString
 		var expiresAt, lastUsedAt sql.NullTime
-		var categories pq.StringArray
+		var categories, guardianIDs pq.StringArray
 
-		err := rows.Scan(&link.ID, &link.UserID, &guardianID, &link.Token, &link.Type, &link.Name,
+		err := rows.Scan(&link.ID, &link.UserID, &guardianID, &guardianIDs, &link.Token, &link.Type, &link.Name,
 			&categories, &expiresAt, &link.MaxUses, &link.UsageCount, &lastUsedAt, &link.IsActive, &link.CreatedAt, &link.UpdatedAt)
 		if err != nil {
 			continue
 		}
 
 		link.GuardianID = guardianID.String
+		link.GuardianIDs = guardianIDs
 		link.Categories = categories
 		if expiresAt.Valid {
 			link.ExpiresAt = &expiresAt.Time

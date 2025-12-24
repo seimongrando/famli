@@ -314,7 +314,7 @@ export const useBoxStore = defineStore('box', () => {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'X-Idempotency-Key': idempotencyKey
+          'Idempotency-Key': idempotencyKey
         },
         body: JSON.stringify(payload)
       })
@@ -390,7 +390,7 @@ export const useBoxStore = defineStore('box', () => {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'X-Idempotency-Key': idempotencyKey
+          'Idempotency-Key': idempotencyKey
         },
         body: JSON.stringify(payload)
       })

@@ -2,8 +2,10 @@ package guardian
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"golang.org/x/crypto/bcrypt"
@@ -92,8 +94,40 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	created, err := h.store.CreateGuardian(userID, guardian)
+	idempotencyKey := getIdempotencyKey(r)
+	var guardianID string
+	if idempotencyKey != "" {
+		guardianID = fmt.Sprintf("grd_%d", time.Now().UnixNano())
+		existingID, inserted, err := h.store.RegisterIdempotencyKey(userID, idempotencyKey, "guardian", guardianID)
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, i18n.Tr(r, "guardian.add_error"))
+			return
+		}
+		if !inserted {
+			guardians := h.store.ListGuardians(userID)
+			for _, g := range guardians {
+				if g.ID == existingID {
+					w.Header().Set("Idempotency-Replayed", "true")
+					writeJSON(w, http.StatusOK, g)
+					return
+				}
+			}
+			writeError(w, http.StatusConflict, i18n.Tr(r, "guardian.add_error"))
+			return
+		}
+	}
+
+	var created *storage.Guardian
+	var err error
+	if idempotencyKey != "" {
+		created, err = h.store.CreateGuardianWithID(userID, guardian, guardianID)
+	} else {
+		created, err = h.store.CreateGuardian(userID, guardian)
+	}
 	if err != nil {
+		if idempotencyKey != "" {
+			_ = h.store.DeleteIdempotencyKey(userID, idempotencyKey, "guardian")
+		}
 		writeError(w, http.StatusInternalServerError, i18n.Tr(r, "guardian.add_error"))
 		return
 	}
@@ -180,4 +214,15 @@ func writeJSON(w http.ResponseWriter, status int, payload interface{}) {
 
 func writeError(w http.ResponseWriter, status int, message string) {
 	writeJSON(w, status, map[string]string{"error": message})
+}
+
+func getIdempotencyKey(r *http.Request) string {
+	key := strings.TrimSpace(r.Header.Get("Idempotency-Key"))
+	if key == "" {
+		key = strings.TrimSpace(r.Header.Get("X-Idempotency-Key"))
+	}
+	if len(key) > 120 {
+		key = key[:120]
+	}
+	return key
 }

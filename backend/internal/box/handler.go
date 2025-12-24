@@ -15,8 +15,10 @@ package box
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 
@@ -66,6 +68,7 @@ type itemPayload struct {
 	Recipient   string           `json:"recipient,omitempty"`
 	IsImportant bool             `json:"is_important"`
 	IsShared    bool             `json:"is_shared"` // Compartilhado com guardiões
+	GuardianIDs []string         `json:"guardian_ids,omitempty"`
 }
 
 // validate valida e sanitiza o payload
@@ -106,6 +109,28 @@ func (p *itemPayload) validate(r *http.Request) string {
 	// Verificar por tentativas de injection
 	if security.ContainsSQLInjection(p.Title) || security.ContainsSQLInjection(p.Content) {
 		return i18n.Tr(r, "box.invalid_detected")
+	}
+
+	if !p.IsShared {
+		p.GuardianIDs = nil
+		return ""
+	}
+
+	if len(p.GuardianIDs) > 0 {
+		unique := make([]string, 0, len(p.GuardianIDs))
+		seen := make(map[string]struct{}, len(p.GuardianIDs))
+		for _, id := range p.GuardianIDs {
+			id = strings.TrimSpace(id)
+			if id == "" {
+				continue
+			}
+			if _, ok := seen[id]; ok {
+				continue
+			}
+			seen[id] = struct{}{}
+			unique = append(unique, id)
+		}
+		p.GuardianIDs = unique
 	}
 
 	return ""
@@ -204,11 +229,46 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		Recipient:   payload.Recipient,
 		IsImportant: payload.IsImportant,
 		IsShared:    payload.IsShared,
+		GuardianIDs: payload.GuardianIDs,
 	}
 
-	created, err := h.store.CreateBoxItem(userID, item)
+	idempotencyKey := getIdempotencyKey(r)
+	if len(idempotencyKey) > 120 {
+		idempotencyKey = idempotencyKey[:120]
+	}
+
+	var itemID string
+	if idempotencyKey != "" {
+		itemID = fmt.Sprintf("itm_%d", time.Now().UnixNano())
+		existingID, inserted, err := h.store.RegisterIdempotencyKey(userID, idempotencyKey, "box_item", itemID)
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, i18n.Tr(r, "box.save_error"))
+			return
+		}
+		if !inserted {
+			existing, err := h.store.GetBoxItem(userID, existingID)
+			if err != nil {
+				writeError(w, http.StatusConflict, i18n.Tr(r, "box.save_error"))
+				return
+			}
+			w.Header().Set("Idempotency-Replayed", "true")
+			writeJSON(w, http.StatusOK, existing)
+			return
+		}
+	}
+
+	var created *storage.BoxItem
+	var err error
+	if idempotencyKey != "" {
+		created, err = h.store.CreateBoxItemWithID(userID, item, itemID)
+	} else {
+		created, err = h.store.CreateBoxItem(userID, item)
+	}
 	if err != nil {
 		h.auditLogger.LogDataAccess(userID, clientIP, "box/items", "create", "failure")
+		if idempotencyKey != "" {
+			_ = h.store.DeleteIdempotencyKey(userID, idempotencyKey, "box_item")
+		}
 		writeError(w, http.StatusInternalServerError, i18n.Tr(r, "box.save_error"))
 		return
 	}
@@ -261,6 +321,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 		Recipient:   payload.Recipient,
 		IsImportant: payload.IsImportant,
 		IsShared:    payload.IsShared,
+		GuardianIDs: payload.GuardianIDs,
 	}
 
 	updated, err := h.store.UpdateBoxItem(userID, itemID, updates)
@@ -410,6 +471,17 @@ func writeJSON(w http.ResponseWriter, status int, payload interface{}) {
 // writeError escreve resposta de erro JSON
 func writeError(w http.ResponseWriter, status int, message string) {
 	writeJSON(w, status, map[string]string{"error": message})
+}
+
+func getIdempotencyKey(r *http.Request) string {
+	key := strings.TrimSpace(r.Header.Get("Idempotency-Key"))
+	if key == "" {
+		key = strings.TrimSpace(r.Header.Get("X-Idempotency-Key"))
+	}
+	if len(key) > 120 {
+		key = key[:120]
+	}
+	return key
 }
 
 // parseInt converte string para int

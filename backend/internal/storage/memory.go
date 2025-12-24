@@ -25,13 +25,14 @@ type MemoryStore struct {
 	guardians           map[string]map[string]*Guardian      // userID -> guardianID -> guardian
 	progress            map[string]map[string]*GuideProgress // userID -> cardID -> progress
 	settings            map[string]*Settings
-	feedbacks           map[string]*Feedback           // feedbackID -> feedback
-	analytics           []*AnalyticsEvent              // Lista de eventos
-	shareLinks          map[string]*ShareLink          // linkID -> link
-	shareLinksByToken   map[string]string              // token -> linkID
-	shareLinkAccesses   []*ShareLinkAccess             // Lista de acessos
-	passwordResetTokens map[string]*PasswordResetToken // tokenHash -> token
-	emergencyProtocols  map[string]*EmergencyProtocol  // userID -> protocol
+	feedbacks           map[string]*Feedback                    // feedbackID -> feedback
+	analytics           []*AnalyticsEvent                       // Lista de eventos
+	shareLinks          map[string]*ShareLink                   // linkID -> link
+	shareLinksByToken   map[string]string                       // token -> linkID
+	shareLinkAccesses   []*ShareLinkAccess                      // Lista de acessos
+	passwordResetTokens map[string]*PasswordResetToken          // tokenHash -> token
+	emergencyProtocols  map[string]*EmergencyProtocol           // userID -> protocol
+	idempotencyKeys     map[string]map[string]map[string]string // user_id -> resource_type -> key -> resource_id
 
 	userSeq     int64
 	itemSeq     int64
@@ -56,6 +57,7 @@ func NewMemoryStore() *MemoryStore {
 		shareLinkAccesses:   make([]*ShareLinkAccess, 0),
 		passwordResetTokens: make(map[string]*PasswordResetToken),
 		emergencyProtocols:  make(map[string]*EmergencyProtocol),
+		idempotencyKeys:     make(map[string]map[string]map[string]string),
 	}
 }
 
@@ -335,12 +337,17 @@ func (s *MemoryStore) GetBoxItem(userID, itemID string) (*BoxItem, error) {
 }
 
 func (s *MemoryStore) CreateBoxItem(userID string, item *BoxItem) (*BoxItem, error) {
+	s.itemSeq++
+	itemID := fmt.Sprintf("itm_%d", s.itemSeq)
+	return s.CreateBoxItemWithID(userID, item, itemID)
+}
+
+func (s *MemoryStore) CreateBoxItemWithID(userID string, item *BoxItem, itemID string) (*BoxItem, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	s.itemSeq++
 	now := time.Now()
-	item.ID = fmt.Sprintf("itm_%d", s.itemSeq)
+	item.ID = itemID
 	item.UserID = userID
 	item.CreatedAt = now
 	item.UpdatedAt = now
@@ -373,6 +380,7 @@ func (s *MemoryStore) UpdateBoxItem(userID, itemID string, updates *BoxItem) (*B
 	item.Recipient = updates.Recipient
 	item.IsImportant = updates.IsImportant
 	item.IsShared = updates.IsShared
+	item.GuardianIDs = updates.GuardianIDs
 	item.UpdatedAt = time.Now()
 
 	copyItem := *item
@@ -451,6 +459,8 @@ func (s *MemoryStore) ListBoxItemsPaginated(userID string, params *PaginationPar
 			Title:       item.Title,
 			Category:    item.Category,
 			IsImportant: item.IsImportant,
+			IsShared:    item.IsShared,
+			GuardianIDs: item.GuardianIDs,
 			UpdatedAt:   item.UpdatedAt,
 		}
 	}
@@ -496,12 +506,17 @@ func (s *MemoryStore) ListGuardians(userID string) []*Guardian {
 }
 
 func (s *MemoryStore) CreateGuardian(userID string, guardian *Guardian) (*Guardian, error) {
+	s.guardianSeq++
+	guardianID := fmt.Sprintf("grd_%d", s.guardianSeq)
+	return s.CreateGuardianWithID(userID, guardian, guardianID)
+}
+
+func (s *MemoryStore) CreateGuardianWithID(userID string, guardian *Guardian, guardianID string) (*Guardian, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	s.guardianSeq++
 	now := time.Now()
-	guardian.ID = fmt.Sprintf("grd_%d", s.guardianSeq)
+	guardian.ID = guardianID
 	guardian.UserID = userID
 	guardian.CreatedAt = now
 	guardian.UpdatedAt = now
@@ -659,6 +674,41 @@ func (s *MemoryStore) ListSharedItems(userID string) []*BoxItem {
 		}
 	}
 	return result
+}
+
+// ============ IDEMPOTÊNCIA ============
+
+func (s *MemoryStore) RegisterIdempotencyKey(userID, key, resourceType, resourceID string) (string, bool, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if _, ok := s.idempotencyKeys[userID]; !ok {
+		s.idempotencyKeys[userID] = make(map[string]map[string]string)
+	}
+	if _, ok := s.idempotencyKeys[userID][resourceType]; !ok {
+		s.idempotencyKeys[userID][resourceType] = make(map[string]string)
+	}
+
+	if existingID, ok := s.idempotencyKeys[userID][resourceType][key]; ok {
+		return existingID, false, nil
+	}
+
+	s.idempotencyKeys[userID][resourceType][key] = resourceID
+	return "", true, nil
+}
+
+func (s *MemoryStore) DeleteIdempotencyKey(userID, key, resourceType string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if _, ok := s.idempotencyKeys[userID]; !ok {
+		return nil
+	}
+	if _, ok := s.idempotencyKeys[userID][resourceType]; !ok {
+		return nil
+	}
+	delete(s.idempotencyKeys[userID][resourceType], key)
+	return nil
 }
 
 // ============ GUIDE PROGRESS ============

@@ -393,6 +393,7 @@ func (h *Handler) getSharedContent(link *storage.ShareLink) (*storage.SharedView
 
 	// Buscar apenas itens compartilhados
 	allItems := h.store.ListSharedItems(link.UserID)
+	allItems = filterItemsByGuardians(allItems, link.GuardianIDs)
 
 	// Filtrar por categoria se necessário
 	var items []*storage.BoxItem
@@ -634,6 +635,7 @@ func (h *Handler) returnGuardianContent(w http.ResponseWriter, r *http.Request, 
 	// IMPORTANTE: Buscar apenas itens COMPARTILHADOS (is_shared = true)
 	// Itens não compartilhados são privados e não devem ser expostos
 	sharedItems := h.store.ListSharedItems(guardian.UserID)
+	sharedItems = filterItemsByGuardians(sharedItems, []string{guardian.ID})
 
 	// Converter para resposta
 	items := make([]*SharedItemInfo, 0, len(sharedItems))
@@ -721,6 +723,42 @@ func maskEmail(value string) string {
 		domainMasked = domainMasked + "." + strings.Join(domainParts[1:], ".")
 	}
 	return localMasked + "@" + domainMasked
+}
+
+func filterItemsByGuardians(items []*storage.BoxItem, guardianIDs []string) []*storage.BoxItem {
+	if len(guardianIDs) == 0 {
+		return items
+	}
+
+	allowed := make(map[string]struct{}, len(guardianIDs))
+	for _, id := range guardianIDs {
+		if id == "" {
+			continue
+		}
+		allowed[id] = struct{}{}
+	}
+
+	filtered := make([]*storage.BoxItem, 0, len(items))
+	for _, item := range items {
+		if len(item.GuardianIDs) == 0 {
+			filtered = append(filtered, item)
+			continue
+		}
+		if hasGuardianAccess(item.GuardianIDs, allowed) {
+			filtered = append(filtered, item)
+		}
+	}
+
+	return filtered
+}
+
+func hasGuardianAccess(itemGuardianIDs []string, allowed map[string]struct{}) bool {
+	for _, id := range itemGuardianIDs {
+		if _, ok := allowed[id]; ok {
+			return true
+		}
+	}
+	return false
 }
 
 type shareLinkPolicy struct {

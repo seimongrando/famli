@@ -36,6 +36,20 @@ CREATE TABLE IF NOT EXISTS system_config (
 );
 
 -- =============================================================================
+-- TABELA: idempotency_keys
+-- =============================================================================
+CREATE TABLE IF NOT EXISTS idempotency_keys (
+    user_id VARCHAR(50) NOT NULL,
+    key VARCHAR(120) NOT NULL,
+    resource_type VARCHAR(50) NOT NULL,
+    resource_id VARCHAR(50) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id, key, resource_type)
+);
+
+CREATE INDEX IF NOT EXISTS idx_idempotency_created ON idempotency_keys(created_at DESC);
+
+-- =============================================================================
 -- TABELA: box_items
 -- =============================================================================
 CREATE TABLE IF NOT EXISTS box_items (
@@ -47,6 +61,8 @@ CREATE TABLE IF NOT EXISTS box_items (
     category VARCHAR(50),
     recipient VARCHAR(512),
     is_important BOOLEAN DEFAULT FALSE,
+    is_shared BOOLEAN DEFAULT FALSE,
+    guardian_ids TEXT[],
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
