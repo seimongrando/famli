@@ -825,5 +825,31 @@
     "server_error": "Erro no servidor. Tente novamente mais tarde.",
     "network_error": "Erro de conexão. Verifique sua internet e tente novamente.",
     "generic": "Algo deu errado. Tente novamente."
+  },
+  "cookies": {
+    "title": "Nós usamos cookies",
+    "subtitle": "Sua privacidade é importante para nós",
+    "description": "Utilizamos cookies para melhorar sua experiência, analisar o tráfego do site e personalizar conteúdo. Você pode escolher quais cookies aceitar. Para mais informações, consulte nossa Política de Privacidade.",
+    "showDetails": "Ver detalhes",
+    "hideDetails": "Ocultar detalhes",
+    "acceptAll": "Aceitar todos",
+    "rejectOptional": "Somente essenciais",
+    "savePreferences": "Salvar preferências",
+    "privacyPolicy": "Política de Privacidade",
+    "termsOfService": "Termos de Uso",
+    "required": "Obrigatório",
+    "necessary": {
+      "title": "Cookies Essenciais",
+      "description": "Necessários para o funcionamento básico do site. Não podem ser desativados."
+    },
+    "analytics": {
+      "title": "Cookies de Análise",
+      "description": "Nos ajudam a entender como você usa o site para melhorarmos sua experiência."
+    },
+    "preferences": {
+      "title": "Cookies de Preferências",
+      "description": "Permitem lembrar suas escolhas e personalizar sua experiência."
+    },
+    "manageLabel": "Gerenciar cookies"
   }
 }

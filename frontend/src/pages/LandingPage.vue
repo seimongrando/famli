@@ -3,6 +3,7 @@ import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../stores/auth'
 import { useLocalizedRoutes } from '../composables/useLocalizedRoutes'
+import { useCookieConsent } from '../composables/useCookieConsent'
 import { onMounted } from 'vue'
 import LanguageSelector from '../components/LanguageSelector.vue'
 
@@ -10,6 +11,7 @@ const { t } = useI18n()
 const router = useRouter()
 const authStore = useAuthStore()
 const { paths, getPath } = useLocalizedRoutes()
+const { openPreferences: openCookiePreferences } = useCookieConsent()
 
 onMounted(() => {
   if (authStore.isAuthenticated) {
@@ -250,6 +252,9 @@ onMounted(() => {
             <router-link :to="paths.privacy" class="footer__link">
               {{ t('legal.privacy.link') }}
             </router-link>
+            <button type="button" class="footer__link footer__link--btn" @click="openCookiePreferences">
+              🍪 {{ t('cookies.manageLabel') }}
+            </button>
           </div>
         </div>
         <p class="footer__copyright">
@@ -638,6 +643,14 @@ onMounted(() => {
 .footer__link:hover {
   color: var(--color-primary);
   text-decoration: underline;
+}
+
+.footer__link--btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: inherit;
+  cursor: pointer;
 }
 
 .footer__copyright {

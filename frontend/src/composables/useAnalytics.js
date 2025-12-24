@@ -2,6 +2,7 @@
 // FAMLI - useAnalytics Composable
 // =============================================================================
 // Composable para rastreamento de eventos de analytics
+// RESPEITA O CONSENTIMENTO DE COOKIES (LGPD/GDPR)
 //
 // Uso:
 // import { useAnalytics } from '@/composables/useAnalytics'
@@ -12,12 +13,24 @@
 // =============================================================================
 
 import { useRoute } from 'vue-router'
+import { useCookieConsent } from './useCookieConsent'
 
 /**
  * Composable para rastreamento de analytics
  */
 export function useAnalytics() {
   const route = useRoute()
+  const { analyticsAllowed } = useCookieConsent()
+
+  /**
+   * Verifica se o rastreamento está permitido
+   */
+  function isTrackingAllowed() {
+    // Verificar flag global (definida pelo composable de cookies)
+    if (window._famliAnalyticsDisabled) return false
+    // Verificar consentimento
+    return analyticsAllowed.value
+  }
 
   /**
    * Rastreia um evento genérico
@@ -25,6 +38,12 @@ export function useAnalytics() {
    * @param {Object} details - Detalhes adicionais do evento
    */
   async function trackEvent(eventType, details = {}) {
+    // LGPD/GDPR: Só rastrear se o usuário consentiu
+    if (!isTrackingAllowed()) {
+      console.debug('Analytics tracking skipped: no consent')
+      return
+    }
+
     try {
       await fetch('/api/analytics/track', {
         method: 'POST',

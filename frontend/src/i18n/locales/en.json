@@ -826,5 +826,31 @@
     "server_error": "Server error. Please try again later.",
     "network_error": "Connection error. Check your internet and try again.",
     "generic": "Something went wrong. Please try again."
+  },
+  "cookies": {
+    "title": "We use cookies",
+    "subtitle": "Your privacy matters to us",
+    "description": "We use cookies to improve your experience, analyze site traffic, and personalize content. You can choose which cookies to accept. For more information, see our Privacy Policy.",
+    "showDetails": "Show details",
+    "hideDetails": "Hide details",
+    "acceptAll": "Accept all",
+    "rejectOptional": "Essential only",
+    "savePreferences": "Save preferences",
+    "privacyPolicy": "Privacy Policy",
+    "termsOfService": "Terms of Service",
+    "required": "Required",
+    "necessary": {
+      "title": "Essential Cookies",
+      "description": "Required for basic site functionality. Cannot be disabled."
+    },
+    "analytics": {
+      "title": "Analytics Cookies",
+      "description": "Help us understand how you use the site so we can improve your experience."
+    },
+    "preferences": {
+      "title": "Preference Cookies",
+      "description": "Allow us to remember your choices and personalize your experience."
+    },
+    "manageLabel": "Manage cookies"
   }
 }
