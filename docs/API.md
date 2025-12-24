@@ -503,7 +503,7 @@ Verificar status da integração WhatsApp.
 {
   "enabled": true,
   "phone_number": "whatsapp:+1415****886",
-  "webhook_url": "https://famli.net/api/whatsapp/webhook"
+  "webhook_url": "https://famli.me/api/whatsapp/webhook"
 }
 ```
 

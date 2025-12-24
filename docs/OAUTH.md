@@ -69,7 +69,7 @@ Os botões de login social aparecem automaticamente na página de autenticação
    - **App name**: Famli
    - **User support email**: seu-email@exemplo.com
    - **App logo**: (opcional)
-   - **App domain**: https://famli.net (ou seu domínio)
+   - **App domain**: https://famli.me (ou seu domínio)
    - **Developer contact**: seu-email@exemplo.com
 4. **Scopes**: Adicione `email` e `profile`
 5. **Test users**: Adicione seu email para testes
@@ -84,8 +84,8 @@ Os botões de login social aparecem automaticamente na página de autenticação
 5. **Authorized JavaScript origins**:
    - `http://localhost:5173` (desenvolvimento)
    - `http://localhost:8080` (desenvolvimento)
-   - `https://famli.net` (produção)
-   - `https://www.famli.net` (produção)
+   - `https://famli.me` (produção)
+   - `https://www.famli.me` (produção)
 6. **Authorized redirect URIs**: (não necessário para GIS)
 7. **Create**
 8. **Copie o Client ID** (formato: `xxxxxxxxxxxx.apps.googleusercontent.com`)
@@ -129,8 +129,8 @@ export GOOGLE_CLIENT_ID="xxxxxxxxxxxx.apps.googleusercontent.com"
 6. Marque **Sign in with Apple** → **Configure**
 7. Configure:
    - **Primary App ID**: selecione o App ID criado
-   - **Domains**: `famli.net` (seu domínio)
-   - **Return URLs**: `https://famli.net/auth`
+   - **Domains**: `famli.me` (seu domínio)
+   - **Return URLs**: `https://famli.me/auth`
 8. **Save** → **Continue** → **Save**
 
 ### Passo 4: Criar Key para Sign in with Apple

@@ -413,7 +413,7 @@ func (s *Service) saveItemToBox(session *UserSession) (string, error) {
 			"📌 *%s*\n"+
 			"📁 Categoria: %s\n\n"+
 			"Você pode ver tudo na sua Caixa Famli:\n"+
-			"🔗 famli.net/minha-caixa\n\n"+
+			"🔗 famli.me/minha-caixa\n\n"+
 			"_Continue me enviando o que quiser guardar!_ 💚",
 		created.Title,
 		created.Category,
@@ -508,7 +508,7 @@ func (s *Service) handleListCommand(session *UserSession) (string, error) {
 		response += fmt.Sprintf("%s *%s*\n   _%s_\n\n", emoji, item.Title, truncate(item.Content, 50))
 	}
 
-	response += fmt.Sprintf("_Total: %d itens_\n\n🔗 Ver tudo: famli.net/minha-caixa", len(items))
+	response += fmt.Sprintf("_Total: %d itens_\n\n🔗 Ver tudo: famli.me/minha-caixa", len(items))
 	return response, nil
 }
 
@@ -528,7 +528,7 @@ func (s *Service) handleStatusCommand(session *UserSession) (string, error) {
 		"📱 *Status: Conectado* ✅\n\n"+
 			"📦 Itens na Caixa: %d\n"+
 			"📅 Última atividade: %s\n\n"+
-			"🔗 Acesse: famli.net/minha-caixa",
+			"🔗 Acesse: famli.me/minha-caixa",
 		itemCount,
 		session.LastMessageAt.Format("02/01/2006 15:04"),
 	), nil
@@ -538,7 +538,7 @@ func (s *Service) handleStatusCommand(session *UserSession) (string, error) {
 func (s *Service) handleLinkCommand(session *UserSession) (string, error) {
 	if session.UserID != "" {
 		return "✅ Seu WhatsApp já está conectado!\n\n" +
-			"Se quiser trocar de conta, acesse famli.net/configuracoes", nil
+			"Se quiser trocar de conta, acesse famli.me/configuracoes", nil
 	}
 
 	// Gerar código de vinculação (6 dígitos)
@@ -547,7 +547,7 @@ func (s *Service) handleLinkCommand(session *UserSession) (string, error) {
 
 	return fmt.Sprintf(
 		"🔗 *Vincular WhatsApp ao Famli*\n\n"+
-			"1️⃣ Acesse *famli.net*\n"+
+			"1️⃣ Acesse *famli.me*\n"+
 			"2️⃣ Faça login na sua conta\n"+
 			"3️⃣ Vá em *Configurações > WhatsApp*\n"+
 			"4️⃣ Digite o código: *%s*\n\n"+
@@ -563,7 +563,7 @@ func (s *Service) handleUnlinkedUser(session *UserSession, text string) (string,
 			"Vi que você enviou:\n_%s_\n\n"+
 			"Para guardar isso na sua Caixa Famli, preciso conectar seu WhatsApp à sua conta.\n\n"+
 			"Digite *vincular* para começar!\n\n"+
-			"_Não tem conta? Crie em famli.net_ 💚",
+			"_Não tem conta? Crie em famli.me_ 💚",
 		truncate(text, 100),
 	), nil
 }

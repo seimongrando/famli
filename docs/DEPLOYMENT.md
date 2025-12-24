@@ -101,7 +101,7 @@ ENCRYPTION_KEY=<gerar-com-openssl-rand-base64-48>
 TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 TWILIO_AUTH_TOKEN=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 TWILIO_PHONE_NUMBER=whatsapp:+14155238886
-WEBHOOK_BASE_URL=https://famli.net
+WEBHOOK_BASE_URL=https://famli.me
 
 # OAuth - Login Social (opcional)
 GOOGLE_CLIENT_ID=xxxxxxxxxxxx.apps.googleusercontent.com
@@ -204,7 +204,7 @@ sudo nano /etc/nginx/sites-available/famli
 ```nginx
 server {
     listen 80;
-    server_name famli.net www.famli.net;
+    server_name famli.me www.famli.me;
     
     # Redirecionar para HTTPS
     return 301 https://$server_name$request_uri;
@@ -212,11 +212,11 @@ server {
 
 server {
     listen 443 ssl http2;
-    server_name famli.net www.famli.net;
+    server_name famli.me www.famli.me;
 
     # SSL (Certbot irá configurar)
-    ssl_certificate /etc/letsencrypt/live/famli.net/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/famli.net/privkey.pem;
+    ssl_certificate /etc/letsencrypt/live/famli.me/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/famli.me/privkey.pem;
     
     # Headers de segurança (redundância com app)
     add_header X-Frame-Options "DENY" always;
@@ -267,7 +267,7 @@ sudo nginx -t
 
 # Obter certificado SSL
 sudo apt install certbot python3-certbot-nginx
-sudo certbot --nginx -d famli.net -d www.famli.net
+sudo certbot --nginx -d famli.me -d www.famli.me
 
 # Reiniciar Nginx
 sudo systemctl restart nginx
@@ -290,7 +290,7 @@ sudo nano /etc/caddy/Caddyfile
 ```
 
 ```caddyfile
-famli.net, www.famli.net {
+famli.me, www.famli.me {
     reverse_proxy localhost:8080
 
     encode gzip
@@ -454,8 +454,8 @@ Na tela do Web Service, vá em **Environment** e adicione:
 
 ##### Passo 5: Verificar
 
-1. Acesse a URL do seu app: `https://famli.onrender.com`
-2. Verifique o health: `https://famli.onrender.com/api/health`
+1. Acesse a URL do seu app: `https://famli.me`
+2. Verifique o health: `https://famli.me/api/health`
 3. Se tudo estiver OK, você verá:
    ```json
    {
@@ -608,7 +608,7 @@ sudo grep -i error /var/log/famli/famli.log
 curl http://localhost:8080/api/health
 
 # Verificar status HTTP
-curl -I https://famli.net
+curl -I https://famli.me
 ```
 
 ### Monitoramento Externo

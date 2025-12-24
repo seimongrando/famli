@@ -488,7 +488,7 @@ STATIC_DIR=../frontend/dist
 TWILIO_ACCOUNT_SID=ACxxxxxxxxx
 TWILIO_AUTH_TOKEN=xxxxxxxxx
 TWILIO_PHONE_NUMBER=whatsapp:+14155238886
-WEBHOOK_BASE_URL=https://famli.net
+WEBHOOK_BASE_URL=https://famli.me
 ```
 
 ### Gerar Segredos Seguros
@@ -531,17 +531,17 @@ openssl rand -base64 48
 
 ```bash
 # Testar headers de segurança
-curl -I https://famli.net
+curl -I https://famli.me
 
 # Verificar CSP
 # Deve retornar Content-Security-Policy
 
 # Testar rate limiting
-for i in {1..10}; do curl -X POST https://famli.net/api/auth/login; done
+for i in {1..10}; do curl -X POST https://famli.me/api/auth/login; done
 # Deve retornar 429 Too Many Requests
 
 # Testar HTTPS redirect
-curl -I http://famli.net
+curl -I http://famli.me
 # Deve redirecionar para https://
 ```
 

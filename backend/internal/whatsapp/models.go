@@ -185,7 +185,7 @@ type Config struct {
 	// Formato: whatsapp:+14155238886 (sandbox) ou seu número verificado
 	TwilioPhoneNumber string
 
-	// WebhookBaseURL é a URL base para webhooks (ex: https://famli.net)
+	// WebhookBaseURL é a URL base para webhooks (ex: https://famli.me)
 	WebhookBaseURL string
 
 	// Enabled indica se a integração está ativa

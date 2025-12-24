@@ -59,7 +59,7 @@ $CMD -size 1200x630 \
     -font "Helvetica" -pointsize 28 -fill '#f4a285' \
     -annotate +0+160 "Memórias • Documentos • Orientações" \
     -font "Helvetica" -pointsize 22 -fill 'rgba(255,255,255,0.6)' \
-    -gravity south -annotate +0+40 "famli.net" \
+    -gravity south -annotate +0+40 "famli.me" \
     "$OUTPUT"
 
 if [ $? -eq 0 ]; then

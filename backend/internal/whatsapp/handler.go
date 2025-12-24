@@ -141,7 +141,7 @@ type LinkPayload struct {
 //
 // O usuário:
 // 1. Digita "vincular" no WhatsApp e recebe um código
-// 2. Acessa famli.net/configuracoes
+// 2. Acessa famli.me/configuracoes
 // 3. Digita o código para vincular
 //
 // Endpoint: POST /api/whatsapp/link
@@ -228,7 +228,7 @@ func (h *Handler) Unlink(w http.ResponseWriter, r *http.Request) {
 //	{
 //	  "enabled": true,
 //	  "phone_number": "+14155238886",
-//	  "webhook_url": "https://famli.net/api/whatsapp/webhook"
+//	  "webhook_url": "https://famli.me/api/whatsapp/webhook"
 //	}
 func (h *Handler) Status(w http.ResponseWriter, r *http.Request) {
 	status := map[string]interface{}{
